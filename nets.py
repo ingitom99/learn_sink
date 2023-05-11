@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 from torchvision.transforms import Resize
 
-class puma_net(nn.Module):
+class pred_net(nn.Module):
 
   def __init__(self, dim):
-    super(puma_net, self).__init__()
+    super(pred_net, self).__init__()
     self.dim = dim
     self.l1 = nn.Sequential(nn.Linear(2*dim, 6*dim), nn.BatchNorm1d(6*dim), nn.ReLU())
     self.l2 = nn.Sequential(nn.Linear(6*dim, 6*dim), nn.BatchNorm1d(6*dim), nn.ReLU())
@@ -18,10 +18,10 @@ class puma_net(nn.Module):
       x = layer(x)
     return x
   
-class prey_net(nn.Module):
+class gen_net(nn.Module):
   
   def __init__(self, dim_in, dim_out, dust_const):
-    super(prey_net, self).__init__()
+    super(gen_net, self).__init__()
     self.dim_in = dim_in
     self.dim_out = dim_out
     self.dust_const = dust_const
