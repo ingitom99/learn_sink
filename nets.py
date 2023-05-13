@@ -32,7 +32,7 @@ class gen_net(nn.Module):
 
   def forward(self, x):
     x_0 = x.detach().clone().reshape(2, x.size(0), self.length_in, self.length_in)
-    transform = Resize((self.length_out, self.length_out))
+    transform = Resize((self.length_out, self.length_out), antialias=True)
     x_0 = torch.cat((transform(x_0[0]).reshape(x.size(0), self.dim_out), transform(x_0[1]).reshape(x.size(0), self.dim_out)), 1)
     for layer in self.layers:
       x = layer(x)
