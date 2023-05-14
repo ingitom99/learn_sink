@@ -1,5 +1,8 @@
 import torch
 
+# Device
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 def sink_vec(mu, nu, C, reg, maxiter, V0=None):
   K = torch.exp(-C/reg)
   if (V0 == None):

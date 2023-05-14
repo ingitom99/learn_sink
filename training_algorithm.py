@@ -7,6 +7,7 @@ from sinkhorn_algos import sink_vec
 from utils import gen_net_loader, MNIST_test_loader, random_noise_loader, random_shapes_loader
 from test_funcs import test_pred_edm2, test_pred_loss
 
+
 def the_hunt(gen_net,
              pred_net,
              C,
@@ -15,6 +16,8 @@ def the_hunt(gen_net,
              dim,
              loss_function,
              device,
+             MNIST,
+             dust_const,
              lr_gen=0.01,
              lr_pred=0.1,
              lr_factor=1.0,
@@ -47,16 +50,17 @@ def the_hunt(gen_net,
     # Testing Section
     if (i % 25 == 0):
       # Testing data
-      X_gn = gen_net_loader(gen_net, 100, dim_prior).double().to(device)
-      X_mnist = MNIST_test_loader(MNIST_TEST, 100).double().to(device)
+      prior_sample_test = prior_sampler(100, dim_prior).double().to(device)
+      X_gn = gen_net(prior_sample_test)
+      X_mnist = MNIST_test_loader(MNIST, 100).double().to(device)
       X_rn = random_noise_loader(100, dim, dust_const, sig=3).double().to(device)
       X_rs = random_shapes_loader(100, dim, dust_const).double().to(device)
 
       # Loss testing
-      test_loss_gn = test_pred_loss(loss_function, X_gn, pred_net, dim, reg, plot=True, maxiter=5000)
-      test_loss_mnist = test_pred_loss(loss_function, X_mnist, pred_net, dim, reg, plot=True, maxiter=5000)
-      test_loss_rn = test_pred_loss(loss_function, X_rn, pred_net, dim, reg, plot=True, maxiter=5000)
-      test_loss_rs = test_pred_loss(loss_function, X_rs, pred_net, dim, reg, plot=True, maxiter=5000)
+      test_loss_gn = test_pred_loss(loss_function, X_gn, pred_net, C, dim, reg, plot=True, maxiter=5000)
+      test_loss_mnist = test_pred_loss(loss_function, X_mnist, pred_net, C, dim, reg, plot=True, maxiter=5000)
+      test_loss_rn = test_pred_loss(loss_function, X_rn, pred_net, C, dim, reg, plot=True, maxiter=5000)
+      test_loss_rs = test_pred_loss(loss_function, X_rs, pred_net, C, dim, reg, plot=True, maxiter=5000)
       
       test_losses_gn.append(test_loss_gn)
       test_losses_mnist.append(test_loss_mnist)

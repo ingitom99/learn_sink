@@ -1,8 +1,8 @@
-from torch import zeros
+import torch
 
 def euclidean_cost_matrix(width, height, normed=True):
   n = width*height
-  M = zeros([n, n])
+  M = torch.zeros([n, n])
   for a in range(n):
     for b in range(n):
       ax = a // width

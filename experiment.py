@@ -24,9 +24,12 @@ MNIST_TEST = (mnist_testset / torch.unsqueeze(mnist_testset.sum(dim=1), 1))
 MNIST_TEST = MNIST_TEST + dust_const
 MNIST_TEST = MNIST_TEST / torch.unsqueeze(MNIST_TEST.sum(dim=1), 1)
 
-# Initialization
+# Initialization of cost matrix
 C = euclidean_cost_matrix(post_l, post_l, normed=True).double().to(device)
+
+# Initialization of loss function
 loss_function = torch.nn.MSELoss()
+
 deer = gen_net(dim_prior, dim, dust_const, skip_const).double().to(device)
 puma = pred_net(dim).double().to(device)
 
@@ -39,6 +42,8 @@ train_losses, test_losses_pn, test_losses_mnist, test_losses_rs, test_losses_rn 
     dim,
     loss_function,
     device,
+    MNIST_TEST,
+    dust_const,
     lr_gen=0.01,
     lr_pred=0.1,
     lr_factor=1.0,
