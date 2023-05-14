@@ -21,7 +21,6 @@ def plot_XPT(X, P, T):
   ax[1][1].imshow(T[0].cpu().detach().numpy().reshape(28,28), cmap='magma')
   plt.show()
   return None
-
   
 def prior_sampler(n_samples, dim):
   sample = torch.randn((n_samples, 2 * dim))
@@ -59,10 +58,9 @@ def random_shapes_loader(n_samples, dim, dust_const):
   return sample
 
 def gen_net_loader(gen_net, n_samples, dim_in):
-  sample = prior_sampler(n_samples, dim_in)
+  sample = prior_sampler(n_samples, dim_in).double().to(device)
   X = gen_net(sample)
   return X
-
 
 def MNIST_test_loader(MNIST, n_samples):
   rand_mask = torch.randint(low=0, high=len(MNIST), size=(n_samples,2))

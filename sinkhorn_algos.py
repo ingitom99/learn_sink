@@ -1,7 +1,9 @@
 import torch
 
-def sink_vec(mu, nu, C, reg, maxiter, V0):
+def sink_vec(mu, nu, C, reg, maxiter, V0=None):
   K = torch.exp(-C/reg)
+  if (V0 == None):
+    V0 = torch.ones_like(mu).double().to(device)
   v = V0
   for i in range(maxiter):
     u = mu / (K @ v.T).T
