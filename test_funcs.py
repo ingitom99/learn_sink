@@ -1,7 +1,8 @@
 # Imports
-from sinkhorn_algos import sink_vec
 import torch
 import ot 
+from sinkhorn_algos import sink_vec
+from utils import plot_XPT
 
 def test_pred_loss(loss_function, X, pred_net, C, dim, reg, plot=True, maxiter=5000):
   P = pred_net(X)

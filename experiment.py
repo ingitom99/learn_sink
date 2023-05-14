@@ -33,7 +33,7 @@ loss_function = torch.nn.MSELoss()
 deer = gen_net(dim_prior, dim, dust_const, skip_const).double().to(device)
 puma = pred_net(dim).double().to(device)
 
-train_losses, test_losses_pn, test_losses_mnist, test_losses_rs, test_losses_rn = the_hunt(
+results = the_hunt(
     deer,
     puma,
     C,

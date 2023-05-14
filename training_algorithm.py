@@ -4,7 +4,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from utils import prior_sampler
 from sinkhorn_algos import sink_vec
-from utils import gen_net_loader, MNIST_test_loader, random_noise_loader, random_shapes_loader
+from utils import MNIST_test_loader, random_noise_loader, random_shapes_loader
 from test_funcs import test_pred_edm2, test_pred_loss
 
 
