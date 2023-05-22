@@ -123,7 +123,7 @@ def the_hunt(gen_net,
         pred_loss.backward(retain_graph=True)
         pred_optimizer.step()
       
-    if (i % 5 == 0):
+    if (i % 50 == 0):
       fig, ax = plt.subplots(1, 2)
       ax[0].imshow(X_e[-1, :dim].cpu().detach().numpy().reshape(28,28))
       ax[1].imshow(X_e[-1, dim:].cpu().detach().numpy().reshape(28,28))

@@ -89,15 +89,15 @@ def MNIST_test_loader(MNIST, n_samples):
   X = torch.flatten(X, start_dim=1)
   return X
 
-def get_MNIST():
+def get_MNIST(dust_const):
   mnist_testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=None)
-  mnist_testset = torch.flatten(mnist_testset.data.double().to(device), start_dim=1)
+  mnist_testset = torch.flatten(mnist_testset.data, start_dim=1)
   MNIST_TEST = (mnist_testset / torch.unsqueeze(mnist_testset.sum(dim=1), 1))
   MNIST_TEST = MNIST_TEST + dust_const
   MNIST_TEST = MNIST_TEST / torch.unsqueeze(MNIST_TEST.sum(dim=1), 1)
   return MNIST_TEST
 
-def get_OMNI():
+def get_OMNI(dust_const):
   dataset = torchvision.datasets.Omniglot(root="./data", download=True, transform=torchvision.transforms.ToTensor())
   OMNIGLOT = torch.ones((len(dataset), 28**2))
   transformer = torchvision.transforms.Resize((28,28))
@@ -109,7 +109,7 @@ def get_OMNI():
   OMNIGLOT_TEST = OMNIGLOT_TEST / torch.unsqueeze(OMNIGLOT_TEST.sum(dim=1), 1)
   return OMNIGLOT_TEST
 
-def test_warmstart(X, C, dim, reg, pred_net, puma):
+def test_warmstart(X, C, dim, reg, pred_net, title):
   emds = []
   for x in X:
     emd_mu = x[:dim] / x[:dim].sum()
@@ -118,8 +118,8 @@ def test_warmstart(X, C, dim, reg, pred_net, puma):
     emds.append(emd)
   emds = torch.tensor(emds)
   K = torch.exp(C/-reg)
-  V = torch.exp(puma(X))
-  V_ones = torch.ones_like(puma(X))
+  V = torch.exp(pred_net(X))
+  V_ones = torch.ones_like(pred_net(X))
   MU = X[:, :dim]
   NU = X[:, dim:]
   rel_err_means = []
@@ -149,7 +149,7 @@ def test_warmstart(X, C, dim, reg, pred_net, puma):
   rel_err_means = torch.tensor(rel_err_means)
   rel_err_means_ones = torch.tensor(rel_err_means_ones)
   plt.figure()
-  plt.title("Rel Err: Predicted Distance versus emd2 (Random Noise)")
+  plt.title(f"Rel Err: Predicted Distance versus emd2, {title}, reg: {reg}")
   plt.xlabel('# Sink Iters')
   plt.ylabel('Rel Err')
   plt.plot(rel_err_means, label="predicted V0")

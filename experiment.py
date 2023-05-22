@@ -3,7 +3,7 @@ import torch
 from cost_matrices import euclidean_cost_matrix
 from training_algorithm import the_hunt
 from nets import gen_net, pred_net
-from utils import get_MMNIST, get_OMNI, hilb_proj_loss, test_warmstart, MNIST_test_loader
+from utils import get_MNIST, get_OMNI, hilb_proj_loss, test_warmstart, MNIST_test_loader
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -18,8 +18,8 @@ dust_const = 1e-5
 skip_const = 0.3
 
 # Download MNIST
-MNIST_TEST = get_MMNIST()
-OMNI_TEST = get_OMNI()
+MNIST_TEST = get_MNIST(dust_const).double().to(device)
+OMNI_TEST = get_OMNI(dust_const).double().to(device)
 
 # Initialization of cost matrix
 C = euclidean_cost_matrix(length, length, normed=True).double().to(device)
@@ -62,6 +62,10 @@ the_hunt(deer,
         learn_gen=True
         )
 
+# Saving nets
+torch.save(deer.state_dict(), "./nets/deer.pt")
+torch.save(puma.state_dict(), "./nets/puma.pt")
+
 # Testing mode
 deer.eval()
 puma.eval()
@@ -70,6 +74,7 @@ puma.eval()
 X_rn = rando(100, dim, dust_const).double().to(device)
 X_mnist= MNIST_test_loader(MNIST_TEST, 100).double().to(device)
 X_omniglot = MNIST_test_loader(OMNI_TEST, 100).double().to(device)
-test_warmstart(X_rn)
-test_warmstart(X_mnist)
-test_warmstart(X_omniglot)
+
+test_warmstart(X_rn, C, dim, reg, puma, 'Random Noise')
+test_warmstart(X_mnist, C, dim, reg, puma, 'MNIST')
+test_warmstart(X_omniglot, C, dim, reg, puma, 'OMNIGLOT')
