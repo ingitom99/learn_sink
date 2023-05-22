@@ -6,7 +6,7 @@ from utils import plot_XPT
 
 def test_pred_loss(loss_function, X, pred_net, C, dim, reg, plot=True, maxiter=5000):
   P = pred_net(X)
-  T = torch.log(sink_vec(X[:, :dim], X[:, dim:], C, reg, 5000, V0=None))
+  T = torch.log(sink_vec(X[:, :dim], X[:, dim:], C, reg, maxiter, V0=None))
   T = T - torch.unsqueeze(T.mean(dim=1), 1).repeat(1, dim)
   loss = loss_function(P, T)
   if (plot == True):

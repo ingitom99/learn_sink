@@ -1,55 +1,75 @@
+# Imports
 import torch
-import torchvision.datasets as datasets
 from cost_matrices import euclidean_cost_matrix
 from training_algorithm import the_hunt
 from nets import gen_net, pred_net
+from utils import get_MMNIST, get_OMNI, hilb_proj_loss, test_warmstart, MNIST_test_loader
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {device}")
 
 # Hyperparameters
-prior_l = 10
-post_l = 28
-dim_prior = prior_l**2
-dim = post_l**2
-reg = 0.0003
+length_prior = 28
+length = 28
+dim_prior = length_prior**2
+dim = length**2
 dust_const = 1e-5
 skip_const = 0.3
 
 # Download MNIST
-mnist_testset = datasets.MNIST(root='./data', train=False, download=True, transform=None)
-mnist_testset = torch.flatten(mnist_testset.data.double().to(device), start_dim=1)
-MNIST_TEST = (mnist_testset / torch.unsqueeze(mnist_testset.sum(dim=1), 1))
-MNIST_TEST = MNIST_TEST + dust_const
-MNIST_TEST = MNIST_TEST / torch.unsqueeze(MNIST_TEST.sum(dim=1), 1)
+MNIST_TEST = get_MMNIST()
+OMNI_TEST = get_OMNI()
 
 # Initialization of cost matrix
-C = euclidean_cost_matrix(post_l, post_l, normed=True).double().to(device)
+C = euclidean_cost_matrix(length, length, normed=True).double().to(device)
+
+# Regularization constant
+reg = C.max() * 5e-4
+print(f"Reg: {reg}")
 
 # Initialization of loss function
-loss_function = torch.nn.MSELoss()
+loss_function = hilb_proj_loss
 
+# Initialization of nets
 deer = gen_net(dim_prior, dim, dust_const, skip_const).double().to(device)
 puma = pred_net(dim).double().to(device)
 
-results = the_hunt(
-    deer,
-    puma,
-    C,
-    reg,
-    dim_prior,
-    dim,
-    loss_function,
-    device,
-    MNIST_TEST,
-    dust_const,
-    lr_gen=0.01,
-    lr_pred=0.1,
-    lr_factor=1.0,
-    n_samples= 10000, 
-    batchsize=100,
-    minibatch=10,
-    epochs=5,
-    train_gen=True
-    )
+# Training mode
+deer.train()
+puma.train()
+
+# Run the hunt
+the_hunt(deer,
+        puma,
+        C,
+        reg,
+        dim_prior,
+        dim,
+        loss_function,
+        device,
+        MNIST_TEST,
+        OMNI_TEST,
+        dust_const,
+        lr_gen=0.5,
+        lr_pred=0.5,
+        lr_factor=0.999,
+        n_samples= 1000000,
+        batchsize=1000,
+        minibatch=200,
+        epochs=5,
+        test_iter=100,
+        learn_gen=True
+        )
+
+# Testing mode
+deer.eval()
+puma.eval()
+
+# Test warmstart
+X_rn = rando(100, dim, dust_const).double().to(device)
+X_mnist= MNIST_test_loader(MNIST_TEST, 100).double().to(device)
+X_omniglot = MNIST_test_loader(OMNI_TEST, 100).double().to(device)
+test_warmstart(X_rn)
+test_warmstart(X_mnist)
+test_warmstart(X_omniglot)
