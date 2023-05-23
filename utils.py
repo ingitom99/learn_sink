@@ -3,7 +3,7 @@ import torchvision
 import numpy as np
 from skimage.draw import random_shapes
 import matplotlib.pyplot as plt
-import ot
+
 
 def hilb_proj_loss(u, v):
   diff = u - v
@@ -108,52 +108,3 @@ def get_OMNI(dust_const):
   OMNIGLOT_TEST = OMNIGLOT_TEST + dust_const
   OMNIGLOT_TEST = OMNIGLOT_TEST / torch.unsqueeze(OMNIGLOT_TEST.sum(dim=1), 1)
   return OMNIGLOT_TEST
-
-def test_warmstart(X, C, dim, reg, pred_net, title):
-  emds = []
-  for x in X:
-    emd_mu = x[:dim] / x[:dim].sum()
-    emd_nu = x[dim:] / x[dim:].sum()
-    emd = ot.emd2(emd_mu, emd_nu, C)
-    emds.append(emd)
-  emds = torch.tensor(emds)
-  K = torch.exp(C/-reg)
-  V = torch.exp(pred_net(X))
-  V_ones = torch.ones_like(pred_net(X))
-  MU = X[:, :dim]
-  NU = X[:, dim:]
-  rel_err_means = []
-  rel_err_means_ones = []
-  for i in tqdm(range(400)):
-    dists = []
-    U = MU / (K @ V.T).T
-    V = NU / (K.T @ U.T).T
-    for u, v in zip(U, V):
-      G = torch.diag(u)@K@torch.diag(v)
-      dist = torch.trace(C.T@G)
-      dists.append(dist)
-    dists = torch.tensor(dists)
-    rel_errs = torch.abs(emds - dists) / emds
-    rel_err_means.append(rel_errs.mean().item())
-    dists_ones = []
-    U_ones = MU / (K @ V_ones.T).T
-    V_ones = NU / (K.T @ U_ones.T).T
-    for u, v in zip(U_ones, V_ones):
-      G = torch.diag(u)@K@torch.diag(v)
-      dist = torch.trace(C.T@G)
-      dists_ones.append(dist)
-    dists_ones = torch.tensor(dists_ones)
-    rel_errs_ones = torch.abs(emds - dists_ones) / emds
-    rel_err_means_ones.append(rel_errs_ones.mean().item())
-
-  rel_err_means = torch.tensor(rel_err_means)
-  rel_err_means_ones = torch.tensor(rel_err_means_ones)
-  plt.figure()
-  plt.title(f"Rel Err: Predicted Distance versus emd2, {title}, reg: {reg}")
-  plt.xlabel('# Sink Iters')
-  plt.ylabel('Rel Err')
-  plt.plot(rel_err_means, label="predicted V0")
-  plt.plot(rel_err_means_ones, label="ones V0")
-  plt.legend()
-  plt.show()
-  return None

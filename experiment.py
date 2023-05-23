@@ -3,7 +3,8 @@ import torch
 from cost_matrices import euclidean_cost_matrix
 from training_algorithm import the_hunt
 from nets import gen_net, pred_net
-from utils import get_MNIST, get_OMNI, hilb_proj_loss, test_warmstart, MNIST_test_loader
+from utils import get_MNIST, get_OMNI, hilb_proj_loss, MNIST_test_loader, rando
+from test_funcs import  test_warmstart
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -54,17 +55,17 @@ the_hunt(deer,
         lr_gen=0.5,
         lr_pred=0.5,
         lr_factor=0.999,
-        n_samples= 1000000,
+        n_samples= 10000,
         batchsize=1000,
         minibatch=200,
         epochs=5,
-        test_iter=100,
+        test_iter=5,
         learn_gen=True
         )
 
 # Saving nets
-torch.save(deer.state_dict(), "./nets/deer.pt")
-torch.save(puma.state_dict(), "./nets/puma.pt")
+torch.save(deer.state_dict(), "./gdrive/MyDrive/learn_sink-main/deer.pt")
+torch.save(puma.state_dict(), "./gdrive/MyDrive/learn_sink-main/puma.pt")
 
 # Testing mode
 deer.eval()
