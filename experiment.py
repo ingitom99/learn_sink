@@ -6,17 +6,18 @@ from nets import gen_net, pred_net
 from utils import get_MNIST, get_OMNI, hilb_proj_loss, MNIST_test_loader, rando
 from test_funcs import  test_warmstart
 
+
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {device}")
 
 # Hyperparameters
-length_prior = 28
+length_prior = 10
 length = 28
 dim_prior = length_prior**2
 dim = length**2
 dust_const = 1e-5
-skip_const = 0.3
+skip_const = 0.5
 
 # Download MNIST
 MNIST_TEST = get_MNIST(dust_const).double().to(device)
@@ -55,17 +56,17 @@ the_hunt(deer,
         lr_gen=0.5,
         lr_pred=0.5,
         lr_factor=0.999,
-        n_samples= 10000,
+        n_samples= 5000000,
         batchsize=1000,
-        minibatch=200,
+        minibatch=100,
         epochs=5,
-        test_iter=5,
+        test_iter=50,
         learn_gen=True
         )
 
 # Saving nets
-torch.save(deer.state_dict(), "./gdrive/MyDrive/learn_sink-main/deer.pt")
-torch.save(puma.state_dict(), "./gdrive/MyDrive/learn_sink-main/puma.pt")
+torch.save(deer.state_dict(), "./nets/deer.pt")
+torch.save(puma.state_dict(), "./nets/puma.pt")
 
 # Testing mode
 deer.eval()

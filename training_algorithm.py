@@ -42,7 +42,8 @@ def the_hunt(gen_net,
   pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
 
   # Initializing learning rate scheduler
-  gen_scheduler = torch.optim.lr_scheduler.ExponentialLR(gen_optimizer, gamma=lr_factor)
+  if (learn_gen == True):
+    gen_scheduler = torch.optim.lr_scheduler.ExponentialLR(gen_optimizer, gamma=lr_factor)
   pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer, gamma=lr_factor)
 
   for i in tqdm(range(n_samples//batchsize)):
@@ -124,7 +125,7 @@ def the_hunt(gen_net,
         pred_loss.backward(retain_graph=True)
         pred_optimizer.step()
       
-    if (i % 25 == 0):
+    if (i % 50 == 0):
       fig, ax = plt.subplots(1, 2)
       ax[0].imshow(X_e[-1, :dim].cpu().detach().numpy().reshape(28,28), cmap='magma')
       ax[1].imshow(X_e[-1, dim:].cpu().detach().numpy().reshape(28,28), cmap='magma')

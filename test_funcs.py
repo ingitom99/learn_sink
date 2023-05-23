@@ -41,6 +41,7 @@ def test_pred_edm2(X, pred_net, C, reg, dim, title, plot=True):
     plt.title(f'Predicted Distance vs emd2 ({title})')
     plt.plot(emds, label='emd2')
     plt.plot(dists, label='predicted')
+    plt.grid()
     plt.legend()
     plt.show()
   return rel_errs.mean().item()
@@ -60,7 +61,7 @@ def test_warmstart(X, C, dim, reg, pred_net, title):
   NU = X[:, dim:]
   rel_err_means = []
   rel_err_means_ones = []
-  for i in tqdm(range(400)):
+  for i in tqdm(range(1000)):
     dists = []
     U = MU / (K @ V.T).T
     V = NU / (K.T @ U.T).T
@@ -85,9 +86,11 @@ def test_warmstart(X, C, dim, reg, pred_net, title):
   rel_err_means = torch.tensor(rel_err_means)
   rel_err_means_ones = torch.tensor(rel_err_means_ones)
   plt.figure()
-  plt.title(f"Rel Err: Predicted Distance versus emd2, {title}, reg: {reg}")
+  plt.title(f"Rel Err of Sink Dist versus emd2, {title}, reg: {reg}")
   plt.xlabel('# Sink Iters')
   plt.ylabel('Rel Err')
+  plt.grid()
+  plt.yticks(torch.arange(0, 1.0001, 0.05))
   plt.plot(rel_err_means, label="predicted V0")
   plt.plot(rel_err_means_ones, label="ones V0")
   plt.legend()
