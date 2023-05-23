@@ -36,8 +36,6 @@ class gen_net(nn.Module):
     x_0 = torch.cat((transform(x_0[0]).reshape(x.size(0), self.dim), transform(x_0[1]).reshape(x.size(0), self.dim)), 1)
     for layer in self.layers:
       x = layer(x)
-
-    
     x_a = x[:, :self.dim]
     x_b = x[:, self.dim:]
     x_a = x_a / torch.unsqueeze(x_a.sum(dim=1), 1)

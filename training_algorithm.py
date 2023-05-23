@@ -37,7 +37,8 @@ def the_hunt(gen_net,
   rel_errs_omniglot = []
 
   # Initializing optimizers
-  gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_pred)
+  if (learn_gen == True):
+    gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_gen)
   pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
 
   # Initializing learning rate scheduler
@@ -123,21 +124,21 @@ def the_hunt(gen_net,
         pred_loss.backward(retain_graph=True)
         pred_optimizer.step()
       
-    if (i % 50 == 0):
+    if (i % 25 == 0):
       fig, ax = plt.subplots(1, 2)
-      ax[0].imshow(X_e[-1, :dim].cpu().detach().numpy().reshape(28,28))
-      ax[1].imshow(X_e[-1, dim:].cpu().detach().numpy().reshape(28,28))
+      ax[0].imshow(X_e[-1, :dim].cpu().detach().numpy().reshape(28,28), cmap='magma')
+      ax[1].imshow(X_e[-1, dim:].cpu().detach().numpy().reshape(28,28), cmap='magma')
       ax[0].set_title('MU')
       ax[1].set_title('NU')
       plt.show()
       plt.figure()
       plt.title('T')
-      plt.imshow(T_mini[-1].cpu().detach().numpy().reshape(28,28))
+      plt.imshow(T_mini[-1].cpu().detach().numpy().reshape(28,28), cmap='magma')
       plt.colorbar()
       plt.show()
       plt.figure()
       plt.title('P')
-      plt.imshow(P_mini[-1].cpu().detach().numpy().reshape(28,28))
+      plt.imshow(P_mini[-1].cpu().detach().numpy().reshape(28,28), cmap='magma')
       plt.colorbar()
       plt.show()
     
@@ -152,14 +153,16 @@ def the_hunt(gen_net,
         gen_optimizer.step()
       
     # Updating learning rates
-    gen_scheduler.step()
+    if (learn_gen == True):
+      gen_scheduler.step()
     pred_scheduler.step()
 
     # Printing batch information
     print('------------------------------------------------')
     print(f"Batch: {i+1}")
     print(f"Train loss: {pred_loss.item()}")
-    print(f"gen lr: {gen_scheduler.get_last_lr()[0]}")
+    if (learn_gen == True):
+      print(f"gen lr: {gen_scheduler.get_last_lr()[0]}")
     print(f"pred lr: {pred_scheduler.get_last_lr()[0]}")
   
   # Converting loss and error collecting lists to tensors
