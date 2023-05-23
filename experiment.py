@@ -1,4 +1,3 @@
-# Imports
 import torch
 from cost_matrices import euclidean_cost_matrix
 from training_algorithm import the_hunt
@@ -60,13 +59,13 @@ the_hunt(deer,
         batchsize=1000,
         minibatch=100,
         epochs=5,
-        test_iter=50,
-        learn_gen=True
+        test_iter=200,
+        learn_gen=False
         )
 
 # Saving nets
-torch.save(deer.state_dict(), "./nets/deer.pt")
-torch.save(puma.state_dict(), "./nets/puma.pt")
+torch.save(deer.state_dict(), "./gdrive/MyDrive/learn_sink-main/nets/deer.pt")
+torch.save(puma.state_dict(), "./gdrive/MyDrive/learn_sink-main/nets/puma.pt")
 
 # Testing mode
 deer.eval()
