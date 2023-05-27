@@ -1,42 +1,39 @@
+"""
+Various implementations of the Sinkhorn algorithm for computing approximate solutions to the entropic regularized optimal transport problem.
+"""
+
+# Imports
 import torch
 
-# Device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# Functions
+def sink(mu, nu, C, reg, v0, maxiter):
+  """
+  Sinkhorn algorithm for computing approximate solutions to the entropic regularized optimal transport problem.
 
-def sink_vec(mu, nu, C, reg, maxiter, V0=None):
-  K = torch.exp(-C/reg)
-  if (V0 == None):
-    V0 = torch.ones_like(mu).double().to(device)
-  v = V0
-  for i in range(maxiter):
-    u = mu / (K @ v.T).T
-    v = nu / (K.T @ u.T).T
-  return v
-
-def sink_safe(MU, NU, C, reg, maxiter, V0):
-  K = torch.exp(-C/reg)
-  V_final = torch.zeros_like(MU).double().to(device)
-  for i, (mu, nu, v0) in enumerate(zip(MU, NU, V0)):
-    v_prev = v0
-    for iter in range(maxiter):
-      u_new = mu / (K @ v_prev)
-      v_new = nu / (K.T @ u_new)
-      if (torch.isnan(u_new).sum() > 0):
-        print('U IS NAN!')
-        V_final[i] = v_prev
-        break
-      if (torch.isnan(v_new).sum() > 0):
-        print('V IS NAN!')
-        V_final[i] = v_prev
-        break
-      u_prev = u_new
-      v_prev = v_new
-      if (iter == (maxiter-1)):
-
-        V_final[i] = v_prev
-  return V_final
-
-def sink_dist(mu, nu, C, reg, maxiter, v0):
+  Inputs:
+    mu: torch tensor of shape (n,)
+      First probability distribution
+    nu: torch tensor of shape (n,)
+      Second probability distribution
+    C: torch tensor of shape (n,n)
+      Cost matrix
+    reg: float
+      Regularization parameter
+    v0: torch tensor of shape (n,)
+      Initial guess for scaling factor v
+    maxiter: int
+      Maximum number of iterations
+  
+  Outputs:
+    u: torch tensor of shape (n,)
+      First Sinkhorn scaling factor
+    v: torch tensor of shape (n,)
+      Second Sinkhorn scaling factor
+    G: torch tensor of shape (n,n)
+      Transport matrix
+    dist: float
+      Sinkhorn distance (Approx. Wasserstein distance)
+  """
   K = torch.exp(-C/reg)
   v = v0
   for i in range(maxiter):
@@ -44,4 +41,33 @@ def sink_dist(mu, nu, C, reg, maxiter, v0):
     v = nu / (K.T @ u)
   G = torch.diag(u)@K@torch.diag(v)    
   dist = torch.trace(C.T@G)
-  return dist
+  return u, v, G, dist
+
+def sink_vec(MU, NU, C, reg, V0, maxiter):
+  """
+  Vectorized Sinkhorn algorithm for computing approximate solutions to the entropic regularized optimal transport problem.
+
+  Inputs:
+    MU: torch tensor of shape (n_samples, n)
+      First probability distributions
+    NU: torch tensor of shape (n_samples, n)
+      Second probability distributions
+    C: torch tensor of shape (n,n)
+      Cost matrix
+    reg: float
+      Regularization parameter
+    V0: torch tensor of shape (n_samples, n)
+      Initial guess for scaling factor v
+    maxiter: int
+      Maximum number of iterations
+  
+  Outputs:
+    V: torch tensor of shape (n_samples, n)
+      Second Sinkhorn scaling factors
+  """
+  K = torch.exp(-C/reg)
+  V = V0
+  for i in range(maxiter):
+    U = MU / (K @ V.T).T
+    V = NU / (K.T @ U.T).T
+  return V
