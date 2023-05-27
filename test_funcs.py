@@ -1,5 +1,7 @@
 """
 Auxiliary functions for testing the performance of the predictive network.
+
+
 """
 
 # Imports
@@ -8,7 +10,8 @@ import ot
 from sinkhorn_algos import sink_vec
 from utils import plot_XPT
 import matplotlib.pyplot as plt
-from tqdm import tqdm 
+from tqdm import tqdm
+
 
 # Functions
 def test_pred_loss(loss_function, X, pred_net, C, dim, reg, plot=True, maxiter=5000):

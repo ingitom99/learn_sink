@@ -1,3 +1,4 @@
+# Imports
 import torch
 import torchvision
 import numpy as np
@@ -6,6 +7,19 @@ import matplotlib.pyplot as plt
 
 
 def hilb_proj_loss(u, v):
+  """
+  Compute the mean Hilbert projective loss between a number of vector pairs.
+
+  Inputs:
+    u: torch tensor of shape (n_samples, dim)
+      First set of vectors
+    v: torch tensor of shape (n_samples, dim)
+      Second set of vectors
+
+  Returns:
+    loss: float
+      Mean Hilbert projective loss
+  """
   diff = u - v
   spectrum = torch.max(diff, dim=1)[0] - torch.min(diff, dim=1)[0]
   loss = spectrum.mean()
@@ -25,39 +39,51 @@ def plot_XPT(X, P, T):
   return None
   
 def prior_sampler(n_samples, dim):
+  """
+  Sample n_samples vectors from the prior distribution (normal distribution).
+
+  Inputs:
+    n_samples: int
+      Number of samples
+    dim: int
+      Dimension of the prior samples
+  
+  Returns:
+    sample: torch tensor of shape (n_samples, dim)
+      Samples from the prior distribution
+  """
   sample = torch.randn((n_samples, 2 * dim))
   return sample
 
-def random_noise_loader(n_samples, dim, dust_const, sig=3):
-  sample_a = sig * torch.rand((n_samples, dim))
-  sample_a /= torch.unsqueeze(sample_a.sum(dim=1), 1)
-  sample_a = sample_a + dust_const
-  sample_a /= torch.unsqueeze(sample_a.sum(dim=1), 1)
-  sample_b = sig * torch.rand((n_samples, dim))
-  sample_b /= torch.unsqueeze(sample_b.sum(dim=1), 1)
-  sample_b = sample_b + dust_const
-  sample_b /= torch.unsqueeze(sample_b.sum(dim=1), 1)
-  sample = torch.cat((sample_a, sample_b), dim=1)
-  return sample
-
 def rando(n_samples, dim, dust_const):
-  bernoulli_p_a = torch.rand((n_samples, 1))
-  bernoulli_p_a[bernoulli_p_a < 0.05] = 0.05
-  bernoulli_p_a[bernoulli_p_a > 0.95] = 0.95
-  bernoulli_p_b = torch.rand((n_samples, 1))
-  bernoulli_p_b[bernoulli_p_b < 0.05] = 0.05
-  bernoulli_p_b[bernoulli_p_b > 0.95] = 0.95
-  multiplier_a = torch.randint(1, 4, (n_samples, 1))
-  multiplier_b = torch.randint(1, 4, (n_samples, 1))
+  """
+  Generate pairs of samples of randomly masked uniform random noise.
+
+  Inputs:
+    n_samples: int
+      Number of samples
+    dim: int
+      Dimension of the samples
+    dust_const: float
+      Constant added to the samples to avoid zero values
+  
+  Returns:
+    sample: torch tensor of shape (n_samples, 2 * dim)
+      Pairs of samples
+  """
+  # Random probabilities for the Bernoulli masks
+  bernoulli_p = torch.rand((n_samples, 1))
+  bernoulli_p[bernoulli_p < 0.03] = 0.03
+  multiplier = torch.randint(1, 4, (n_samples, 1))
   sample_a = torch.rand((n_samples, dim))
-  mask_a = torch.bernoulli(bernoulli_p_a * torch.ones_like(sample_a))
-  sample_a = (sample_a * mask_a)**multiplier_a
+  mask_a = torch.bernoulli(bernoulli_p * torch.ones_like(sample_a))
+  sample_a = (sample_a * mask_a)**multiplier
   sample_a /= torch.unsqueeze(sample_a.sum(dim=1), 1)
   sample_a = sample_a + dust_const
   sample_a /= torch.unsqueeze(sample_a.sum(dim=1), 1)
   sample_b = torch.rand((n_samples, dim))
-  mask_b = torch.bernoulli(bernoulli_p_b * torch.ones_like(sample_b))
-  sample_b = (sample_b * mask_b)**multiplier_b
+  mask_b = torch.bernoulli(bernoulli_p * torch.ones_like(sample_b))
+  sample_b = (sample_b * mask_b)**multiplier
   sample_b /= torch.unsqueeze(sample_b.sum(dim=1), 1)
   sample_b = sample_b + dust_const
   sample_b /= torch.unsqueeze(sample_b.sum(dim=1), 1)
