@@ -26,15 +26,40 @@ def hilb_proj_loss(u, v):
   return loss
 
 def plot_XPT(X, P, T):
-  fig, ax = plt.subplots(2, 2)
-  ax[0][0].set_title('Mu')
-  ax[0][1].set_title('Nu')
-  ax[1][0].set_title('P')
-  ax[1][1].set_title('T')
-  ax[0][0].imshow(X[0, :784].cpu().detach().numpy().reshape(28, 28), cmap='magma')
-  ax[0][1].imshow(X[0, 784:].cpu().detach().numpy().reshape(28,28), cmap='magma')
-  ax[1][0].imshow(P[0].cpu().detach().numpy().reshape(28, 28), cmap='magma')
-  ax[1][1].imshow(T[0].cpu().detach().numpy().reshape(28,28), cmap='magma')
+  """
+  Plot an example of a pair of samples and the corresponding prediction-target pair.
+
+  Inputs:
+    X: torch tensor of shape (n_samples, 2 * dim)
+      Data
+    P: torch tensor of shape (n_samples, dim)
+      Predictions
+    T: torch tensor of shape (n_samples, dim)
+      Targets
+  
+  Returns:
+    None
+  """
+  plt.show()
+  plt.figure()
+  plt.title('Mu')
+  plt.imshow(X[0, :784].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+  plt.colorbar()
+  plt.show()
+  plt.figure()
+  plt.title('Nu')
+  plt.imshow(X[0, 784:].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+  plt.colorbar()
+  plt.show()
+  plt.figure()
+  plt.title('T')
+  plt.imshow(T[0].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+  plt.colorbar()
+  plt.show()
+  plt.figure()
+  plt.title('P')
+  plt.imshow(P[0].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+  plt.colorbar()
   plt.show()
   return None
   
@@ -92,6 +117,21 @@ def rando(n_samples, dim, dust_const):
 
 
 def random_shapes_loader(n_samples, dim, dust_const):
+  """
+  Generate a data set of pairs of samples of random shapes.
+
+  Inputs:
+    n_samples: int
+      Number of samples
+    dim: int
+      Dimension of the samples
+    dust_const: float
+      Constant added to the samples to avoid zero values
+  
+  Returns:
+    sample: torch tensor of shape (n_samples, 2 * dim)
+      Pairs of samples
+  """
   length = int(dim**.5)
   pairs = []
   for i in range(n_samples):
@@ -109,28 +149,21 @@ def random_shapes_loader(n_samples, dim, dust_const):
   sample = torch.tensor(pairs)
   return sample
 
-def MNIST_test_loader(MNIST, n_samples):
-  rand_mask = torch.randint(low=0, high=len(MNIST), size=(n_samples,2))
-  X = MNIST[rand_mask]
-  X = torch.flatten(X, start_dim=1)
-  return X
+def test_sampler(test_set, n_samples):
+  """
+  Sample n_samples pairs of samples from a given dataset.
 
-def get_MNIST(dust_const):
-  mnist_testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=None)
-  mnist_testset = torch.flatten(mnist_testset.data, start_dim=1)
-  MNIST_TEST = (mnist_testset / torch.unsqueeze(mnist_testset.sum(dim=1), 1))
-  MNIST_TEST = MNIST_TEST + dust_const
-  MNIST_TEST = MNIST_TEST / torch.unsqueeze(MNIST_TEST.sum(dim=1), 1)
-  return MNIST_TEST
-
-def get_OMNI(dust_const):
-  dataset = torchvision.datasets.Omniglot(root="./data", download=True, transform=torchvision.transforms.ToTensor())
-  OMNIGLOT = torch.ones((len(dataset), 28**2))
-  transformer = torchvision.transforms.Resize((28,28))
-  for i in range(len(dataset)):
-    img = 1 - transformer(dataset[i][0]).reshape(-1)
-    OMNIGLOT[i] = img
-  OMNIGLOT_TEST = (OMNIGLOT / torch.unsqueeze(OMNIGLOT.sum(dim=1), 1))
-  OMNIGLOT_TEST = OMNIGLOT_TEST + dust_const
-  OMNIGLOT_TEST = OMNIGLOT_TEST / torch.unsqueeze(OMNIGLOT_TEST.sum(dim=1), 1)
-  return OMNIGLOT_TEST
+  Inputs:
+    test_set: torch tensor of shape (n, dim)
+      Dataset to sample from
+    n_samples: int
+      Number of samples
+  
+  Returns:
+    test_sample: torch tensor of shape (n_samples, 2 * dim)
+      Sample of pairs
+  """
+  rand_mask = torch.randint(low=0, high=len(test_set), size=(n_samples,2))
+  test_sample = test_set[rand_mask]
+  test_sample = torch.flatten(test_sample, start_dim=1)
+  return test_sample

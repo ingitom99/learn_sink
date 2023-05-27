@@ -67,8 +67,11 @@ class pred_net(nn.Module):
   """
   def __init__(self, dim, width):
     """
-    dim: dimension of each probability distribution
-    width: multiplier for width of the hidden layers
+    Inputs:
+      dim: integer
+        Dimension of each probability distribution
+      width: integer
+        Multiplier for width of the hidden layers
     """
     super(pred_net, self).__init__()
     self.dim = dim
