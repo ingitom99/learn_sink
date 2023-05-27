@@ -1,3 +1,7 @@
+"""
+Auxiliary functions for testing the performance of the predictive network.
+"""
+
 # Imports
 import torch
 import ot 
@@ -6,16 +10,47 @@ from utils import plot_XPT
 import matplotlib.pyplot as plt
 from tqdm import tqdm 
 
+# Functions
 def test_pred_loss(loss_function, X, pred_net, C, dim, reg, plot=True, maxiter=5000):
+  """
+  Test the performance of the predictive network with respect to a given loss function.
+
+  Inputs:
+    loss_function: function
+      Loss function for comparing predictions and targets
+    X: torch tensor of shape (n_samples, 2*n)
+      Pairs of probability distributions
+    pred_net: torch nn.Module
+      Predictive network
+    C: torch tensor of shape (n,n)
+      Cost matrix
+    dim: int
+      Dimension of the probability distributions
+    reg: float
+      Regularization parameter
+    plot: bool
+      Whether to plot the an example of the distributions and the respective prediction-target pair
+    
+  Returns:
+    loss: float
+      Average loss over the samples
+  """
   P = pred_net(X)
-  T = torch.log(sink_vec(X[:, :dim], X[:, dim:], C, reg, maxiter, V0=None))
-  T = T - torch.unsqueeze(T.mean(dim=1), 1).repeat(1, dim)
+  with torch.no_grad():
+    V0 = torch.ones_like(X[:, :dim])
+    V = sink_vec(X[:, :dim], X[:, dim:], C, reg, V0, maxiter)
+    V = torch.log(V)
+    V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
+  T = V
   loss = loss_function(P, T)
   if (plot == True):
     plot_XPT(X, P, T)
   return loss.item()
 
-def test_pred_edm2(X, pred_net, C, reg, dim, title, plot=True):
+def test_pred_dist(X, pred_net, C, reg, dim, title, plot=True):
+  """
+  Test the performance of the predictive network with respect to the predicted distance versus the unregularized .
+  """
   emds = []
   for x in X:
     emd_mu = x[:dim] / x[:dim].sum()
@@ -39,6 +74,8 @@ def test_pred_edm2(X, pred_net, C, reg, dim, title, plot=True):
   if (plot == True):
     plt.figure()
     plt.title(f'Predicted Distance vs emd2 ({title})')
+    plt.xlabel('Sample')
+    plt.ylabel('Distance')
     plt.plot(emds, label='emd2')
     plt.plot(dists, label='predicted')
     plt.grid()
@@ -85,7 +122,6 @@ def test_warmstart(X, C, dim, reg, pred_net, title):
 
   rel_err_means = torch.tensor(rel_err_means)
   rel_err_means_ones = torch.tensor(rel_err_means_ones)
-  plt.figure()
   plt.title(f"Rel Err of Sink Dist versus emd2, {title}, reg: {reg}")
   plt.xlabel('# Sink Iters')
   plt.ylabel('Rel Err')
@@ -94,5 +130,5 @@ def test_warmstart(X, C, dim, reg, pred_net, title):
   plt.plot(rel_err_means, label="predicted V0")
   plt.plot(rel_err_means_ones, label="ones V0")
   plt.legend()
-  plt.show()
+  plt.savefig(f"./stamp/{title}_warmstart.png")
   return None
