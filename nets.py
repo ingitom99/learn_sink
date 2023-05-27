@@ -1,3 +1,7 @@
+"""
+nets.py contains the pytorch neural network classes for the generative and predictive networks.
+"""
+
 # Imports
 import torch
 import torch.nn as nn

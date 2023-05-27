@@ -1,40 +1,126 @@
+"""
+training_algorithm.py contains the training algorihtm function for leanring the Sinkhorn centered logarithms of Sinkhorn scale factors.
+"""
+
+#Imports
 import torch
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from sinkhorn_algos import sink_vec
-from utils import MNIST_test_loader, random_shapes_loader, prior_sampler, rando
-from test_funcs import test_pred_edm2, test_pred_loss
+from utils import test_sampler, prior_sampler, rando
+from test_funcs import test_pred_dist, test_pred_loss
 
+# Training algorithm
 def the_hunt(gen_net,
              pred_net,
              C,
              reg,
-             dim_in,
+             dim_prior,
              dim,
              loss_function,
              device,
+             dust_const,
              MNIST,
              OMNIGLOT,
-             dust_const,
+             CIFAR10,
+             FLOWERS102,
              lr_gen=0.5,
              lr_pred=0.5,
              lr_factor=0.999,
-             n_samples= 1000000,
-             batchsize=1000,
-             minibatch=200,
-             epochs=5,
+             n_samples= 5000000,
+             batchsize=5000,
+             minibatch=1000,
+             epochs=10,
              test_iter=100,
              learn_gen=True
              ):
+  """
+  The training algorithm is named the hunt in a metaphor for adversarial learning where the predictive network is the hunter and the generative network is the prey.
+
+  Inputs:
+    gen_net: generative network
+      The generative network for data creation
+    pred_net: predictive network
+      The predictive network for learning the centered logarithms of Sinkhorn scale factors
+    C: cost matrix
+      The cost matrix for the optimal transport problem
+    reg: regularization parameter
+      The regularization parameter for the optimal transport problem
+    dim_prior: integer
+      The dimension of the prior sample (i.e. the latent space)
+    dim: integer
+      The dimension of the data
+    loss_function: loss function
+      The loss function for training
+    device: torch.device
+      The device to run the training on
+    dust_const: float
+      The constant to add to the data to prevent the data from containing zeros
+    MNIST: torch.utils.data.Dataset
+      The processed MNIST dataset for testing
+    OMNIGLOT: torch.utils.data.Dataset
+      The processed OMNIGLOT dataset for testing
+    CIFAR10: torch.utils.data.Dataset
+      The processed CIFAR10 dataset for testing
+    FLOWERS102: torch.utils.data.Dataset
+      The processed FLOWERS102 dataset for testing
+    lr_gen: float
+      The learning rate for the generative network
+    lr_pred: float
+      The learning rate for the predictive network
+    lr_factor: float
+      The learning rate decay factor
+    n_samples: integer
+      The number of unique samples to train on
+    batchsize: integer
+      The number of samples per batch
+    minibatch: integer
+      The number of samples per minibatch
+    epochs: integer
+      The number of epochs per batch
+    test_iter: integer
+      The number of batches between testing
+    learn_gen: boolean
+      Whether or not to train the generative network
+  
+  Returns:
+    train_losses: torch.tensor
+      The training losses
+    test_losses_rn: torch.tensor
+      The test losses for random noise
+    test_losses_mnist: torch.tensor
+      The test losses for MNIST
+    test_losses_omniglot: torch.tensor
+      The test losses for OMNIGLOT
+    test_losses_cifar: torch.tensor
+      The test losses for CIFAR10
+    test_losses_flowers: torch.tensor
+      The test losses for FLOWERS102
+    rel_errs_rn: torch.tensor
+      The relative errors for random noise
+    rel_errs_mnist: torch.tensor
+      The relative errors for MNIST
+    rel_errs_omniglot: torch.tensor
+      The relative errors for OMNIGLOT
+    rel_errs_cifar: torch.tensor
+      The relative errors for CIFAR10
+    rel_errs_flowers: torch.tensor
+      The relative errors for FLOWERS102
+
+  """
   
   # Loss and error collecting lists
   train_losses = []
   test_losses_rn = []
   test_losses_mnist = []
   test_losses_omniglot = []
+  test_losses_cifar = []
+  test_losses_flowers = []
   rel_errs_rn = []
   rel_errs_mnist = []
   rel_errs_omniglot = []
+  rel_errs_cifar = []
+  rel_errs_flowers = []
 
   # Initializing optimizers
   if (learn_gen == True):
@@ -49,37 +135,59 @@ def the_hunt(gen_net,
   for i in tqdm(range(n_samples//batchsize)):
 
     # Testing Section
-    if (i % test_iter == 0):
+    if ((i+1) % test_iter == 0) or (i == 0):
     
       # Testing data
+      if (learn_gen == True):
+        sample = prior_sampler(200, dim_prior).double().to(device)
+        X_gn = gen_net(sample)
       X_rn = rando(200, dim, dust_const).double().to(device)
-      X_mnist = MNIST_test_loader(MNIST, 200).double().to(device)
-      X_omniglot = MNIST_test_loader(OMNIGLOT, 200).double().to(device)
+      X_mnist = test_sampler(MNIST, 200).double().to(device)
+      X_omniglot = test_sampler(OMNIGLOT, 200).double().to(device)
+      X_cifar = test_sampler(CIFAR10, 200).double().to(device)
+      X_flowers = test_sampler(FLOWERS102, 200).double().to(device)
 
       # Loss testing
+      if (learn_gen == True):
+        test_loss_rn = test_pred_loss(loss_function, X_gn, pred_net, C, dim, reg, plot=True, maxiter=5000)  
       test_loss_rn = test_pred_loss(loss_function, X_rn, pred_net, C, dim, reg, plot=True, maxiter=5000)
       test_loss_mnist = test_pred_loss(loss_function, X_mnist, pred_net, C, dim, reg, plot=True, maxiter=5000)
       test_loss_omniglot = test_pred_loss(loss_function, X_omniglot, pred_net, C, dim, reg, plot=True, maxiter=5000)
+      test_loss_cifar = test_pred_loss(loss_function, X_cifar, pred_net, C, dim, reg, plot=True, maxiter=5000)
+      test_loss_flowers = test_pred_loss(loss_function, X_flowers, pred_net, C, dim, reg, plot=True, maxiter=5000)
+      
       
       test_losses_rn.append(test_loss_rn)
       test_losses_mnist.append(test_loss_mnist)
       test_losses_omniglot.append(test_loss_omniglot)
+      test_losses_cifar.append(test_loss_cifar)
+      test_losses_flowers.append(test_loss_flowers)
 
  
       # emd2 relative error testing
-      rel_err_rn = test_pred_edm2(X_rn[:50], pred_net, C, reg, dim, 'Random Noise')
-      rel_err_mnist = test_pred_edm2(X_mnist[:50], pred_net, C, reg, dim, 'MNIST')
-      rel_err_omniglot = test_pred_edm2(X_omniglot[:50], pred_net, C, reg, dim, 'OMNIGLOT')
+      if (learn_gen == True):
+        rel_err_rn = test_pred_dist(X_gn[:50], pred_net, C, reg, dim, 'Gen Net')
+      rel_err_rn = test_pred_dist(X_rn[:50], pred_net, C, reg, dim, 'Random Noise')
+      rel_err_mnist = test_pred_dist(X_mnist[:50], pred_net, C, reg, dim, 'MNIST')
+      rel_err_omniglot = test_pred_dist(X_omniglot[:50], pred_net, C, reg, dim, 'OMNIGLOT')
+      rel_err_cifar = test_pred_dist(X_cifar[:50], pred_net, C, reg, dim, 'CIFAR10')
+      rel_err_flowers = test_pred_dist(X_flowers[:50], pred_net, C, reg, dim, 'FLOWERS102')
 
       rel_errs_rn.append(rel_err_rn)
       rel_errs_mnist.append(rel_err_mnist)
       rel_errs_omniglot.append(rel_err_omniglot)
+      rel_errs_cifar.append(rel_err_cifar)
+      rel_errs_flowers.append(rel_err_flowers)
+      
 
 
       # Displaying loss and error information
       print(f"Rel err rn: {rel_err_rn}")
       print(f"Rel err mnist: {rel_err_mnist}")
       print(f"Rel err omniglot: {rel_err_omniglot}")
+      print(f"Rel err cifar: {rel_err_cifar}")
+      print(f"Rel err flowers: {rel_err_flowers}")
+
       plt.figure()
       plt.plot(torch.log(torch.tensor(train_losses)))
       plt.title('Log Train Losses')
@@ -88,6 +196,8 @@ def the_hunt(gen_net,
       plt.plot(torch.log(torch.tensor(test_losses_rn)), label='rn')
       plt.plot(torch.log(torch.tensor(test_losses_mnist)), label='mnist')
       plt.plot(torch.log(torch.tensor(test_losses_omniglot)), label='omniglot')
+      plt.plot(torch.log(torch.tensor(test_losses_cifar)), label='cifar')
+      plt.plot(torch.log(torch.tensor(test_losses_flowers)), label='flowers')
       plt.legend()
       plt.title('Log Test Losses')
       plt.show()
@@ -95,24 +205,31 @@ def the_hunt(gen_net,
       plt.plot(torch.tensor(rel_errs_rn), label='rn')
       plt.plot(torch.tensor(rel_errs_mnist), label='mnist')
       plt.plot(torch.tensor(rel_errs_omniglot), label='omniglot')
+      plt.plot(torch.tensor(rel_errs_cifar), label='cifar')
+      plt.plot(torch.tensor(rel_errs_flowers), label='flowers')
       plt.legend()
       plt.title('Predicted Distance Relative Error Versus ot.emd2')
       plt.show()
     
     # Training predictive neural net.
     
+    # Data creation
     if (learn_gen == True):
-      sample = prior_sampler(batchsize, dim_in).double().to(device)
-      #sample = torch.ones((batchsize, 2*dim_in)).double().to(device)
+      sample = prior_sampler(batchsize, dim_prior).double().to(device)
       X = gen_net(sample)
     else:
       sample = rando(batchsize, dim, dust_const).double().to(device)
       X = sample
+    
+    # Target creation
     with torch.no_grad():
-      V = sink_vec(X[:, :dim], X[:, dim:], C, reg, 1000, V0=None)
+      V0 = torch.ones_like(X[:, :dim])
+      V = sink_vec(X[:, :dim], X[:, dim:], C, reg, V0, 1000)
       V = torch.log(V)
       V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
     T = V
+
+    # Training loop
     for e in range(epochs):
       perm = torch.randperm(batchsize).to(device)
       X_e, T_e = X[perm], T[perm]
@@ -121,34 +238,21 @@ def the_hunt(gen_net,
         T_mini = T_e[j*minibatch:(j+1)*minibatch]
         pred_loss = loss_function(P_mini, T_mini)
         train_losses.append(pred_loss.item())
+
+        # Update
         pred_optimizer.zero_grad()
         pred_loss.backward(retain_graph=True)
         pred_optimizer.step()
-      
-    if (i % 50 == 0):
-      fig, ax = plt.subplots(1, 2)
-      ax[0].imshow(X_e[-1, :dim].cpu().detach().numpy().reshape(28,28), cmap='magma')
-      ax[1].imshow(X_e[-1, dim:].cpu().detach().numpy().reshape(28,28), cmap='magma')
-      ax[0].set_title('MU')
-      ax[1].set_title('NU')
-      plt.show()
-      plt.figure()
-      plt.title('T')
-      plt.imshow(T_mini[-1].cpu().detach().numpy().reshape(28,28), cmap='magma')
-      plt.colorbar()
-      plt.show()
-      plt.figure()
-      plt.title('P')
-      plt.imshow(P_mini[-1].cpu().detach().numpy().reshape(28,28), cmap='magma')
-      plt.colorbar()
-      plt.show()
     
+    # Training generative neural net.
     if (learn_gen == True):
       for j in range(batchsize//minibatch):        
         P_mini = pred_net(X[j*minibatch:(j+1)*minibatch])
         T_mini = T[j*minibatch:(j+1)*minibatch]
         gen_loss = -loss_function(P_mini, T_mini)
         train_losses.append(gen_loss.item())
+
+        # Update
         gen_optimizer.zero_grad()
         gen_loss.backward(retain_graph=True)
         gen_optimizer.step()
@@ -170,7 +274,13 @@ def the_hunt(gen_net,
   train_losses = torch.tensor(train_losses)
   test_losses_rn = torch.tensor(test_losses_rn)
   test_losses_mnist = torch.tensor(test_losses_mnist)
+  test_losses_omniglot = torch.tensor(test_losses_omniglot)
+  test_losses_cifar = torch.tensor(test_losses_cifar)
+  test_losses_flowers = torch.tensor(test_losses_flowers)
   rel_errs_rn = torch.tensor(rel_errs_rn)
   rel_errs_mnist = torch.tensor(rel_errs_mnist)
+  rel_errs_omniglot = torch.tensor(rel_errs_omniglot)
+  rel_errs_cifar = torch.tensor(rel_errs_cifar)
+  rel_errs_flowers = torch.tensor(rel_errs_flowers)
 
-  return train_losses, test_losses_rn, test_losses_mnist, test_losses_omniglot, rel_errs_rn, rel_errs_mnist, rel_errs_omniglot
+  return train_losses, test_losses_rn, test_losses_mnist, test_losses_omniglot, test_losses_cifar, test_losses_flowers, rel_errs_rn, rel_errs_mnist, rel_errs_omniglot, rel_errs_cifar, rel_errs_flowers
