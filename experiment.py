@@ -89,6 +89,33 @@ results = the_hunt(deer,
 # Unpack results
 train_losses, test_losses_rn, test_losses_mnist, test_losses_omniglot, test_losses_cifar, test_losses_flowers, rel_errs_rn, rel_errs_mnist, rel_errs_omniglot, rel_errs_cifar, rel_errs_flowers = results
 
+# Plot the results
+plt.figure()
+plt.plot(torch.log(train_losses))
+plt.grid()
+plt.title('Log Train Losses')
+plt.savefig("./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/log_train_losses.png")
+plt.figure()
+plt.grid()
+plt.plot(torch.log(test_losses_rn), label='rn')
+plt.plot(torch.log(test_losses_mnist), label='mnist')
+plt.plot(torch.log(test_losses_omniglot), label='omniglot')
+plt.plot(torch.log(test_losses_cifar), label='cifar')
+plt.plot(torch.log(test_losses_flowers), label='flowers')
+plt.legend()
+plt.title('Log Test Losses')
+plt.savefig("./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/log_test_losses.png")
+plt.figure()
+plt.grid()
+plt.plot(rel_errs_rn, label='rn')
+plt.plot(rel_errs_mnist, label='mnist')
+plt.plot(rel_errs_omniglot, label='omniglot')
+plt.plot(rel_errs_cifar, label='cifar')
+plt.plot(rel_errs_flowers, label='flowers')
+plt.legend()
+plt.title('Predicted Distance Relative Error Versus ot.emd2')
+plt.savefig("./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/rel_errs.png")
+
 # Testing mode
 deer.eval()
 puma.eval()
