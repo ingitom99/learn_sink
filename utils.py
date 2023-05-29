@@ -6,6 +6,13 @@ from skimage.draw import random_shapes
 import matplotlib.pyplot as plt
 
 
+def inf_norm_loss(u, v):
+
+  diff = torch.abs(u - v)
+  spectrum = torch.max(diff, dim=1)[0]
+  loss = spectrum.mean()
+  return loss
+  
 def hilb_proj_loss(u, v):
   """
   Compute the mean Hilbert projective loss between a number of vector pairs.

@@ -78,9 +78,8 @@ class pred_net(nn.Module):
     self.width = width
     self.l1 = nn.Sequential(nn.Linear(2*dim, width*dim), nn.BatchNorm1d(width*dim), nn.ELU())
     self.l2 = nn.Sequential(nn.Linear(width*dim, width*dim), nn.BatchNorm1d(width*dim), nn.ELU())
-    self.l3 = nn.Sequential(nn.Linear(width*dim, width*dim), nn.BatchNorm1d(width*dim), nn.ELU())
-    self.l4 = nn.Sequential(nn.Linear(width*dim, dim))
-    self.layers = [self.l1, self.l2, self.l3, self.l4]
+    self.l3 = nn.Sequential(nn.Linear(width*dim, dim))
+    self.layers = [self.l1, self.l2, self.l3]
 
   def forward(self, x):
     for layer in self.layers:

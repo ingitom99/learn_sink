@@ -82,7 +82,7 @@ def get_CIFAR10(length, dust_const, download=True):
   CIFAR10 = CIFAR10 / torch.unsqueeze(CIFAR10.sum(dim=1), 1)
   return CIFAR10
 
-def get_FLOWERS102(dust_const, length, download=True):
+def get_FLOWERS102(length, dust_const, download=True):
   """
   Get the FLOWERS102 dataset and process it.
 

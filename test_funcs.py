@@ -86,7 +86,7 @@ def test_pred_dist(X, pred_net, C, reg, dim, title, plot=True):
     plt.show()
   return rel_errs.mean().item()
   
-def test_warmstart(X, C, dim, reg, pred_net, title):
+def test_warmstart(X, C, dim, reg, pred_net, title, path):
   emds = []
   for x in X:
     emd_mu = x[:dim] / x[:dim].sum()
@@ -125,13 +125,15 @@ def test_warmstart(X, C, dim, reg, pred_net, title):
 
   rel_err_means = torch.tensor(rel_err_means)
   rel_err_means_ones = torch.tensor(rel_err_means_ones)
-  plt.title(f"Rel Err of Sink Dist versus emd2, {title}, reg: {reg}")
-  plt.xlabel('# Sink Iters')
-  plt.ylabel('Rel Err')
+  plt.figure()
+  plt.title(f"{title}, reg: {reg}")
+  plt.xlabel('# Sinkhorn Iterations')
+  plt.ylabel('Relative Error on Wasserstein Distance')
   plt.grid()
   plt.yticks(torch.arange(0, 1.0001, 0.05))
+  plt.axhline(y=rel_err_means[0], color='r', linestyle="dashed", label='init rel err')
   plt.plot(rel_err_means, label="predicted V0")
   plt.plot(rel_err_means_ones, label="ones V0")
   plt.legend()
-  plt.savefig(f"./stamp/{title}_warmstart.png")
+  plt.savefig(path)
   return None
