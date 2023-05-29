@@ -106,7 +106,7 @@ def rando(n_samples, dim, dust_const):
   # Random probabilities for the Bernoulli masks
   bernoulli_p = torch.rand((n_samples, 1))
   bernoulli_p[bernoulli_p < 0.03] = 0.03
-  multiplier = torch.randint(1, 4, (n_samples, 1))
+  multiplier = torch.randint(1, 6, (n_samples, 1))
   sample_a = torch.rand((n_samples, dim))
   mask_a = torch.bernoulli(bernoulli_p * torch.ones_like(sample_a))
   sample_a = (sample_a * mask_a)**multiplier
