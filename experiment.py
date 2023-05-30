@@ -16,13 +16,13 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {device}")
 
 # Hyperparameters
-length_prior = 28
+length_prior = 10
 length = 28
 dim_prior = length_prior**2
 dim = length**2
 dust_const = 1e-5
-skip_const = 0.3
-width = 2
+skip_const = 0.2
+width = 4
 
 # Download testsets
 MNIST = get_MNIST(length, dust_const, download=False).double().to(device)
@@ -54,13 +54,13 @@ puma.train()
 
 # Training Hyperparams
 lr_gen=0.5
-lr_pred=2.0
-lr_factor=0.99
-n_samples= 100000
-batchsize=10000
-minibatch=1000
-epochs=3
-test_iter=5
+lr_pred=1.0
+lr_factor=0.993
+n_samples= 1000000
+batchsize=2000
+minibatch=200
+epochs=10
+test_iter=50
 learn_gen=False
 
 # Run the hunt
