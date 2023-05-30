@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from cost_matrices import euclidean_cost_matrix
 from training_algorithm import the_hunt
 from nets import gen_net, pred_net
-from utils import hilb_proj_loss, test_sampler, rando, inf_norm_loss
+from utils import hilb_proj_loss, test_sampler, rando, random_shapes_loader
 from data_creators import get_MNIST, get_OMNIGLOT, get_CIFAR10, get_FLOWERS102
 from test_funcs import test_warmstart
 
@@ -87,34 +87,36 @@ results = the_hunt(deer,
         )
 
 # Unpack results
-train_losses, test_losses_rn, test_losses_mnist, test_losses_omniglot, test_losses_cifar, test_losses_flowers, rel_errs_rn, rel_errs_mnist, rel_errs_omniglot, rel_errs_cifar, rel_errs_flowers = results
+train_losses, test_losses_rn, test_losses_rs, test_losses_mnist, test_losses_omniglot, test_losses_cifar, test_losses_flowers, rel_errs_rn, rel_errs_rs, rel_errs_mnist, rel_errs_omniglot, rel_errs_cifar, rel_errs_flowers = results
 
 # Plot the results
 plt.figure()
 plt.plot(torch.log(train_losses))
 plt.grid()
 plt.title('Log Train Losses')
-plt.savefig("./stamp/log_train_losses.png")
+plt.savefig("./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/log_train_losses.png")
 plt.figure()
 plt.grid()
 plt.plot(torch.log(test_losses_rn), label='rn')
+plt.plot(torch.log(test_losses_rs), label='rs')
 plt.plot(torch.log(test_losses_mnist), label='mnist')
 plt.plot(torch.log(test_losses_omniglot), label='omniglot')
 plt.plot(torch.log(test_losses_cifar), label='cifar')
 plt.plot(torch.log(test_losses_flowers), label='flowers')
 plt.legend()
 plt.title('Log Test Losses')
-plt.savefig("./stamp/log_test_losses.png")
+plt.savefig("./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/log_test_losses.png")
 plt.figure()
 plt.grid()
 plt.plot(rel_errs_rn, label='rn')
+plt.plot(rel_errs_rs, label='rs')
 plt.plot(rel_errs_mnist, label='mnist')
 plt.plot(rel_errs_omniglot, label='omniglot')
 plt.plot(rel_errs_cifar, label='cifar')
 plt.plot(rel_errs_flowers, label='flowers')
 plt.legend()
 plt.title('Predicted Distance Relative Error Versus ot.emd2')
-plt.savefig("./stamp/rel_errs.png")
+plt.savefig("./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/rel_errs.png")
 
 # Testing mode
 deer.eval()
@@ -155,14 +157,15 @@ with open(output_file, 'w') as file:
         file.write(f"{key}: {value}\n")
 
 # Test warmstart
-X_rn = rando(10, dim, dust_const).double().to(device)
-X_mnist = test_sampler(MNIST, 10).double().to(device)
-X_omniglot = test_sampler(OMNIGLOT, 10).double().to(device)
-X_cifar = test_sampler(CIFAR10, 10).double().to(device)
-X_flowers = test_sampler(FLOWERS102, 10).double().to(device)
+X_rn = rando(100, dim, dust_const).double().to(device)
+X_rs = random_shapes_loader(100, dim, dust_const).double().to(device)
+X_mnist = test_sampler(MNIST, 100).double().to(device)
+X_omniglot = test_sampler(OMNIGLOT, 100).double().to(device)
+X_cifar = test_sampler(CIFAR10, 100).double().to(device)
+X_flowers = test_sampler(FLOWERS102, 100).double().to(device)
 
-test_warmstart(X_rn, C, dim, reg, puma, "Random Noise", "./stamp/warmstart_rn.png")
-test_warmstart(X_mnist, C, dim, reg, puma, "MNIST", "./stamp/warmstart_mnist.png")
-test_warmstart(X_omniglot, C, dim, reg, puma, "OMNIGLOT", "./stamp/warmstart_omniglot.png")
-test_warmstart(X_cifar, C, dim, reg, puma, "CIFAR10", "./stamp/warmstart_cifar.png")
-test_warmstart(X_flowers, C, dim, reg, puma, "FLOWERS102", "./stamp/warmstart_flowers.png")
+test_warmstart(X_rn, C, dim, reg, puma, "Random Noise", "./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/warmstart_rn.png")
+test_warmstart(X_mnist, C, dim, reg, puma, "MNIST", "./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/warmstart_mnist.png")
+test_warmstart(X_omniglot, C, dim, reg, puma, "OMNIGLOT", "./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/warmstart_omniglot.png")
+test_warmstart(X_cifar, C, dim, reg, puma, "CIFAR10", "./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/warmstart_cifar.png")
+test_warmstart(X_flowers, C, dim, reg, puma, "FLOWERS102", "./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/warmstart_flowers.png")

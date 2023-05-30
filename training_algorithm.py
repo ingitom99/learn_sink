@@ -7,7 +7,7 @@ import torch
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from sinkhorn_algos import sink_vec
-from utils import test_sampler, prior_sampler, rando
+from utils import test_sampler, prior_sampler, rando, plot_XPT
 from test_funcs import test_pred_dist, test_pred_loss
 
 # Training algorithm
@@ -24,15 +24,15 @@ def the_hunt(gen_net,
              OMNIGLOT,
              CIFAR10,
              FLOWERS102,
-             lr_gen=0.5,
-             lr_pred=0.5,
-             lr_factor=0.999,
-             n_samples= 5000000,
-             batchsize=5000,
-             minibatch=1000,
-             epochs=10,
-             test_iter=100,
-             learn_gen=True
+             lr_gen,
+             lr_pred,
+             lr_factor,
+             n_samples,
+             batchsize,
+             minibatch,
+             epochs,
+             test_iter,
+             learn_gen
              ):
   """
   The training algorithm is named the hunt in a metaphor for adversarial learning where the predictive network is the hunter and the generative network is the prey.
@@ -112,11 +112,13 @@ def the_hunt(gen_net,
   # Loss and error collecting lists
   train_losses = []
   test_losses_rn = []
+  test_losses_rs = []
   test_losses_mnist = []
   test_losses_omniglot = []
   test_losses_cifar = []
   test_losses_flowers = []
   rel_errs_rn = []
+  rel_errs_rs = []
   rel_errs_mnist = []
   rel_errs_omniglot = []
   rel_errs_cifar = []
@@ -135,13 +137,14 @@ def the_hunt(gen_net,
   for i in tqdm(range(n_samples//batchsize)):
 
     # Testing Section
-    if ((i+1) % test_iter == 0) or (i == 0):
+    if ((i+1) % test_iter == 0):# or (i == 0):
     
       # Testing data
       if (learn_gen == True):
         sample = prior_sampler(200, dim_prior).double().to(device)
         X_gn = gen_net(sample)
       X_rn = rando(200, dim, dust_const).double().to(device)
+      X_rs = random_shapes_loader(200, dim, dust_const).double().to(device)
       X_mnist = test_sampler(MNIST, 200).double().to(device)
       X_omniglot = test_sampler(OMNIGLOT, 200).double().to(device)
       X_cifar = test_sampler(CIFAR10, 200).double().to(device)
@@ -149,8 +152,9 @@ def the_hunt(gen_net,
 
       # Loss testing
       if (learn_gen == True):
-        test_loss_rn = test_pred_loss(loss_function, X_gn, pred_net, C, dim, reg, plot=True, maxiter=5000)  
+        test_loss_gn = test_pred_loss(loss_function, X_gn, pred_net, C, dim, reg, plot=True, maxiter=5000)  
       test_loss_rn = test_pred_loss(loss_function, X_rn, pred_net, C, dim, reg, plot=True, maxiter=5000)
+      test_loss_rs = test_pred_loss(loss_function, X_rs, pred_net, C, dim, reg, plot=True, maxiter=5000)
       test_loss_mnist = test_pred_loss(loss_function, X_mnist, pred_net, C, dim, reg, plot=True, maxiter=5000)
       test_loss_omniglot = test_pred_loss(loss_function, X_omniglot, pred_net, C, dim, reg, plot=True, maxiter=5000)
       test_loss_cifar = test_pred_loss(loss_function, X_cifar, pred_net, C, dim, reg, plot=True, maxiter=5000)
@@ -158,6 +162,7 @@ def the_hunt(gen_net,
       
       
       test_losses_rn.append(test_loss_rn)
+      test_losses_rs.append(test_loss_rs)
       test_losses_mnist.append(test_loss_mnist)
       test_losses_omniglot.append(test_loss_omniglot)
       test_losses_cifar.append(test_loss_cifar)
@@ -166,14 +171,16 @@ def the_hunt(gen_net,
  
       # emd2 relative error testing
       if (learn_gen == True):
-        rel_err_rn = test_pred_dist(X_gn[:50], pred_net, C, reg, dim, 'Gen Net')
+        rel_err_gn = test_pred_dist(X_gn[:50], pred_net, C, reg, dim, 'Gen Net')
       rel_err_rn = test_pred_dist(X_rn[:50], pred_net, C, reg, dim, 'Random Noise')
+      rel_err_rs = test_pred_dist(X_rs[:50], pred_net, C, reg, dim, 'Random Shapes')
       rel_err_mnist = test_pred_dist(X_mnist[:50], pred_net, C, reg, dim, 'MNIST')
       rel_err_omniglot = test_pred_dist(X_omniglot[:50], pred_net, C, reg, dim, 'OMNIGLOT')
       rel_err_cifar = test_pred_dist(X_cifar[:50], pred_net, C, reg, dim, 'CIFAR10')
       rel_err_flowers = test_pred_dist(X_flowers[:50], pred_net, C, reg, dim, 'FLOWERS102')
 
       rel_errs_rn.append(rel_err_rn)
+      rel_errs_rs.append(rel_err_rs)
       rel_errs_mnist.append(rel_err_mnist)
       rel_errs_omniglot.append(rel_err_omniglot)
       rel_errs_cifar.append(rel_err_cifar)
@@ -183,17 +190,21 @@ def the_hunt(gen_net,
 
       # Displaying loss and error information
       print(f"Rel err rn: {rel_err_rn}")
+      print(f"Rel err rs: {rel_err_rs}")
       print(f"Rel err mnist: {rel_err_mnist}")
       print(f"Rel err omniglot: {rel_err_omniglot}")
       print(f"Rel err cifar: {rel_err_cifar}")
       print(f"Rel err flowers: {rel_err_flowers}")
 
       plt.figure()
+      plt.grid()
       plt.plot(torch.log(torch.tensor(train_losses)))
       plt.title('Log Train Losses')
       plt.show()
       plt.figure()
+      plt.grid()
       plt.plot(torch.log(torch.tensor(test_losses_rn)), label='rn')
+      plt.plot(torch.log(torch.tensor(test_losses_rs)), label='rs')
       plt.plot(torch.log(torch.tensor(test_losses_mnist)), label='mnist')
       plt.plot(torch.log(torch.tensor(test_losses_omniglot)), label='omniglot')
       plt.plot(torch.log(torch.tensor(test_losses_cifar)), label='cifar')
@@ -202,7 +213,9 @@ def the_hunt(gen_net,
       plt.title('Log Test Losses')
       plt.show()
       plt.figure()
+      plt.grid()
       plt.plot(torch.tensor(rel_errs_rn), label='rn')
+      plt.plot(torch.tensor(rel_errs_rs), label='rs')
       plt.plot(torch.tensor(rel_errs_mnist), label='mnist')
       plt.plot(torch.tensor(rel_errs_omniglot), label='omniglot')
       plt.plot(torch.tensor(rel_errs_cifar), label='cifar')
@@ -218,7 +231,9 @@ def the_hunt(gen_net,
       sample = prior_sampler(batchsize, dim_prior).double().to(device)
       X = gen_net(sample)
     else:
-      sample = rando(batchsize, dim, dust_const).double().to(device)
+      #sample = random_shapes_loader(batchsize, dim, dust_const).double().to(device)
+      #sample = rando(batchsize, dim, dust_const).double().to(device)
+      sample = rn_rs(batchsize, dim, dust_const).double().to(device)
       X = sample
     
     # Target creation
@@ -256,6 +271,9 @@ def the_hunt(gen_net,
         gen_optimizer.zero_grad()
         gen_loss.backward(retain_graph=True)
         gen_optimizer.step()
+    
+    if (i%5 == 0):
+      plot_XPT(X_e[-10:-1], P_mini[-10:-1], T_mini[-10:-1])
       
     # Updating learning rates
     if (learn_gen == True):
@@ -273,14 +291,16 @@ def the_hunt(gen_net,
   # Converting loss and error collecting lists to tensors
   train_losses = torch.tensor(train_losses)
   test_losses_rn = torch.tensor(test_losses_rn)
+  test_losses_rs = torch.tensor(test_losses_rs)
   test_losses_mnist = torch.tensor(test_losses_mnist)
   test_losses_omniglot = torch.tensor(test_losses_omniglot)
   test_losses_cifar = torch.tensor(test_losses_cifar)
   test_losses_flowers = torch.tensor(test_losses_flowers)
   rel_errs_rn = torch.tensor(rel_errs_rn)
+  rel_errs_rs = torch.tensor(rel_errs_rs)
   rel_errs_mnist = torch.tensor(rel_errs_mnist)
   rel_errs_omniglot = torch.tensor(rel_errs_omniglot)
   rel_errs_cifar = torch.tensor(rel_errs_cifar)
   rel_errs_flowers = torch.tensor(rel_errs_flowers)
 
-  return train_losses, test_losses_rn, test_losses_mnist, test_losses_omniglot, test_losses_cifar, test_losses_flowers, rel_errs_rn, rel_errs_mnist, rel_errs_omniglot, rel_errs_cifar, rel_errs_flowers
+  return train_losses, test_losses_rn, test_losses_rs, test_losses_mnist, test_losses_omniglot, test_losses_cifar, test_losses_flowers, rel_errs_rn, rel_errs_rs, rel_errs_mnist, rel_errs_omniglot, rel_errs_cifar, rel_errs_flowers
