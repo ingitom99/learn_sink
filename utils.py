@@ -159,7 +159,7 @@ def random_shapes_loader(n_samples, dim, dust_const):
 
 def rn_rs(n_samples, dim, dust_const):
   """
-  Generate a data set of pairs of samples of random shapes added to randomly-masked, uniform random noise.
+  Generate a data set of pairs of samples of random shapes.
 
   Inputs:
     n_samples: int
@@ -176,10 +176,10 @@ def rn_rs(n_samples, dim, dust_const):
   length = int(dim**.5)
   pairs = []
   for i in range(n_samples):
-    image1 = random_shapes((length, length), max_shapes=10, min_shapes=2, min_size=3, max_size=8, channel_axis=None, allow_overlap=True)[0]
+    image1 = random_shapes((length, length), max_shapes=10, min_shapes=2, min_size=2, max_size=10, channel_axis=None, allow_overlap=True, intensity_range=(200, 250))[0]
     image1 = image1.max() - image1
     image1 = image1 / image1.sum()
-    image2= random_shapes((length, length), max_shapes=10, min_shapes=2, min_size=3, max_size=8, channel_axis=None, allow_overlap=True)[0]
+    image2= random_shapes((length, length), max_shapes=10, min_shapes=2, min_size=2, max_size=10, channel_axis=None, allow_overlap=True, intensity_range=(200, 250))[0]
     image2 = image2.max() - image2
     image2 = image2 / image2.sum()
     pair = np.concatenate((image1.flatten(), image2.flatten()))

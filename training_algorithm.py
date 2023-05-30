@@ -7,7 +7,7 @@ import torch
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from sinkhorn_algos import sink_vec
-from utils import test_sampler, prior_sampler, rando, plot_XPT
+from utils import test_sampler, prior_sampler, rando, plot_XPT, random_shapes_loader, rn_rs
 from test_funcs import test_pred_dist, test_pred_loss
 
 # Training algorithm
@@ -138,7 +138,12 @@ def the_hunt(gen_net,
 
     # Testing Section
     if ((i+1) % test_iter == 0):# or (i == 0):
-    
+
+      # Setting networks to eval mode
+      pred_net.eval()
+      if (learn_gen == True):
+        gen_net.eval()
+
       # Testing data
       if (learn_gen == True):
         sample = prior_sampler(200, dim_prior).double().to(device)
@@ -170,6 +175,7 @@ def the_hunt(gen_net,
 
  
       # emd2 relative error testing
+
       if (learn_gen == True):
         rel_err_gn = test_pred_dist(X_gn[:50], pred_net, C, reg, dim, 'Gen Net')
       rel_err_rn = test_pred_dist(X_rn[:50], pred_net, C, reg, dim, 'Random Noise')
@@ -225,7 +231,12 @@ def the_hunt(gen_net,
       plt.show()
     
     # Training predictive neural net.
-    
+
+    # Setting networks to train mode
+    pred_net.train()
+    if (learn_gen == True):
+      gen_net.train()
+      
     # Data creation
     if (learn_gen == True):
       sample = prior_sampler(batchsize, dim_prior).double().to(device)
@@ -272,7 +283,7 @@ def the_hunt(gen_net,
         gen_loss.backward(retain_graph=True)
         gen_optimizer.step()
     
-    if (i%5 == 0):
+    if (i%20 == 0):
       plot_XPT(X_e[-10:-1], P_mini[-10:-1], T_mini[-10:-1])
       
     # Updating learning rates
