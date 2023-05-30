@@ -8,6 +8,8 @@ from utils import hilb_proj_loss, test_sampler, rando, random_shapes_loader
 from data_creators import get_MNIST, get_OMNIGLOT, get_CIFAR10, get_FLOWERS102
 from test_funcs import test_warmstart
 
+# Stamp folder
+stamp_folder = "stamp_i"
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -39,8 +41,8 @@ print(f"Reg: {reg}")
 loss_function = hilb_proj_loss
 
 # Load model state dict
-#deer.load_state_dict(torch.load("./stamp/nets/deer.pt"))
-#puma.load_state_dict(torch.load("./stamp/nets/puma.pt"))
+#deer.load_state_dict(torch.load(f"./{stamp_folder}/nets/deer.pt"))
+#puma.load_state_dict(torch.load(f"./{stamp_folder}/nets/puma.pt"))
 
 # Initialization of nets
 deer = gen_net(dim_prior, dim, dust_const, skip_const).double().to(device)
@@ -89,12 +91,16 @@ results = the_hunt(deer,
 # Unpack results
 train_losses, test_losses_rn, test_losses_rs, test_losses_mnist, test_losses_omniglot, test_losses_cifar, test_losses_flowers, rel_errs_rn, rel_errs_rs, rel_errs_mnist, rel_errs_omniglot, rel_errs_cifar, rel_errs_flowers = results
 
+# Testing mode
+deer.eval()
+puma.eval()
+
 # Plot the results
 plt.figure()
 plt.plot(torch.log(train_losses))
 plt.grid()
 plt.title('Log Train Losses')
-plt.savefig("./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/log_train_losses.png")
+plt.savefig(f"./{stamp_folder}/log_train_losses.png")
 plt.figure()
 plt.grid()
 plt.plot(torch.log(test_losses_rn), label='rn')
@@ -105,7 +111,7 @@ plt.plot(torch.log(test_losses_cifar), label='cifar')
 plt.plot(torch.log(test_losses_flowers), label='flowers')
 plt.legend()
 plt.title('Log Test Losses')
-plt.savefig("./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/log_test_losses.png")
+plt.savefig(f"./{stamp_folder}/log_test_losses.png")
 plt.figure()
 plt.grid()
 plt.plot(rel_errs_rn, label='rn')
@@ -116,11 +122,7 @@ plt.plot(rel_errs_cifar, label='cifar')
 plt.plot(rel_errs_flowers, label='flowers')
 plt.legend()
 plt.title('Predicted Distance Relative Error Versus ot.emd2')
-plt.savefig("./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/rel_errs.png")
-
-# Testing mode
-deer.eval()
-puma.eval()
+plt.savefig(f"./{stamp_folder}/rel_errs.png")
 
 # Saving nets
 torch.save(deer.state_dict(), "./stamp/deer.pt")
@@ -149,7 +151,7 @@ hyperparams = {
 }
 
 # Define the output file path
-output_file = "./stamp/params.txt"
+output_file = f"./{stamp_folder}/params.txt"
 
 # Save the hyperparams to the text file
 with open(output_file, 'w') as file:
@@ -164,8 +166,8 @@ X_omniglot = test_sampler(OMNIGLOT, 100).double().to(device)
 X_cifar = test_sampler(CIFAR10, 100).double().to(device)
 X_flowers = test_sampler(FLOWERS102, 100).double().to(device)
 
-test_warmstart(X_rn, C, dim, reg, puma, "Random Noise", "./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/warmstart_rn.png")
-test_warmstart(X_mnist, C, dim, reg, puma, "MNIST", "./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/warmstart_mnist.png")
-test_warmstart(X_omniglot, C, dim, reg, puma, "OMNIGLOT", "./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/warmstart_omniglot.png")
-test_warmstart(X_cifar, C, dim, reg, puma, "CIFAR10", "./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/warmstart_cifar.png")
-test_warmstart(X_flowers, C, dim, reg, puma, "FLOWERS102", "./gdrive/MyDrive/Summer2023/May/29_05_2023/stamp/warmstart_flowers.png")
+test_warmstart(X_rn, C, dim, reg, puma, "Random Noise", f"./{stamp_folder}/warmstart_rn.png")
+test_warmstart(X_mnist, C, dim, reg, puma, "MNIST", f"./{stamp_folder}/warmstart_mnist.png")
+test_warmstart(X_omniglot, C, dim, reg, puma, "OMNIGLOT", f"./{stamp_folder}/warmstart_omniglot.png")
+test_warmstart(X_cifar, C, dim, reg, puma, "CIFAR10", f"./{stamp_folder}/warmstart_cifar.png")
+test_warmstart(X_flowers, C, dim, reg, puma, "FLOWERS102", f"./{stamp_folder}/warmstart_flowers.png")
