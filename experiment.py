@@ -9,7 +9,7 @@ from data_creators import get_MNIST, get_OMNIGLOT, get_CIFAR10, get_FLOWERS102
 from test_funcs import test_warmstart
 
 # Stamp folder
-stamp_folder = "stamp_i"
+stamp_folder_path = "./stamp_i"
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -41,8 +41,8 @@ print(f"Reg: {reg}")
 loss_function = hilb_proj_loss
 
 # Load model state dict
-#deer.load_state_dict(torch.load(f"./{stamp_folder}/nets/deer.pt"))
-#puma.load_state_dict(torch.load(f"./{stamp_folder}/nets/puma.pt"))
+#deer.load_state_dict(torch.load(f"{stamp_folder_path}/deer.pt"))
+#puma.load_state_dict(torch.load(f"{stamp_folder_path}/puma.pt"))
 
 # Initialization of nets
 deer = gen_net(dim_prior, dim, dust_const, skip_const).double().to(device)
@@ -100,7 +100,7 @@ plt.figure()
 plt.plot(torch.log(train_losses))
 plt.grid()
 plt.title('Log Train Losses')
-plt.savefig(f"./{stamp_folder}/log_train_losses.png")
+plt.savefig(f"{stamp_folder_path}/log_train_losses.png")
 plt.figure()
 plt.grid()
 plt.plot(torch.log(test_losses_rn), label='rn')
@@ -111,7 +111,7 @@ plt.plot(torch.log(test_losses_cifar), label='cifar')
 plt.plot(torch.log(test_losses_flowers), label='flowers')
 plt.legend()
 plt.title('Log Test Losses')
-plt.savefig(f"./{stamp_folder}/log_test_losses.png")
+plt.savefig(f"{stamp_folder_path}/log_test_losses.png")
 plt.figure()
 plt.grid()
 plt.plot(rel_errs_rn, label='rn')
@@ -122,11 +122,11 @@ plt.plot(rel_errs_cifar, label='cifar')
 plt.plot(rel_errs_flowers, label='flowers')
 plt.legend()
 plt.title('Predicted Distance Relative Error Versus ot.emd2')
-plt.savefig(f"./{stamp_folder}/rel_errs.png")
+plt.savefig(f"{stamp_folder_path}/rel_errs.png")
 
 # Saving nets
-torch.save(deer.state_dict(), "./stamp/deer.pt")
-torch.save(puma.state_dict(), "./stamp/puma.pt")
+torch.save(deer.state_dict(), f"{stamp_folder_path}/deer.pt")
+torch.save(puma.state_dict(), "{stamp_folder_path}/puma.pt")
 
 # Create txt file in stamp for hyperparams
 current_date = datetime.datetime.now().strftime("%d.%m.%Y")
@@ -151,7 +151,7 @@ hyperparams = {
 }
 
 # Define the output file path
-output_file = f"./{stamp_folder}/params.txt"
+output_file = f"{stamp_folder_path}/params.txt"
 
 # Save the hyperparams to the text file
 with open(output_file, 'w') as file:
@@ -166,8 +166,8 @@ X_omniglot = test_sampler(OMNIGLOT, 100).double().to(device)
 X_cifar = test_sampler(CIFAR10, 100).double().to(device)
 X_flowers = test_sampler(FLOWERS102, 100).double().to(device)
 
-test_warmstart(X_rn, C, dim, reg, puma, "Random Noise", f"./{stamp_folder}/warmstart_rn.png")
-test_warmstart(X_mnist, C, dim, reg, puma, "MNIST", f"./{stamp_folder}/warmstart_mnist.png")
-test_warmstart(X_omniglot, C, dim, reg, puma, "OMNIGLOT", f"./{stamp_folder}/warmstart_omniglot.png")
-test_warmstart(X_cifar, C, dim, reg, puma, "CIFAR10", f"./{stamp_folder}/warmstart_cifar.png")
-test_warmstart(X_flowers, C, dim, reg, puma, "FLOWERS102", f"./{stamp_folder}/warmstart_flowers.png")
+test_warmstart(X_rn, C, dim, reg, puma, "Random Noise", f"{stamp_folder_path}/warmstart_rn.png")
+test_warmstart(X_mnist, C, dim, reg, puma, "MNIST", f"{stamp_folder_path}/warmstart_mnist.png")
+test_warmstart(X_omniglot, C, dim, reg, puma, "OMNIGLOT", f"{stamp_folder_path}/warmstart_omniglot.png")
+test_warmstart(X_cifar, C, dim, reg, puma, "CIFAR10", f"{stamp_folder_path}/warmstart_cifar.png")
+test_warmstart(X_flowers, C, dim, reg, puma, "FLOWERS102", f"{stamp_folder_path}/warmstart_flowers.png")
