@@ -55,12 +55,12 @@ puma.train()
 # Training Hyperparams
 lr_gen=0.5
 lr_pred=1.0
-lr_factor=0.993
+lr_factor=0.99
 n_samples= 1000000
-batchsize=2000
-minibatch=200
+batchsize=2500
+minibatch=500
 epochs=10
-test_iter=50
+test_iter=20
 learn_gen=False
 
 # Run the hunt

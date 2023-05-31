@@ -137,7 +137,7 @@ def the_hunt(gen_net,
   for i in tqdm(range(n_samples//batchsize)):
 
     # Testing Section
-    if ((i+1) % test_iter == 0):# or (i == 0):
+    if ((i+1) % test_iter == 0) or (i == 0):
 
       # Setting networks to eval mode
       pred_net.eval()
