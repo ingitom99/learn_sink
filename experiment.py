@@ -20,7 +20,7 @@ length_prior = 10
 length = 28
 dim_prior = length_prior**2
 dim = length**2
-dust_const = 1e-5
+dust_const = 1e-4
 skip_const = 0.2
 width = 4
 
@@ -34,7 +34,7 @@ FLOWERS102 = get_FLOWERS102(length, dust_const, download=False).double().to(devi
 C = euclidean_cost_matrix(length, length, normed=True).double().to(device)
 
 # Regularization constant
-reg = C.max() * 5e-4
+reg = C.max() * 6e-4
 print(f"Reg: {reg}")
 
 # Initialization of loss function
