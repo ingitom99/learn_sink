@@ -40,13 +40,13 @@ print(f"Reg: {reg}")
 # Initialization of loss function
 loss_function = hilb_proj_loss
 
-# Load model state dict
-#deer.load_state_dict(torch.load(f"{stamp_folder_path}/deer.pt"))
-#puma.load_state_dict(torch.load(f"{stamp_folder_path}/puma.pt"))
-
 # Initialization of nets
 deer = gen_net(dim_prior, dim, dust_const, skip_const).double().to(device)
 puma = pred_net(dim, width).double().to(device)
+
+# Load model state dict
+#deer.load_state_dict(torch.load(f"{stamp_folder_path}/deer.pt"))
+#puma.load_state_dict(torch.load(f"{stamp_folder_path}/puma.pt"))
 
 # Training mode
 deer.train()
