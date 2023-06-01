@@ -10,8 +10,7 @@ import matplotlib.pyplot as plt
 def hilb_proj_loss(U, V):
 
     """
-    Compute the mean Hilbert projective loss between a number of pairs
-    of vectors.
+    Compute the mean Hilbert projective loss between pairs of vectors.
 
     Parameters
     ----------
@@ -32,61 +31,69 @@ def hilb_proj_loss(U, V):
 
     return loss
 
-def plot_XPT(X, P, T):
-  """
-  Plot an example of a pair of samples and the corresponding
-  prediction-target pair.
+def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
+             ) -> None:
 
-  Inputs:
-    X: torch tensor of shape (n_samples, 2 * dim)
-      Data
-    P: torch tensor of shape (n_samples, dim)
-      Predictions
-    T: torch tensor of shape (n_samples, dim)
-      Targets
-  
-  Returns:
-    None
-  """
-  plt.show()
-  plt.figure()
-  plt.title('Mu')
-  plt.imshow(X[0, :784].cpu().detach().numpy().reshape(28, 28), cmap='magma')
-  plt.colorbar()
-  plt.show()
-  plt.figure()
-  plt.title('Nu')
-  plt.imshow(X[0, 784:].cpu().detach().numpy().reshape(28, 28), cmap='magma')
-  plt.colorbar()
-  plt.show()
-  plt.figure()
-  plt.title('T')
-  plt.imshow(T[0].cpu().detach().numpy().reshape(28, 28), cmap='magma')
-  plt.colorbar()
-  plt.show()
-  plt.figure()
-  plt.title('P')
-  plt.imshow(P[0].cpu().detach().numpy().reshape(28, 28), cmap='magma')
-  plt.colorbar()
-  plt.show()
-  return None
-  
-def prior_sampler(n_samples, dim):
-  """
-  Sample n_samples vectors from the prior distribution (normal distribution).
+    """
+    Plot and show a pair of probability distributions formatted as images
+    followed by the corresponding target and prediction.
 
-  Inputs:
-    n_samples: int
-      Number of samples
-    dim: int
-      Dimension of the prior samples
-  
-  Returns:
-    sample: torch tensor of shape (n_samples, dim)
-      Samples from the prior distribution
-  """
-  sample = torch.randn((n_samples, 2 * dim))
-  return sample
+    Parameters
+    ----------
+    X : (2 * dim) torch.Tensor
+        Pair of probability distributions.
+    P : (dim) torch.Tensor  
+        Prediction.
+    T : (dim) torch.Tensor
+        Target.
+    dim : int
+        Dimension of the probability distributions.
+    """
+
+    plt.figure()
+    plt.title('Mu')
+    plt.imshow(X[:784].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+    plt.colorbar()
+    plt.show()
+    plt.figure()
+    plt.title('Nu')
+    plt.imshow(X[784:].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+    plt.colorbar()
+    plt.show()
+    plt.figure()
+    plt.title('T')
+    plt.imshow(T.cpu().detach().numpy().reshape(28, 28), cmap='magma')
+    plt.colorbar()
+    plt.show()
+    plt.figure()
+    plt.title('P')
+    plt.imshow(P.cpu().detach().numpy().reshape(28, 28), cmap='magma')
+    plt.colorbar()
+    plt.show()
+
+    return None
+    
+def prior_sampler(n_samples : int, dim : int) -> torch.Tensor:
+
+    """
+    Sample from the prior distribution.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples.
+    dim : int
+        Dimension of the samples.
+
+    Returns
+    -------
+    samples : (n_samples, 2 * dim) torch.Tensor
+        Samples from the prior distribution.
+    """
+
+    samples = torch.randn((n_samples, 2 * dim))
+    
+    return samples
 
 def rando(n_samples, dim, dust_const):
   """
