@@ -76,7 +76,7 @@ class GenNet(nn.Module):
         x = torch.cat((x_a, x_b), dim=1)
         return x
 
-# Predctive network class
+# Predictive network class
 class pred_net(nn.Module):
 
     """

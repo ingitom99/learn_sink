@@ -113,8 +113,64 @@ def testset_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
         Random sample from the test set.
     """
 
-    rand_mask = torch.randint(low=0, high=len(test_set), size=(n_samples,2))
+    rand_perm = torch.randperm(test_set.size(0))
+    rand_mask = rand_perm[:n_samples]
     test_sample = test_set[rand_mask]
     test_sample = torch.flatten(test_sample, start_dim=1)
 
     return test_sample
+
+def plot_train_losses(losses_train : list) -> None:
+
+    """
+    Plot the training losses.
+
+    Parameters
+    ----------
+    losses_train : list
+        List of training losses.
+    """
+    log_losses = torch.log(torch.tensor(losses_train))
+    plt.figure()
+    plt.plot(log_losses)
+    plt.title('Log Train Losses')
+    plt.xlabel('# minibatches')
+    plt.ylabel('log loss')
+    plt.grid()
+    plt.show()
+    
+    return None
+
+def plot_test_losses(losses_test : dict[str, list]) -> None:
+
+    plt.figure()
+    for key in losses_test.keys():
+        log_data = torch.log(torch.tensor(losses_test[key]))
+        plt.plot(log_data, label=key)
+    plt.title('Log Test Losses')
+    plt.xlabel('# test phases')
+    plt.ylabel('log loss')
+    plt.grid()
+    plt.legend()
+    plt.show()
+
+    return None
+
+
+
+def plot_test_rel_errs(rel_errs):
+
+
+    plt.figure()
+    for key in rel_errs.keys():
+        data = rel_errs[key]
+        plt.plot(data, label=key)
+    plt.title(' Rel Error: PredNet Dist VS ot.emd2')
+    plt.xlabel('# test phases')
+    plt.ylabel('rel err')
+    plt.yticks(torch.arange(0, 1.0001, 0.05))
+    plt.grid()
+    plt.legend()
+    plt.show()
+
+    return None
