@@ -6,11 +6,11 @@ import datetime
 import os
 import torch
 import matplotlib.pyplot as plt
-from cost_matrices import euclidean_cost_matrix
-from training_algorithm import the_hunt
-from nets import gen_net, pred_net
-from utils import hilb_proj_loss, test_sampler, rando, random_shapes_loader
-from data_creators import get_cifar, get_omniglot, get_mnist, get_flowers
+from cost_matrices import l2_cost_mat
+from training_algo import the_hunt
+from nets import GenNet, PredNet
+from utils import hilb_proj_loss
+from data_creators import rand_noise, rand_shapes, rand_noise_and_shapes, get_cifar, get_omniglot, get_mnist, get_flowers,  random_shapes_loader, random_noise
 from test_funcs import test_warmstart
 
 # Create 'stamp' folder for saving results
@@ -33,25 +33,37 @@ skip_const = 0.2
 width = 4
 
 # Download testsets
+rn = random_noise(10000, dim, dust_const)
+rs = random_shapes_loader(10000, dim, dust_const)
+rn_rs = rand_noise_and_shapes(10000, dim, dust_const)
 mnist = get_mnist(length, dust_const, download=True)
 omniglot = get_omniglot(length, dust_const, download=True)  
 cifar = get_cifar(length, dust_const, download=True)
 flowers = get_flowers(length, dust_const,  download=True)   
 
-
+test_sets = {
+    'rn': rn,
+    'rs': rs,
+    'rn_rs': rn_rs,
+    'mnist': mnist,
+    'omniglot': omniglot,
+    'cifar': cifar,
+    'flowers': flowers
+}
+             
 # Initialization of cost matrix
-C = euclidean_cost_matrix(length, length, normed=True).double().to(device)
+cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
 
 # Regularization constant
-eps = C.max() * 6e-4
+eps = cost_mat.max() * 6e-4
 print(f"Reg: {eps}")
 
 # Initialization of loss function
-loss_function = hilb_proj_loss
+loss_func = hilb_proj_loss
 
 # Initialization of nets
-deer = gen_net(dim_prior, dim, dust_const, skip_const).double().to(device)
-puma = pred_net(dim, width).double().to(device)
+deer = GenNet(dim_prior, dim, dust_const, skip_const).double().to(device)
+puma = PredNet(dim, width).double().to(device)
 
 # Load model state dict
 #deer.load_state_dict(torch.load(f"{stamp_folder_path}/deer.pt"))
@@ -62,43 +74,47 @@ deer.train()
 puma.train()
 
 # Training Hyperparams
-lr_gen=0.5
-lr_pred=1.0
-lr_factor=0.99
-n_samples= 1000000
-batchsize=2500
-minibatch=500
-epochs=10
-test_iter=20
-learn_gen=False
+n_samples = 1000000
+batch_size = 2500
+minibatch_size = 500
+n_epochs_pred = 10
+gen_pred_ratio = 1
+lr_pred = 0.1
+lr_gen = 0.1
+lr_factor = 0.999
+learn_gen = False
+bootstrapped = True
+boot_no = 10
+test_iter = 100
+n_test_samples = 100
+
 
 # Run the hunt
-results = the_hunt(deer, 
+train_losses, test_losses, test_rel_errs = the_hunt(
         puma,
-        C,
-        reg,
+        deer,
+        loss_func,
+        cost_mat,        
+        eps,
+        dust_const,
         dim_prior,
         dim,
-        loss_function,
         device,
-        dust_const,
-        MNIST,
-        OMNIGLOT,
-        CIFAR10,
-        FLOWERS102,
-        lr_gen,
-        lr_pred,
-        lr_factor,
+        test_sets,
         n_samples,
-        batchsize,
-        minibatch,
-        epochs,
+        batch_size,
+        minibatch_size,
+        n_epochs_pred,
+        gen_pred_ratio,
+        lr_pred,
+        lr_gen,
+        lr_factor,
+        learn_gen,
+        bootstrapped,
+        boot_no,
         test_iter,
-        learn_gen
+        n_test_samples,
         )
-
-# Unpack results
-train_losses, test_losses_rn, test_losses_rs, test_losses_mnist, test_losses_omniglot, test_losses_cifar, test_losses_flowers, rel_errs_rn, rel_errs_rs, rel_errs_mnist, rel_errs_omniglot, rel_errs_cifar, rel_errs_flowers = results
 
 # Testing mode
 deer.eval()
@@ -173,15 +189,7 @@ with open(output_file, 'w') as file:
         file.write(f"{key}: {value}\n")
 
 # Test warmstart
-X_rn = rando(100, dim, dust_const).double().to(device)
-X_rs = random_shapes_loader(100, dim, dust_const).double().to(device)
-X_mnist = test_sampler(MNIST, 100).double().to(device)
-X_omniglot = test_sampler(OMNIGLOT, 100).double().to(device)
-X_cifar = test_sampler(CIFAR10, 100).double().to(device)
-X_flowers = test_sampler(FLOWERS102, 100).double().to(device)
-
-test_warmstart(X_rn, C, dim, reg, puma, "Random Noise", f"{stamp_folder_path}/warmstart_rn.png")
-test_warmstart(X_mnist, C, dim, reg, puma, "MNIST", f"{stamp_folder_path}/warmstart_mnist.png")
-test_warmstart(X_omniglot, C, dim, reg, puma, "OMNIGLOT", f"{stamp_folder_path}/warmstart_omniglot.png")
-test_warmstart(X_cifar, C, dim, reg, puma, "CIFAR10", f"{stamp_folder_path}/warmstart_cifar.png")
-test_warmstart(X_flowers, C, dim, reg, puma, "FLOWERS102", f"{stamp_folder_path}/warmstart_flowers.png")
+for key in test_sets.keys():
+    X_test = test_sampler(test_sets[key], n_test_samples).double().to(device)
+    test_warmstart(puma, X_test, n_test_samples, cost_mat, eps, dim, key,
+                   device, dust_const, plot=True)

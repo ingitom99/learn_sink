@@ -4,7 +4,7 @@ Function(s) for generating cost matrices for the optimal transport problem.
 
 import torch
 
-def l2_cost_matrix(width : int, height : int, normed: bool = True
+def l2_cost_mat(width : int, height : int, normed: bool = True
                    ) -> torch.Tensor:
 
     """

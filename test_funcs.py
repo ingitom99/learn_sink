@@ -5,9 +5,12 @@ Auxiliary functions for testing the performance of the predictive network.
 import torch
 import ot 
 from sinkhorn_algos import sink_vec
-from utils import plot_XPT
+from utils import plot_XPT, test_set_sampler, plot_test_losses, plot_test_rel_errs
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+
+from utils import 
+from nets import PredNet
 
 def test_pred_loss(PredNet : torch.nn.Module, X : torch.Tensor,
                    C : torch.Tensor, eps : float, dim : int, loss_func,
@@ -136,7 +139,7 @@ def test_pred_dist(PredNet : torch.nn.Module, X : torch.Tensor,
   
 def test_warmstart(PredNet : torch.nn.Module, X : torch.Tensor,
                    C : torch.Tensor, eps : float, dim : int, plot : bool,
-                   title : str) -> float:
+                   title : str) -> tuple[list, list]:
   
     """
     Test the performance of the predictive network as a 'warmstart' for the 
@@ -161,8 +164,10 @@ def test_warmstart(PredNet : torch.nn.Module, X : torch.Tensor,
     
     Returns
     -------
-    rel_err_means : float
-        Mean relative error on the Wasserstein distance.
+    rel_err_means_pred : list
+        Mean relative error on the Wasserstein distance for predicted V0.
+    rel_err_means_ones : list
+        Mean relative error on the Wasserstein distance for vector of ones V0.
     """
 
     # Collecting the Wasserstein distances
@@ -180,7 +185,7 @@ def test_warmstart(PredNet : torch.nn.Module, X : torch.Tensor,
     V_ones = torch.ones_like(PredNet(X))
     MU = X[:, :dim]
     NU = X[:, dim:]
-    rel_err_means = []
+    rel_err_means_pred = []
     rel_err_means_ones = []
 
     # Looping over 1000 iterations of Sinkhorn algorithm
@@ -193,25 +198,24 @@ def test_warmstart(PredNet : torch.nn.Module, X : torch.Tensor,
         # Calculating the Sinkhorn distances for predicted V0
         dists_pred = []
         for u, v in zip(U_pred, V_pred):
-        G = torch.diag(u)@K@torch.diag(v)
-        dist_pred = torch.trace(C.T@G)
-        dists_pred.append(dist_pred)
+            G = torch.diag(u)@K@torch.diag(v)
+            dist_pred = torch.trace(C.T@G)
+            dists_pred.append(dist_pred)
         dists_pred = torch.tensor(dists_pred)
-        rel_errs = torch.abs(emds - dists_pred) / emds
-        rel_err_means.append(rel_errs.mean().item())
+        rel_errs_pred = torch.abs(emds - dists_pred) / emds
+        rel_err_means_pred.append(rel_errs_pred.mean().item())
         dists_ones = []
         U_ones = MU / (K @ V_ones.T).T
         V_ones = NU / (K.T @ U_ones.T).T
         for u, v in zip(U_ones, V_ones):
-        G = torch.diag(u)@K@torch.diag(v)
-        dist = torch.trace(C.T@G)
-        dists_ones.append(dist)
+            G = torch.diag(u)@K@torch.diag(v)
+            dist = torch.trace(C.T@G)
+            dists_ones.append(dist)
         dists_ones = torch.tensor(dists_ones)
         rel_errs_ones = torch.abs(emds - dists_ones) / emds
         rel_err_means_ones.append(rel_errs_ones.mean().item())
 
-    rel_err_means = torch.tensor(rel_err_means)
-    rel_err_means_ones = torch.tensor(rel_err_means_ones)
+
     plt.figure()
     plt.title(f"{title}")
     plt.xlabel('# Sinkhorn Iterations')
@@ -223,6 +227,40 @@ def test_warmstart(PredNet : torch.nn.Module, X : torch.Tensor,
     plt.plot(rel_err_means_ones, label="V0: ones")
     plt.legend()
     plt.savefig(path)
+    return rel_err_means_pred, rel_err_means_ones
+
+def test_loss(pred_net : PredNet, test_sets: dict, n_samples : int,
+              losses_test : dict, device : torch.device, C : torch.Tensor,
+              eps : float, dim : int, loss_func : callable, plot : bool):
+    """
+    """
+
+    for key in test_sets.keys():
+        X_test = test_set_sampler(test_sets[key], n_samples).double().to(device)
+        loss = test_pred_loss(pred_net, X_test, C, eps, dim, loss_func, 5000, False)
+        losses_test[key].append(loss)
+
+    if plot:
+        plot_test_losses(losses_test)
+
+    return None
+
+def test_rel_err(pred_net, test_set_dict, n_samples, rel_errs, device, C, eps,
+                   dim, plot):
+
+    """
+    """
+
+    for key in test_set_dict.keys():
+
+        X_test = test_set_sampler(test_set_dict[key], n_samples).double().to(device)
+        rel_err = test_pred_dist(pred_net, X_test, C, eps, dim, plot, key)
+        rel_errs[key].append(rel_err)
+        print(f"Rel err {key}: {rel_err}")
+
+    if plot:
+        plot_test_rel_errs(rel_errs)
+
     return None
 
 def sink2_vs_emd2(X : torch.Tensor, C : torch.Tensor, eps : float, dim : int

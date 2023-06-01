@@ -95,7 +95,7 @@ def prior_sampler(n_samples : int, dim : int) -> torch.Tensor:
 
     return samples
 
-def testset_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
+def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
 
     """
     Randomly sample from a given test set.

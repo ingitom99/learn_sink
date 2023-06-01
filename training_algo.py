@@ -22,18 +22,20 @@ def the_hunt(
         dim_prior : int,
         dim : int,
         device : torch.device,
+        test_sets: dict,
         n_samples : int,
         batch_size : int,
         minibatch_size: int,
-        n_epochs : int,
-        test_sets: dict,
+        n_epochs_pred : int,
+        gen_pred_ratio : float,
         lr_pred : float,
         lr_gen : float,
         lr_factor : float,
         learn_gen : bool,
         bootstrapped : bool,
         boot_no : int,
-        test_iter : int
+        test_iter : int,
+        n_test_samples : int,
         ) -> tuple[dict, dict, dict]:
     
     """
@@ -71,10 +73,10 @@ def the_hunt(
             # Setting networks to eval mode
             pred_net.eval()
 
-            test_loss(pred_net, test_sets, test_losses, device, C, eps, dim,
-                      loss_func, 5000)
-            test_rel_err(pred_net, test_sets, test_rel_errs, device, C, eps,
-                         dim, False)
+            test_loss(pred_net, test_sets, n_test_samples, test_losses, device,
+                      C, eps, dim, loss_func, True)
+            test_rel_err(pred_net, test_sets, test_rel_errs, n_test_samples, 
+                         device, C, eps, dim, True)
                     
         # Training Section
 
@@ -83,6 +85,7 @@ def the_hunt(
         if learn_gen:
             gen_net.train()
 
+        n_epochs_gen = int(gen_pred_ratio * n_epochs_pred)
 
         # Data creation
         if learn_gen:
@@ -95,7 +98,7 @@ def the_hunt(
 
          # Training generative neural net
         if learn_gen:
-            for e in range(n_epochs):
+            for e in range(n_epochs_gen):
                 perm = torch.randperm(batch_size).to(device)
                 X_e = X[perm]
                 for j in range(batch_size//minibatch_size):
@@ -127,7 +130,7 @@ def the_hunt(
                     gen_optimizer.step()
 
         # Training predictive neural net
-        for e in range(n_epochs):
+        for e in range(n_epochs_pred):
             perm = torch.randperm(batch_size).to(device)
             X_e = X[perm]
             for j in range(batch_size//minibatch_size):

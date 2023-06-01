@@ -77,7 +77,7 @@ class GenNet(nn.Module):
         return x
 
 # Predictive network class
-class pred_net(nn.Module):
+class PredNet(nn.Module):
 
     """
     Predictive network class.
