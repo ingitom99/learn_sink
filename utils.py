@@ -1,40 +1,41 @@
-# Imports
+"""
+Utility functions for this project.
+"""
+
 import torch
-import torchvision
 import numpy as np
 from skimage.draw import random_shapes
 import matplotlib.pyplot as plt
-
-
-def inf_norm_loss(u, v):
-
-  diff = torch.abs(u - v)
-  spectrum = torch.max(diff, dim=1)[0]
-  loss = spectrum.mean()
-  return loss
   
-def hilb_proj_loss(u, v):
-  """
-  Compute the mean Hilbert projective loss between a number of vector pairs.
+def hilb_proj_loss(U, V):
 
-  Inputs:
-    u: torch tensor of shape (n_samples, dim)
-      First set of vectors
-    v: torch tensor of shape (n_samples, dim)
-      Second set of vectors
+    """
+    Compute the mean Hilbert projective loss between a number of pairs
+    of vectors.
 
-  Returns:
-    loss: float
-      Mean Hilbert projective loss
-  """
-  diff = u - v
-  spectrum = torch.max(diff, dim=1)[0] - torch.min(diff, dim=1)[0]
-  loss = spectrum.mean()
-  return loss
+    Parameters
+    ----------
+    U : (n_samples, dim) torch.Tensor
+        First set of vectors.
+    V : (n_samples, dim) torch.Tensor
+        Second set of vectors.
+    
+    Returns
+    -------
+    loss : float
+        Loss value.
+    """
+
+    diff = U - V
+    spectrum = torch.max(diff, dim=1)[0] - torch.min(diff, dim=1)[0]
+    loss = spectrum.mean()
+
+    return loss
 
 def plot_XPT(X, P, T):
   """
-  Plot an example of a pair of samples and the corresponding prediction-target pair.
+  Plot an example of a pair of samples and the corresponding
+  prediction-target pair.
 
   Inputs:
     X: torch tensor of shape (n_samples, 2 * dim)

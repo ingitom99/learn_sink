@@ -1,15 +1,23 @@
+"""
+Let the hunt begin!
+"""
+# Imports
 import datetime
+import os
 import torch
 import matplotlib.pyplot as plt
 from cost_matrices import euclidean_cost_matrix
 from training_algorithm import the_hunt
 from nets import gen_net, pred_net
 from utils import hilb_proj_loss, test_sampler, rando, random_shapes_loader
-from data_creators import get_MNIST, get_OMNIGLOT, get_CIFAR10, get_FLOWERS102
+from data_creators import get_cifar, get_omniglot, get_mnist, get_flowers
 from test_funcs import test_warmstart
 
-# Stamp folder
-stamp_folder_path = "./stamp_i"
+# Create 'stamp' folder for saving results
+current_time = datetime.datetime.now()
+formatted_time = current_time.strftime("%m-%d_%H_%M_%S")
+stamp_folder_path = "./stamp_"+formatted_time
+os.mkdir(stamp_folder_path)
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -20,22 +28,23 @@ length_prior = 10
 length = 28
 dim_prior = length_prior**2
 dim = length**2
-dust_const = 1e-4
+dust_const = 1e-5
 skip_const = 0.2
 width = 4
 
 # Download testsets
-MNIST = get_MNIST(length, dust_const, download=False).double().to(device)
-OMNIGLOT = get_OMNIGLOT(length, dust_const, download=False).double().to(device)
-CIFAR10 = get_CIFAR10(length, dust_const, download=False).double().to(device)
-FLOWERS102 = get_FLOWERS102(length, dust_const, download=False).double().to(device)
+mnist = get_mnist(length, dust_const, download=True)
+omniglot = get_omniglot(length, dust_const, download=True)  
+cifar = get_cifar(length, dust_const, download=True)
+flowers = get_flowers(length, dust_const,  download=True)   
+
 
 # Initialization of cost matrix
 C = euclidean_cost_matrix(length, length, normed=True).double().to(device)
 
 # Regularization constant
-reg = C.max() * 6e-4
-print(f"Reg: {reg}")
+eps = C.max() * 6e-4
+print(f"Reg: {eps}")
 
 # Initialization of loss function
 loss_function = hilb_proj_loss
