@@ -25,12 +25,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Device: {device}')
 
 # Hyperparameters
-length_prior = 10
+length_prior = 14
 length = 28
 dim_prior = length_prior**2
 dim = length**2
 dust_const = 1e-5
-skip_const = 0.2
+skip_const = 0.3
 width_gen = 4 * dim
 width_pred = 4 * dim
 
@@ -58,7 +58,8 @@ print(f'Regularization parameter: {eps}')
 loss_func = hilb_proj_loss
 
 # Initialization of nets
-deer = GenNet(dim_prior, dim, width_gen, dust_const, skip_const).double().to(device)
+deer = GenNet(dim_prior, dim, width_gen, dust_const,
+              skip_const).double().to(device)
 puma = PredNet(dim, width_pred).double().to(device)
 
 # Load model state dict
@@ -136,7 +137,8 @@ hyperparams = {
     'regularization parameter': eps,
     'dust constant': dust_const,
     'skip connection constant': skip_const,
-    'hidden layer width': width_,
+    'hidden layer width gen': width_gen,
+    'hidden layer width pred': width_pred,
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,
     'learning rates scale factor': lr_factor,

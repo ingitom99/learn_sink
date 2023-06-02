@@ -94,7 +94,7 @@ def the_hunt(
                 # Data creation
                 sample = prior_sampler(batch_size,
                                        dim_prior).double().to(device)
-                X = gen_net(sample)
+                X_e = gen_net(sample)
                 for j in range(batch_size//minibatch_size):
                     X_mini = X_e[j*minibatch_size:(j+1)*minibatch_size]     
                     P_mini = pred_net(X_mini)

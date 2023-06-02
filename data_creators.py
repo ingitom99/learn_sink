@@ -103,8 +103,11 @@ def rand_shapes(n_samples : int, dim : int, dust_const : float,
             image2 = image2 /image2.sum()
             sample_b.append(image2.flatten())
 
+    sample_a = np.array(sample_a)
     sample_a = torch.tensor(sample_a)
+
     if pairs:
+        sample_b = np.array(sample_b)
         sample_b = torch.tensor(sample_b)
         sample = torch.cat((sample_a, sample_b), dim=1)
         return sample
