@@ -135,9 +135,10 @@ def test_pred_dist(PredNet : torch.nn.Module, X : torch.Tensor,
 
     return rel_errs_mean
   
-def test_warmstart(pred_net : PredNet, X : torch.Tensor,
-                   C : torch.Tensor, eps : float, dim : int, plot : bool,
-                   title : str) -> tuple[list, list]:
+import ot
+def test_warmstart(pred_net : PredNet, X : torch.Tensor, C : torch.Tensor,
+                   eps : float, dim : int, plot : bool, path : str
+                   ) -> tuple[list, list]:
   
     """
     Test the performance of the predictive network as a 'warmstart' for the 
@@ -155,10 +156,9 @@ def test_warmstart(pred_net : PredNet, X : torch.Tensor,
         Regularization parameter.
     dim : int
         Dimension of the probability distributions.
-    plot : bool
-        Whether to plot the results or not.
-    title : str
-        Title of the plot.
+    plot : str
+        Title of the plot, if None no plot.
+    path : str
     
     Returns
     -------
@@ -213,19 +213,19 @@ def test_warmstart(pred_net : PredNet, X : torch.Tensor,
         rel_errs_ones = torch.abs(emds - dists_ones) / emds
         rel_err_means_ones.append(rel_errs_ones.mean().item())
 
-
-    plt.figure()
-    plt.title(f"{title}")
-    plt.xlabel('# Sinkhorn Iterations')
-    plt.ylabel('Relative Error on Wasserstein Distance')
-    plt.grid()
-    plt.yticks(torch.arange(0, 1.0001, 0.05))
-    plt.axhline(y=rel_err_means[0], color='r', linestyle="dashed",
-                label='pred net 0th rel err')
-    plt.plot(rel_err_means, label="V0: pred net")
-    plt.plot(rel_err_means_ones, label="V0: ones")
-    plt.legend()
-    plt.savefig(path)
+    if plot:
+        plt.figure()
+        plt.title(f"Sinkhorn rel errors with emd2: {plot}")
+        plt.xlabel('# Sinkhorn Iterations')
+        plt.ylabel('Relative Error on Wasserstein Distance')
+        plt.grid()
+        plt.yticks(torch.arange(0, 1.0001, 0.05))
+        plt.axhline(y=rel_err_means_pred[0], color='r', linestyle="dashed",
+                    label='pred net 0th rel err')
+        plt.plot(rel_err_means_pred, label="V0: pred net")
+        plt.plot(rel_err_means_ones, label="V0: ones")
+        plt.legend()
+        plt.savefig(path)
     return rel_err_means_pred, rel_err_means_ones
 
 def test_loss(pred_net : PredNet, test_sets: dict, n_samples : int,

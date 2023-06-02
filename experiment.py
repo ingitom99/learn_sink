@@ -31,12 +31,13 @@ dim_prior = length_prior**2
 dim = length**2
 dust_const = 1e-5
 skip_const = 0.2
-width = 4 * dim
+width_gen = 4 * dim
+width_pred = 4 * dim
 
 # Create/download testsets
-rn = rand_noise(5000, dim, dust_const)
-rs = rand_shapes(5000, dim, dust_const)
-rn_rs = rand_noise_and_shapes(5000, dim, dust_const)
+rn = rand_noise(5000, dim, dust_const, False)
+rs = rand_shapes(5000, dim, dust_const, False)
+rn_rs = rand_noise_and_shapes(5000, dim, dust_const, False)
 mnist = get_mnist(length, dust_const, download=True)
 omniglot = get_omniglot(length, dust_const, download=True)  
 cifar = get_cifar(length, dust_const, download=True)
@@ -57,8 +58,8 @@ print(f'Regularization parameter: {eps}')
 loss_func = hilb_proj_loss
 
 # Initialization of nets
-deer = GenNet(dim_prior, dim, dust_const, skip_const).double().to(device)
-puma = PredNet(dim, width).double().to(device)
+deer = GenNet(dim_prior, dim, width_gen, dust_const, skip_const).double().to(device)
+puma = PredNet(dim, width_pred).double().to(device)
 
 # Load model state dict
 #deer.load_state_dict(torch.load(f'{stamp_folder_path}/deer.pt'))
@@ -72,15 +73,15 @@ puma.train()
 n_samples = 1000000
 batch_size = 2500
 minibatch_size = 500
-n_epochs_gen = 10
-n_epochs_pred = 10
+n_epochs_gen = 5
+n_epochs_pred = 5
 lr_pred = 0.1
 lr_gen = 0.1
-lr_factor = 0.999
-learn_gen = False
+lr_factor = 1.0
+learn_gen = True
 bootstrapped = True
 boot_no = 10
-test_iter = 100
+test_iter = 50
 n_test_samples = 100
 
 
@@ -135,7 +136,7 @@ hyperparams = {
     'regularization parameter': eps,
     'dust constant': dust_const,
     'skip connection constant': skip_const,
-    'hidden layer width': width,
+    'hidden layer width': width_,
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,
     'learning rates scale factor': lr_factor,
@@ -159,7 +160,9 @@ with open(output_file, 'w') as file:
         file.write(f'{key}: {value}\n')
 
 # Test warmstart
+test_warmstart_trials = {}
 for key in test_sets.keys():
-    X_test = test_set_sampler(test_sets[key], n_test_samples).double().to(device)
-    test_warmstart(puma, X_test, n_test_samples, cost_mat, eps, dim, key,
-                   device, dust_const, plot=True)
+    X_test = test_set_sampler(test_sets[key],
+                              n_test_samples).double().to(device)
+    test_warmstart_trials[key] = test_warmstart(puma, X_test, cost_mat, eps,
+                        dim, key, f'{stamp_folder_path}/warm_start_{key}.png')

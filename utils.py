@@ -124,22 +124,27 @@ def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
 
     return test_sample
 
-def plot_train_losses(losses_train : list, path: str = None) -> None:
+def plot_train_losses(train_losses : dict, path: str = None) -> None:
 
     """
     Plot the training losses.
 
     Parameters
     ----------
-    losses_train : list
-        List of training losses.
+    train_losses : list
+        Dictionary of generative and predictive training losses.
     """
-    log_losses = torch.log(torch.tensor(losses_train))
+    
     plt.figure()
-    plt.plot(log_losses)
-    plt.title('Log Train Losses')
+    
+    for key in train_losses.keys():
+        losses = train_losses[key]
+        plt.plot(losses, label=key)
+
+    plt.title('Train Losses')
     plt.xlabel('# minibatches')
     plt.ylabel('log loss')
+    plt.legend()
     plt.grid()
 
     if path:

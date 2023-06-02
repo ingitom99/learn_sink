@@ -5,11 +5,10 @@ Hunting time!
 # Imports
 import torch
 from tqdm import tqdm
-from test_funcs import sink_vec,  test_loss, test_rel_err
-from utils import prior_sampler
+from test_funcs import sink_vec, test_loss, test_rel_err
+from utils import prior_sampler, plot_train_losses, plot_test_losses, plot_test_rel_errs, plot_XPT
 from data_creators import rand_noise_and_shapes
 from nets import GenNet, PredNet
-
 
 
 def the_hunt(
@@ -43,7 +42,7 @@ def the_hunt(
     """
 
     # Initializing loss and relative error collectors
-    train_losses = {'pred': [], 'gen': []}
+    train_losses = {'gen': [], 'pred': []}
     test_losses = {}
     test_rel_errs = {}
     for i in test_sets.keys():
@@ -72,9 +71,15 @@ def the_hunt(
             pred_net.eval()
 
             test_loss(pred_net, test_sets, n_test_samples, test_losses, device,
-                      C, eps, dim, loss_func, True)
+                      C, eps, dim, loss_func, False)
+
             test_rel_err(pred_net, test_sets, test_rel_errs, n_test_samples, 
-                         device, C, eps, dim, True)
+                         device, C, eps, dim, False)
+            # Plot the results
+            plot_train_losses(train_losses, None)
+            plot_test_losses(test_losses, None)
+            plot_test_rel_errs(test_rel_errs, None)
+
                     
         # Training Section
 
@@ -83,20 +88,13 @@ def the_hunt(
         if learn_gen:
             gen_net.train()
 
-        # Data creation
-        if learn_gen:
-            sample = prior_sampler(batch_size, dim_prior).double().to(device)
-            X = gen_net(sample)
-
-        else:
-            X = rand_noise_and_shapes(batch_size, dim,
-                                           dust_const).double().to(device)
-
          # Training generative neural net
         if learn_gen:
             for e in range(n_epochs_gen):
-                perm = torch.randperm(batch_size).to(device)
-                X_e = X[perm]
+                # Data creation
+                sample = prior_sampler(batch_size,
+                                       dim_prior).double().to(device)
+                X = gen_net(sample)
                 for j in range(batch_size//minibatch_size):
                     X_mini = X_e[j*minibatch_size:(j+1)*minibatch_size]     
                     P_mini = pred_net(X_mini)
@@ -126,6 +124,14 @@ def the_hunt(
                     gen_optimizer.step()
 
         # Training predictive neural net
+        # Data creation
+        if learn_gen:
+            sample = prior_sampler(batch_size, dim_prior).double().to(device)
+            X = gen_net(sample)
+    
+        else:
+            X = rand_noise_and_shapes(batch_size, dim, dust_const,
+                                          True).double().to(device)
         for e in range(n_epochs_pred):
             perm = torch.randperm(batch_size).to(device)
             X_e = X[perm]
@@ -155,6 +161,10 @@ def the_hunt(
                 pred_loss.backward(retain_graph=True)
                 pred_optimizer.step()
 
+        if (i%5 == 0):
+            plot_XPT(X_mini[0], P_mini[0], T_mini[0], dim)
+
+
         # Updating learning rates
         if learn_gen:
             gen_scheduler.step()
@@ -163,9 +173,10 @@ def the_hunt(
         # Printing batch information
         print('------------------------------------------------')
         print(f"Batch: {i+1}")
-        print(f"Train loss: {pred_loss.item()}")
+        print((f"Train loss gen: {gen_loss.item()}"))
+        print(f"Train loss pred: {pred_loss.item()}")
         if learn_gen:
             print(f"gen lr: {gen_scheduler.get_last_lr()[0]}")
         print(f"pred lr: {pred_scheduler.get_last_lr()[0]}")
 
-        return train_losses, test_losses, test_rel_errs
+    return train_losses, test_losses, test_rel_errs
