@@ -120,7 +120,7 @@ def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
 
     return test_sample
 
-def plot_train_losses(losses_train : list) -> None:
+def plot_train_losses(losses_train : list, path: str = None) -> None:
 
     """
     Plot the training losses.
@@ -137,29 +137,38 @@ def plot_train_losses(losses_train : list) -> None:
     plt.xlabel('# minibatches')
     plt.ylabel('log loss')
     plt.grid()
-    plt.show()
+
+    if path:
+        plt.savefig(f'{path}')
+    else:
+        plt.show()
     
     return None
 
-def plot_test_losses(losses_test : dict[str, list]) -> None:
+def plot_test_losses(losses_test : dict[str, list], path: str = None) -> None:
 
     plt.figure()
+
     for key in losses_test.keys():
         log_data = torch.log(torch.tensor(losses_test[key]))
         plt.plot(log_data, label=key)
+
     plt.title('Log Test Losses')
     plt.xlabel('# test phases')
     plt.ylabel('log loss')
     plt.grid()
     plt.legend()
-    plt.show()
+
+    if path:
+        plt.savefig(f'{path}')
+    else:
+        plt.show()
 
     return None
 
 
 
-def plot_test_rel_errs(rel_errs):
-
+def plot_test_rel_errs(rel_errs : dict[str, list], path: str = None) -> None:
 
     plt.figure()
     for key in rel_errs.keys():
@@ -171,6 +180,10 @@ def plot_test_rel_errs(rel_errs):
     plt.yticks(torch.arange(0, 1.0001, 0.05))
     plt.grid()
     plt.legend()
-    plt.show()
+    
+    if path:
+        plt.savefig(f'{path}')
+    else:
+        plt.show()
 
     return None

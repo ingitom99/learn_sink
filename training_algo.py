@@ -9,14 +9,15 @@ from test_funcs import sink_vec
 from utils import prior_sampler
 from tester import test_loss, test_rel_err
 from data_creators import rand_noise_and_shapes
+from nets import GenNet, PredNet
 
 
 
 def the_hunt(
-        pred_net : torch.nn.Module,
-        gen_net : torch.nn.Module,
-        loss_func : function,
-        C : torch.Tensor,        
+        gen_net : GenNet,
+        pred_net : PredNet,
+        loss_func : callable,
+        C : torch.Tensor,    
         eps : float,
         dust_const : float,
         dim_prior : int,
@@ -27,7 +28,7 @@ def the_hunt(
         batch_size : int,
         minibatch_size: int,
         n_epochs_pred : int,
-        gen_pred_ratio : float,
+        n_epochs_gen : int,
         lr_pred : float,
         lr_gen : float,
         lr_factor : float,
@@ -53,8 +54,7 @@ def the_hunt(
     # Initializing optimizers
     pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
     if learn_gen:
-        gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_gen)
-    
+        gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_gen)   
 
     # Initializing learning rate scheduler
     pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer,
@@ -63,7 +63,6 @@ def the_hunt(
         gen_scheduler = torch.optim.lr_scheduler.ExponentialLR(gen_optimizer,
                                                                gamma=lr_factor)
     
-
     # Batch loop
     for i in tqdm(range(n_samples//batch_size)):
        
@@ -84,8 +83,6 @@ def the_hunt(
         pred_net.train()
         if learn_gen:
             gen_net.train()
-
-        n_epochs_gen = int(gen_pred_ratio * n_epochs_pred)
 
         # Data creation
         if learn_gen:
