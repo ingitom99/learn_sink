@@ -113,9 +113,13 @@ def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
         Random sample from the test set.
     """
 
-    rand_perm = torch.randperm(test_set.size(0))
-    rand_mask = rand_perm[:n_samples]
-    test_sample = test_set[rand_mask]
+    rand_perm_a = torch.randperm(test_set.size(0))
+    rand_mask_a = rand_perm_a[:n_samples]
+    test_sample_a = test_set[rand_mask_a]
+    rand_perm_b= torch.randperm(test_set.size(0))
+    rand_mask_b = rand_perm_b[:n_samples]
+    test_sample_b = test_set[rand_mask_b]
+    test_sample = torch.cat((test_sample_a, test_sample_b), dim=1)
     test_sample = torch.flatten(test_sample, start_dim=1)
 
     return test_sample

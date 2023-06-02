@@ -94,7 +94,7 @@ class PredNet(nn.Module):
             Width of the predictive network hidden layers.
         """
 
-        super(pred_net, self).__init__()
+        super(PredNet, self).__init__()
         self.dim = dim
         self.width = width
         self.l_1 = nn.Sequential(nn.Linear(2*dim, width), nn.BatchNorm1d(width),

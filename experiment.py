@@ -11,7 +11,7 @@ from cost_matrices import l2_cost_mat
 from training_algo import the_hunt
 from nets import GenNet, PredNet
 from utils import hilb_proj_loss, plot_train_losses, plot_test_losses, plot_test_rel_errs, test_set_sampler
-from data_creators import rand_noise, rand_shapes, rand_noise_and_shapes, get_cifar, get_omniglot, get_mnist, get_flowers,  random_shapes_loader, random_noise
+from data_creators import rand_noise, rand_shapes, rand_noise_and_shapes, get_cifar, get_omniglot, get_mnist, get_flowers
 from test_funcs import test_warmstart
 
 # Create 'stamp' folder for saving results

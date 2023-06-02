@@ -245,21 +245,21 @@ def test_loss(pred_net : PredNet, test_sets: dict, n_samples : int,
 
     return None
 
-def test_rel_err(pred_net, test_set_dict, n_samples, rel_errs, device, C, eps,
-                   dim, plot):
+def test_rel_err(pred_net : PredNet, test_sets : dict, test_rel_errs : dict,
+                 n_samples : int, device : torch.device, C : torch.tensor,
+                 eps : float, dim : int, plot : bool) -> None:
 
     """
     """
 
-    for key in test_set_dict.keys():
-
-        X_test = test_set_sampler(test_set_dict[key], n_samples).double().to(device)
+    for key in test_sets.keys():
+        X_test = test_set_sampler(test_sets[key], n_samples).double().to(device)
         rel_err = test_pred_dist(pred_net, X_test, C, eps, dim, plot, key)
-        rel_errs[key].append(rel_err)
+        test_rel_errs[key].append(rel_err)
         print(f"Rel err {key}: {rel_err}")
 
     if plot:
-        plot_test_rel_errs(rel_errs)
+        plot_test_rel_errs(test_rel_errs, path=None)
 
     return None
 
