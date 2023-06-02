@@ -161,7 +161,7 @@ def the_hunt(
                 pred_loss.backward(retain_graph=True)
                 pred_optimizer.step()
 
-        if (i%5 == 0):
+        if (i%10 == 0):
             plot_XPT(X_mini[0], P_mini[0], T_mini[0], dim)
 
 
