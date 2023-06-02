@@ -113,6 +113,41 @@ def rand_shapes(n_samples : int, dim : int, dust_const : float,
         return sample
     else:
         return sample_a
+    
+def get_lfw(length : int, dust_const : float, download: bool = True
+              ) -> (torch.Tensor):
+    
+    """
+    Get the lfw dataset and process it.
+
+    Parameters
+    ----------
+    length : int
+        Length of the reshaped images.
+    dust_const : float
+        Constant to add to the images to avoid zero entries.
+    download : bool, optional
+        Whether to download the dataset or not. The default is True.
+    
+    Returns
+    -------
+    lfw : (n_samples, length**2) torch.Tensor
+        Processed lfw dataset.
+    """
+    dataset = torchvision.datasets.LFWPeople(root='./data', download=True,
+                                transform=torchvision.transforms.Grayscale())
+    totensor = torchvision.transforms.ToTensor()
+    resizer = torchvision.transforms.Resize((length, length), antialias=True)
+    lfw = torch.zeros((len(dataset), length**2))
+    for i, data_point in enumerate(dataset):
+        img = totensor(data_point[0])
+        img = resizer(img).reshape(-1)
+        lfw[i] = img
+    lfw = lfw / torch.unsqueeze(lfw.sum(dim=1), 1)
+    lfw = lfw + dust_const
+    lfw = lfw / torch.unsqueeze(lfw.sum(dim=1), 1)
+    
+    return lfw 
 
 def rand_noise_and_shapes(n_samples : int, dim : int, dust_const : float,
                           pairs : bool) -> torch.Tensor:
