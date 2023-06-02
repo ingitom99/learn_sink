@@ -5,9 +5,8 @@ Hunting time!
 # Imports
 import torch
 from tqdm import tqdm
-from test_funcs import sink_vec
+from test_funcs import sink_vec,  test_loss, test_rel_err
 from utils import prior_sampler
-from tester import test_loss, test_rel_err
 from data_creators import rand_noise_and_shapes
 from nets import GenNet, PredNet
 

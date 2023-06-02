@@ -8,11 +8,9 @@ from sinkhorn_algos import sink_vec
 from utils import plot_XPT, test_set_sampler, plot_test_losses, plot_test_rel_errs
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-
-from utils import 
 from nets import PredNet
 
-def test_pred_loss(PredNet : torch.nn.Module, X : torch.Tensor,
+def test_pred_loss(pred_net : PredNet, X : torch.Tensor,
                    C : torch.Tensor, eps : float, dim : int, loss_func,
                    n_iters : int, plot : bool) -> float:
     """
@@ -46,7 +44,7 @@ def test_pred_loss(PredNet : torch.nn.Module, X : torch.Tensor,
 
     
                                       
-    P = PredNet(X)
+    P = pred_net(X)
 
     with torch.no_grad():
         V0 = torch.ones_like(X[:, :dim])
@@ -137,7 +135,7 @@ def test_pred_dist(PredNet : torch.nn.Module, X : torch.Tensor,
 
     return rel_errs_mean
   
-def test_warmstart(PredNet : torch.nn.Module, X : torch.Tensor,
+def test_warmstart(pred_net : PredNet, X : torch.Tensor,
                    C : torch.Tensor, eps : float, dim : int, plot : bool,
                    title : str) -> tuple[list, list]:
   
@@ -147,7 +145,7 @@ def test_warmstart(PredNet : torch.nn.Module, X : torch.Tensor,
 
     Parameters
     ----------
-    PredNet : torch.nn.Module
+    pred_net : PredNet
         Predictive network.
     X : (n_samples, 2*dim) torch.Tensor
         Pairs of probability distributions.
@@ -181,8 +179,8 @@ def test_warmstart(PredNet : torch.nn.Module, X : torch.Tensor,
 
     # Initiliazing Sinkhorn algorithm
     K = torch.exp(C/-eps)
-    V_pred = torch.exp(PredNet(X))
-    V_ones = torch.ones_like(PredNet(X))
+    V_pred = torch.exp(pred_net(X))
+    V_ones = torch.ones_like(V_pred)
     MU = X[:, :dim]
     NU = X[:, dim:]
     rel_err_means_pred = []
@@ -222,7 +220,8 @@ def test_warmstart(PredNet : torch.nn.Module, X : torch.Tensor,
     plt.ylabel('Relative Error on Wasserstein Distance')
     plt.grid()
     plt.yticks(torch.arange(0, 1.0001, 0.05))
-    plt.axhline(y=rel_err_means[0], color='r', linestyle="dashed", label='pred net 0th rel err')
+    plt.axhline(y=rel_err_means[0], color='r', linestyle="dashed",
+                label='pred net 0th rel err')
     plt.plot(rel_err_means, label="V0: pred net")
     plt.plot(rel_err_means_ones, label="V0: ones")
     plt.legend()
@@ -237,7 +236,8 @@ def test_loss(pred_net : PredNet, test_sets: dict, n_samples : int,
 
     for key in test_sets.keys():
         X_test = test_set_sampler(test_sets[key], n_samples).double().to(device)
-        loss = test_pred_loss(pred_net, X_test, C, eps, dim, loss_func, 5000, False)
+        loss = test_pred_loss(pred_net, X_test, C, eps, dim, loss_func,
+                              5000, False)
         losses_test[key].append(loss)
 
     if plot:
