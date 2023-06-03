@@ -48,7 +48,7 @@ test_sets = {'rn': rn, 'rs': rs, 'rn_rs': rn_rs, 'mnist': mnist,
              'omniglot': omniglot, 'cifar': cifar, 'flowers': flowers}
              
 # Initialization of cost matrix
-cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
+C = l2_cost_mat(length, length, normed=True).double().to(device)
 
 # Regularization parameter
 eps = cost_mat.max() * 6e-4
@@ -91,7 +91,7 @@ train_losses, test_losses, test_rel_errs = the_hunt(
         deer,
         puma,
         loss_func,
-        cost_mat,        
+        C,       
         eps,
         dust_const,
         dim_prior,
@@ -166,5 +166,5 @@ test_warmstart_trials = {}
 for key in test_sets.keys():
     X_test = test_set_sampler(test_sets[key],
                               n_test_samples).double().to(device)
-    test_warmstart_trials[key] = test_warmstart(puma, X_test, cost_mat, eps,
+    test_warmstart_trials[key] = test_warmstart(puma, X_test, C, eps,
                         dim, key, f'{stamp_folder_path}/warm_start_{key}.png')
