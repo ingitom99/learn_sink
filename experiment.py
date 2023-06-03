@@ -6,12 +6,11 @@ Let the hunt begin!
 import datetime
 import os
 import torch
-import matplotlib.pyplot as plt
 from cost_matrices import l2_cost_mat
 from training_algo import the_hunt
 from nets import GenNet, PredNet
 from utils import hilb_proj_loss, plot_train_losses, plot_test_losses, plot_test_rel_errs, test_set_sampler
-from data_creators import rand_noise, rand_shapes, rand_noise_and_shapes, get_cifar, get_omniglot, get_mnist, get_flowers
+from data_creators import rand_noise, get_cifar, get_omniglot, get_mnist, get_flowers, get_lfw
 from test_funcs import test_warmstart
 
 # Create 'stamp' folder for saving results
@@ -36,19 +35,17 @@ width_pred = 4 * dim
 
 # Create/download testsets
 rn = rand_noise(5000, dim, dust_const, False)
-rs = rand_shapes(5000, dim, dust_const, False)
-rn_rs = rand_noise_and_shapes(5000, dim, dust_const, False)
 mnist = get_mnist(length, dust_const, download=True)
 omniglot = get_omniglot(length, dust_const, download=True)  
 cifar = get_cifar(length, dust_const, download=True)
-flowers = get_flowers(length, dust_const,  download=True)   
+lfw = get_lfw(length, dust_const, download=True)   
 
 # Create test sets dictionary
-test_sets = {'rn': rn, 'rs': rs, 'rn_rs': rn_rs, 'mnist': mnist,
-             'omniglot': omniglot, 'cifar': cifar, 'flowers': flowers}
+test_sets = {'rn': rn, 'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
+             'lfw': lfw}
              
 # Initialization of cost matrix
-C = l2_cost_mat(length, length, normed=True).double().to(device)
+cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
 
 # Regularization parameter
 eps = cost_mat.max() * 6e-4
@@ -91,7 +88,7 @@ train_losses, test_losses, test_rel_errs = the_hunt(
         deer,
         puma,
         loss_func,
-        C,       
+        cost_mat,       
         eps,
         dust_const,
         dim_prior,
