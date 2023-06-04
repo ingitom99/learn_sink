@@ -81,48 +81,11 @@ bootstrapped = True
 boot_no = 10
 test_iter = 50
 n_test_samples = 100
+checkpoint = 200
+n_warmstart_samples = 50
 
-
-# Run the hunt
-train_losses, test_losses, test_rel_errs = the_hunt(
-        deer,
-        puma,
-        loss_func,
-        cost_mat,       
-        eps,
-        dust_const,
-        dim_prior,
-        dim,
-        device,
-        test_sets,
-        n_samples,
-        batch_size,
-        minibatch_size,
-        n_epochs_gen,
-        n_epochs_pred,
-        lr_pred,
-        lr_gen,
-        lr_factor,
-        learn_gen,
-        bootstrapped,
-        boot_no,
-        test_iter,
-        n_test_samples,
-        )
-
-# Testing mode
-deer.eval()
-puma.eval()
-
-# Saving nets
-torch.save(deer.state_dict(), f'{stamp_folder_path}/deer.pt')
-torch.save(puma.state_dict(), f'{stamp_folder_path}/puma.pt')
-
-# Plot the results
-plot_train_losses(train_losses, f'{stamp_folder_path}/train_losses.png')
-plot_test_losses(test_losses, f'{stamp_folder_path}/test_losses.png')
-plot_test_rel_errs(test_rel_errs, f'{stamp_folder_path}/test_rel_errs.png')
-
+# Create txt file in stamp for hyperparams
+current_date = datetime.datetime.now().strftime('%d.%m.%Y')
 # Create txt file in stamp for hyperparams
 current_date = datetime.datetime.now().strftime('%d.%m.%Y')
 hyperparams = {
@@ -148,6 +111,8 @@ hyperparams = {
     'learn gen?': learn_gen,
     'bootstrapped?': bootstrapped,
     'no. bootstraps': boot_no,
+    'checkpoint': checkpoint,
+    'no warmstart samples': n_warmstart_samples
 }
 
 # Define the output file path
@@ -157,6 +122,50 @@ output_file = f'{stamp_folder_path}/params.txt'
 with open(output_file, 'w') as file:
     for key, value in hyperparams.items():
         file.write(f'{key}: {value}\n')
+
+
+# Run the hunt
+train_losses, test_losses, test_rel_errs = the_hunt(
+        deer,
+        puma,
+        loss_func,
+        cost_mat,        
+        eps,
+        dust_const,
+        dim_prior,
+        dim,
+        device,
+        test_sets,
+        n_samples,
+        batch_size,
+        minibatch_size,
+        n_epochs_gen,
+        n_epochs_pred,
+        lr_pred,
+        lr_gen,
+        lr_factor,
+        learn_gen,
+        bootstrapped,
+        boot_no,
+        test_iter,
+        n_test_samples,
+        stamp_folder_path,
+        checkpoint,
+        n_warmstart_samples
+        )
+
+# Testing mode
+deer.eval()
+puma.eval()
+
+# Saving nets
+torch.save(deer.state_dict(), f'{stamp_folder_path}/deer.pt')
+torch.save(puma.state_dict(), f'{stamp_folder_path}/puma.pt')
+
+# Plot the results
+plot_train_losses(train_losses, f'{stamp_folder_path}/train_losses.png')
+plot_test_losses(test_losses, f'{stamp_folder_path}/test_losses.png')
+plot_test_rel_errs(test_rel_errs, f'{stamp_folder_path}/test_rel_errs.png')
 
 # Test warmstart
 test_warmstart_trials = {}

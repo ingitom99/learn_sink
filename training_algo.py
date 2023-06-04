@@ -35,6 +35,9 @@ def the_hunt(
         boot_no : int,
         test_iter : int,
         n_test_samples : int,
+        results_folder : str,
+        checkpoint : int,
+        n_warmstart_samples : int,
         ) -> tuple[dict, dict, dict]:
     
     """
@@ -163,6 +166,30 @@ def the_hunt(
 
         if (i%10 == 0):
             plot_XPT(X_mini[0], P_mini[0], T_mini[0], dim)
+
+        if ((i+1) % checkpoint == 0):
+            # Testing mode
+            deer.eval()
+            puma.eval()
+            # Saving nets
+            torch.save(deer.state_dict(), f'{results_folder}/deer.pt')
+            torch.save(puma.state_dict(), f'{results_folder}/puma.pt')
+            # Plot the results
+            plot_train_losses(train_losses,
+                              f'{results_folder}/train_losses.png')
+            plot_test_losses(test_losses,
+                             f'{results_folder}/test_losses.png')
+            plot_test_rel_errs(test_rel_errs,
+                               f'{results_folder}/test_rel_errs.png')
+            # Test warmstart
+            test_warmstart_trials = {}
+            for key in test_sets.keys():
+                X_test = test_set_sampler(test_sets[key],
+                                        n_warmstart_samples).double().to(device)
+                test_warmstart_trials[key] = test_warmstart(puma, X_test,
+                                    cost_mat, eps, dim, key,
+                                    f'{results_folder}/warm_start_{key}.png')
+            
 
 
         # Updating learning rates
