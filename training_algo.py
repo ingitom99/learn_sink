@@ -5,8 +5,8 @@ Hunting time!
 # Imports
 import torch
 from tqdm import tqdm
-from test_funcs import sink_vec, test_loss, test_rel_err
-from utils import prior_sampler, plot_train_losses, plot_test_losses, plot_test_rel_errs, plot_XPT
+from test_funcs import sink_vec, test_loss, test_rel_err, test_warmstart
+from utils import prior_sampler, plot_train_losses, plot_test_losses, plot_test_rel_errs, plot_XPT, test_set_sampler
 from data_creators import rand_noise_and_shapes
 from nets import GenNet, PredNet
 
@@ -15,7 +15,7 @@ def the_hunt(
         gen_net : GenNet,
         pred_net : PredNet,
         loss_func : callable,
-        C : torch.Tensor,    
+        cost_mat : torch.Tensor,    
         eps : float,
         dust_const : float,
         dim_prior : int,
@@ -74,10 +74,10 @@ def the_hunt(
             pred_net.eval()
 
             test_loss(pred_net, test_sets, n_test_samples, test_losses, device,
-                      C, eps, dim, loss_func, False)
+                      cost_mat, eps, dim, loss_func, False)
 
             test_rel_err(pred_net, test_sets, test_rel_errs, n_test_samples, 
-                         device, C, eps, dim, False)
+                         device, cost_mat, eps, dim, False)
             # Plot the results
             plot_train_losses(train_losses, None)
             plot_test_losses(test_losses, None)
@@ -105,15 +105,15 @@ def the_hunt(
                     with torch.no_grad():
                         if bootstrapped:
                             V0 = torch.exp(P_mini)
-                            V = sink_vec(X_mini[:, :dim], X_mini[:, dim:], C,
-                                         eps, V0, boot_no)
+                            V = sink_vec(X_mini[:, :dim], X_mini[:, dim:],
+                                         cost_mat, eps, V0, boot_no)
                             V = torch.log(V)
                             V = V - torch.unsqueeze(V.mean(dim=1),
                                                     1).repeat(1, dim)
                         else:
                             V0 = torch.ones_like(X_mini[:, :dim])
                             V = sink_vec(X_mini[:, :dim], X_mini[:, dim:],
-                                         C, eps, V0, 1000)
+                                         cost_mat, eps, V0, 1000)
                             V = torch.log(V)
                             V = V - torch.unsqueeze(V.mean(dim=1),
                                                     1).repeat(1, dim)
@@ -145,14 +145,14 @@ def the_hunt(
                 with torch.no_grad():
                     if bootstrapped:
                         V0 = torch.exp(P_mini)
-                        V = sink_vec(X_mini[:, :dim], X_mini[:, dim:], C, eps,
-                                    V0, boot_no)
+                        V = sink_vec(X_mini[:, :dim], X_mini[:, dim:], cost_mat,
+                                     eps, V0, boot_no)
                         V = torch.log(V)
                         V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
                     else:
                         V0 = torch.ones_like(X_mini[:, :dim])
-                        V = sink_vec(X_mini[:, :dim], X_mini[:, dim:], C, eps,
-                                    V0, 1500)
+                        V = sink_vec(X_mini[:, :dim], X_mini[:, dim:], cost_mat,
+                                     eps, V0, 1500)
                         V = torch.log(V)
                         V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
                 T_mini = V
@@ -164,16 +164,15 @@ def the_hunt(
                 pred_loss.backward(retain_graph=True)
                 pred_optimizer.step()
 
-        if (i%10 == 0):
-            plot_XPT(X_mini[0], P_mini[0], T_mini[0], dim)
 
+        # Checkpointing
         if ((i+1) % checkpoint == 0):
             # Testing mode
-            deer.eval()
-            puma.eval()
+            gen_net.eval()
+            pred_net.eval()
             # Saving nets
-            torch.save(deer.state_dict(), f'{results_folder}/deer.pt')
-            torch.save(puma.state_dict(), f'{results_folder}/puma.pt')
+            torch.save(gen_net.state_dict(), f'{results_folder}/deer.pt')
+            torch.save(pred_net.state_dict(), f'{results_folder}/puma.pt')
             # Plot the results
             plot_train_losses(train_losses,
                               f'{results_folder}/train_losses.png')
@@ -186,11 +185,12 @@ def the_hunt(
             for key in test_sets.keys():
                 X_test = test_set_sampler(test_sets[key],
                                         n_warmstart_samples).double().to(device)
-                test_warmstart_trials[key] = test_warmstart(puma, X_test,
+                test_warmstart_trials[key] = test_warmstart(pred_net, X_test,
                                     cost_mat, eps, dim, key,
                                     f'{results_folder}/warm_start_{key}.png')
-            
-
+        
+        if (i%50 == 0):
+            plot_XPT(X_mini[0], P_mini[0], T_mini[0], dim)
 
         # Updating learning rates
         if learn_gen:
