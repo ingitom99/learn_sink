@@ -31,6 +31,24 @@ def hilb_proj_loss(U, V):
 
     return loss
 
+def preprocessor(dataset, length, constant):
+    # Resize the dataset
+    resized_dataset = F.interpolate(dataset.unsqueeze(1), size=(length, length), mode='bilinear', align_corners=False).squeeze(1)
+
+    # Flatten the dataset
+    flattened_dataset = resized_dataset.view(-1, length**2)
+
+    # Normalize the dataset to sum to one in the second dimension
+    normalized_dataset = flattened_dataset / flattened_dataset.sum(dim=1, keepdim=True)
+
+    # Add a small constant value to each element
+    processed_dataset = normalized_dataset + constant
+
+    # Normalize the dataset again to sum to one in the second dimension
+    processed_dataset /= processed_dataset.sum(dim=1, keepdim=True)
+
+    return processed_dataset
+
 def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
              ) -> None:
 

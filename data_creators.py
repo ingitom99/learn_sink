@@ -7,12 +7,12 @@ import torchvision
 import numpy as np
 from skimage.draw import random_shapes
 
+
 def rand_noise(n_samples : int, dim : int, dust_const : float,
                pairs : bool) -> torch.Tensor:
 
     """
-    Create a sample of randomly masked, randomly exponentiated, random uniform
-    noise.
+    Create a sample of random uniform noise cubed.
 
     Parameters
     ----------
@@ -33,20 +33,13 @@ def rand_noise(n_samples : int, dim : int, dust_const : float,
     
     """
 
-    bernoulli_p = torch.rand((n_samples, 1))
-    bernoulli_p[bernoulli_p < 0.05] = 0.05
-    multiplier = torch.randint(1, 4, (n_samples, 1))
-    sample_a = torch.rand((n_samples, dim))
-    mask_a = torch.bernoulli(bernoulli_p * torch.ones_like(sample_a))
-    sample_a = (sample_a * mask_a)**multiplier
+    sample_a = torch.rand((n_samples, dim))**3
     sample_a /= torch.unsqueeze(sample_a.sum(dim=1), 1)
     sample_a = sample_a + dust_const
     sample_a /= torch.unsqueeze(sample_a.sum(dim=1), 1)
     
     if pairs:
-        sample_b = torch.rand((n_samples, dim))
-        mask_b = torch.bernoulli(bernoulli_p * torch.ones_like(sample_b))
-        sample_b = (sample_b * mask_b)**multiplier
+        sample_b = torch.rand((n_samples, dim))**3
         sample_b /= torch.unsqueeze(sample_b.sum(dim=1), 1)
         sample_b = sample_b + dust_const
         sample_b /= torch.unsqueeze(sample_b.sum(dim=1), 1)
@@ -55,7 +48,6 @@ def rand_noise(n_samples : int, dim : int, dust_const : float,
     
     else:
         return sample_a
-        
 
 def rand_shapes(n_samples : int, dim : int, dust_const : float,
                 pairs : bool) -> torch.Tensor:
