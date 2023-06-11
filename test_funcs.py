@@ -48,15 +48,15 @@ def test_pred_loss(pred_net : PredNet, X : torch.Tensor,
 
     with torch.no_grad():
         V0 = torch.ones_like(X[:, :dim])
-        V = sink_vec(X[:, :dim], X[:, dim:], C, eps, V0, n_iters)
+        V = sink_vec(X[:, :dim], X[:, dim:], C, eps, V0, n_iters)[1]
         V = torch.log(V)
-        V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
+        #V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
 
     T = V
     loss = loss_func(P, T).item()
 
     if plot:
-        plot_XPT(X, P, T)
+        plot_XPT(X[0], P[0], T[0], dim)
 
     return loss
 
@@ -237,7 +237,7 @@ def test_loss(pred_net : PredNet, test_sets: dict, n_samples : int,
     for key in test_sets.keys():
         X_test = test_set_sampler(test_sets[key], n_samples).double().to(device)
         loss = test_pred_loss(pred_net, X_test, C, eps, dim, loss_func,
-                              5000, False)
+                              2000, True)
         losses_test[key].append(loss)
 
     if plot:
@@ -300,7 +300,7 @@ def sink2_vs_emd2(X : torch.Tensor, C : torch.Tensor, eps : float, dim : int
     for x in X:
         sink_mu = x[:dim] / x[:dim].sum()
         sink_nu = x[dim:] / x[dim:].sum()
-        sink = ot.sinkhorn2(sink_mu, sink_nu, C, reg, numItermax=3000)
+        sink = ot.sinkhorn2(sink_mu, sink_nu, C, eps, numItermax=3000)
         sinks.append(sink)
     sinks = torch.tensor(sinks)
 

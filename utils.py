@@ -33,7 +33,8 @@ def hilb_proj_loss(U, V):
 
 def preprocessor(dataset, length, constant):
     # Resize the dataset
-    resized_dataset = F.interpolate(dataset.unsqueeze(1), size=(length, length), mode='bilinear', align_corners=False).squeeze(1)
+    resized_dataset = F.interpolate(dataset.unsqueeze(1), size=(length, length),
+                                    mode='bilinear', align_corners=False).squeeze(1)
 
     # Flatten the dataset
     flattened_dataset = resized_dataset.view(-1, length**2)
@@ -154,22 +155,25 @@ def plot_train_losses(train_losses : dict, path: str = None) -> None:
     """
     
     plt.figure()
-    
-    for key in train_losses.keys():
-        losses = train_losses[key]
-        plt.plot(losses, label=key)
-
-    plt.title('Train Losses')
-    plt.xlabel('# minibatches')
-    plt.ylabel('log loss')
-    plt.legend()
+    plt.subplot(1, 2, 1)
+    plt.plot(train_losses['gen'])
+    plt.title('Generative Training Loss')
+    plt.xlabel('# training phases')
+    plt.ylabel('loss')
     plt.grid()
+    plt.subplot(1, 2, 2)
+    plt.plot(train_losses['pred'])
+    plt.title('Predictive Training Loss')
+    plt.xlabel('# training phases')
+    plt.ylabel('loss')
+    plt.grid()
+    plt.tight_layout()
 
     if path:
         plt.savefig(f'{path}')
     else:
         plt.show()
-    
+
     return None
 
 def plot_test_losses(losses_test : dict[str, list], path: str = None) -> None:

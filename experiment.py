@@ -9,8 +9,7 @@ import torch
 from cost_matrices import l2_cost_mat
 from training_algo import the_hunt
 from nets import GenNet, PredNet
-from utils import hilb_proj_loss, plot_train_losses, plot_test_losses, plot_test_rel_errs, test_set_sampler
-from data_creators import rand_noise, get_cifar, get_omniglot, get_mnist, get_flowers, get_lfw
+from utils import hilb_proj_loss, plot_train_losses, plot_test_losses, plot_test_rel_errs, test_set_sampler, preprocessor
 from test_funcs import test_warmstart
 
 # Create 'stamp' folder for saving results
@@ -33,16 +32,19 @@ skip_const = 0.3
 width_gen = 4 * dim
 width_pred = 4 * dim
 
-# Create/download testsets
-rn = rand_noise(5000, dim, dust_const, False)
-mnist = get_mnist(length, dust_const, download=True)
-omniglot = get_omniglot(length, dust_const, download=True)  
-cifar = get_cifar(length, dust_const, download=True)
-lfw = get_lfw(length, dust_const, download=True)   
+mnist = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/mnist_tensor.pt')
+omniglot = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/omniglot_tensor.pt')
+cifar = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/cifar_tensor.pt')
+teddies = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/teddies_tensor.pt')
+
+mnist = preprocessor(mnist, length, dust_const)
+omniglot = preprocessor(omniglot, length, dust_const)
+cifar = preprocessor(cifar, length, dust_const)
+teddies = preprocessor(teddies, length, dust_const)
 
 # Create test sets dictionary
-test_sets = {'rn': rn, 'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
-             'lfw': lfw}
+test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
+             'teddies': teddies}
              
 # Initialization of cost matrix
 cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
@@ -59,6 +61,10 @@ deer = GenNet(dim_prior, dim, width_gen, dust_const,
               skip_const).double().to(device)
 puma = PredNet(dim, width_pred).double().to(device)
 
+# no. layers in each net
+n_layers_gen = len(deer.layers)
+n_layers_pred = len(puma.layers)
+
 # Load model state dict
 #deer.load_state_dict(torch.load(f'{stamp_folder_path}/deer.pt'))
 #puma.load_state_dict(torch.load(f'{stamp_folder_path}/puma.pt'))
@@ -68,24 +74,21 @@ deer.train()
 puma.train()
 
 # Training Hyperparams
-n_samples = 1000000
-batch_size = 2500
-minibatch_size = 500
-n_epochs_gen = 5
-n_epochs_pred = 5
-lr_pred = 0.1
+n_loops = 10000
+n_mini_loops_gen = 1
+n_mini_loops_pred = 1
+batch_size = 500
 lr_gen = 0.1
+lr_pred = 0.05
 lr_factor = 1.0
 learn_gen = True
 bootstrapped = True
-boot_no = 10
-test_iter = 50
-n_test_samples = 100
-checkpoint = 200
-n_warmstart_samples = 50
+boot_no = 30
+test_iter = 500
+n_test_samples = 50
+checkpoint = 50000000
+n_warmstart_samples = 25
 
-# Create txt file in stamp for hyperparams
-current_date = datetime.datetime.now().strftime('%d.%m.%Y')
 # Create txt file in stamp for hyperparams
 current_date = datetime.datetime.now().strftime('%d.%m.%Y')
 hyperparams = {
@@ -97,16 +100,19 @@ hyperparams = {
     'regularization parameter': eps,
     'dust constant': dust_const,
     'skip connection constant': skip_const,
+    'no. layers gen': n_layers_gen,
+    'no. layers pred': n_layers_pred,
     'hidden layer width gen': width_gen,
     'hidden layer width pred': width_pred,
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,
     'learning rates scale factor': lr_factor,
-    'no. unique data points': n_samples,
+    'no. unique data points gen': n_loops*n_mini_loops_gen*batch_size,
+    'no. unique data points pred': n_loops*n_mini_loops_pred*batch_size,
+    'no. loops' : n_loops,
+    'no. mini loops gen' : n_mini_loops_gen,
+    'no. mini loops pred' : n_mini_loops_pred,
     'batch size': batch_size,
-    'minibatch size': minibatch_size,
-    'gen net training epochs': n_epochs_gen,
-    'pred net training epochs': n_epochs_pred,
     'test_iter': test_iter,
     'learn gen?': learn_gen,
     'bootstrapped?': bootstrapped,
@@ -136,11 +142,10 @@ train_losses, test_losses, test_rel_errs = the_hunt(
         dim,
         device,
         test_sets,
-        n_samples,
+        n_loops,
+        n_mini_loops_gen,
+        n_mini_loops_pred,
         batch_size,
-        minibatch_size,
-        n_epochs_gen,
-        n_epochs_pred,
         lr_pred,
         lr_gen,
         lr_factor,
