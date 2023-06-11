@@ -3,6 +3,7 @@ Utility functions for this project.
 """
 
 import torch
+import torch.nn.functional as F
 import numpy as np
 from skimage.draw import random_shapes
 import matplotlib.pyplot as plt
