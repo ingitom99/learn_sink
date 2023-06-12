@@ -114,6 +114,7 @@ hyperparams = {
     'no. mini loops pred' : n_mini_loops_pred,
     'batch size': batch_size,
     'test_iter': test_iter,
+    'no. test samples': n_test_samples,
     'learn gen?': learn_gen,
     'bootstrapped?': bootstrapped,
     'no. bootstraps': boot_no,

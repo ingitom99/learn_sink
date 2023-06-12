@@ -104,7 +104,6 @@ def the_hunt(
                         V0 = torch.exp(P)
                         U, V = sink_vec(X[:, :dim], X[:, dim:],
                                         cost_mat, eps, V0, boot_no)
-                        U = torch.log(U)
                         V = torch.log(V)
                         #V = V - torch.unsqueeze(V.mean(dim=1),
                         #                       1).repeat(1, dim)
@@ -113,7 +112,7 @@ def the_hunt(
                         U, V = sink_vec(X[:, :dim], X[:, dim:],
                                         cost_mat, eps, V0, 1000)
                         V = torch.log(V)
-                        V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
+                        #V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
                     nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
                         V).any(dim=1))
 
@@ -146,8 +145,7 @@ def the_hunt(
                     U, V = sink_vec(X[:, :dim], X[:, dim:],
                                     cost_mat, eps, V0, boot_no)
                     U = torch.log(U)
-                    V = torch.log(V)
-                    V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
+                    V = torch.log(V
                 else:
                     V0 = torch.ones_like(X[:, :dim])
                     U, V = sink_vec(X[:, :dim], X[:, dim:],
