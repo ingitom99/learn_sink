@@ -145,7 +145,7 @@ def the_hunt(
                     U, V = sink_vec(X[:, :dim], X[:, dim:],
                                     cost_mat, eps, V0, boot_no)
                     U = torch.log(U)
-                    V = torch.log(V
+                    V = torch.log(V)
                 else:
                     V0 = torch.ones_like(X[:, :dim])
                     U, V = sink_vec(X[:, :dim], X[:, dim:],
