@@ -2,12 +2,12 @@ import torch
 
 def get_X_T(X, U, V, n_batch, dim, nan_mask, device, center=True):
     length = int(dim**0.5)
-    T = torch.zeros(8*n_batch, dim).double().to(device)
-    MU = torch.zeros(8*n_batch, dim).double().to(device)
-    NU = torch.zeros(8*n_batch, dim).double().to(device)
+    T = torch.zeros(4*n_batch, dim).double().to(device)
+    MU = torch.zeros(4*n_batch, dim).double().to(device)
+    NU = torch.zeros(4*n_batch, dim).double().to(device)
     for flip_i, flip in enumerate([False, True]):
-        for rot_i, rot in enumerate([0, 1, 2, 3]):
-            mini_i = flip_i*4 + rot_i
+        for rot_i, rot in enumerate([0, 2]):
+            mini_i = flip_i*2 + rot_i
             if flip:
                 MU_curr = X[:, dim:][nan_mask]
                 NU_curr = X[:, :dim][nan_mask]

@@ -77,9 +77,9 @@ puma.train()
 n_loops = 50000
 n_mini_loops_gen = 1
 n_mini_loops_pred = 1
-batch_size = 8*100
+batch_size = 4*200
 lr_gen = 0.1
-lr_pred = 0.01
+lr_pred = 0.05
 lr_factor = 1.0
 learn_gen = True
 bootstrapped = True
