@@ -27,15 +27,15 @@ length_prior = 14
 length = 28
 dim_prior = length_prior**2
 dim = length**2
-dust_const = 1e-5
-skip_const = 0.3
+dust_const = 5e-6
+skip_const = 0.8
 width_gen = 4 * dim
 width_pred = 4 * dim
 
-mnist = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/mnist_tensor.pt')
-omniglot = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/omniglot_tensor.pt')
-cifar = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/cifar_tensor.pt')
-teddies = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/teddies_tensor.pt')
+mnist = torch.load('./data/mnist_tensor.pt')
+omniglot = torch.load('./data/omniglot_tensor.pt')
+cifar = torch.load('./data/cifar_tensor.pt')
+teddies = torch.load('./data/teddies_tensor.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 omniglot = preprocessor(omniglot, length, dust_const)
@@ -74,20 +74,20 @@ deer.train()
 puma.train()
 
 # Training Hyperparams
-n_loops = 10000
+n_loops = 20000
 n_mini_loops_gen = 1
 n_mini_loops_pred = 1
 batch_size = 500
 lr_gen = 0.1
-lr_pred = 0.05
+lr_pred = 0.01
 lr_factor = 1.0
 learn_gen = True
 bootstrapped = True
-boot_no = 30
-test_iter = 500
-n_test_samples = 50
-checkpoint = 50000000
-n_warmstart_samples = 25
+boot_no = 40
+test_iter = 1000
+n_test_samples = 200
+checkpoint = 10000
+n_warmstart_samples = 50
 
 # Create txt file in stamp for hyperparams
 current_date = datetime.datetime.now().strftime('%d.%m.%Y')
