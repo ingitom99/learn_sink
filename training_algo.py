@@ -9,6 +9,7 @@ from test_funcs import sink_vec, test_loss, test_rel_err, test_warmstart
 from utils import prior_sampler, plot_train_losses, plot_test_losses, plot_test_rel_errs, plot_XPT, test_set_sampler
 from data_creators import rand_noise
 from nets import GenNet, PredNet
+from targets_creator import get_X_T
 
 
 def the_hunt(
@@ -43,6 +44,7 @@ def the_hunt(
 
     """
     length = int(dim**.5)
+    n_data = batch_size // 8
     # Initializing loss and relative error collectors
     train_losses = {'gen': [], 'pred': []}
     test_losses = {}
@@ -93,31 +95,29 @@ def the_hunt(
          # Training generative neural net
         if learn_gen:
             for loop in range(n_mini_loops_gen):
-                # Data creation
-                sample = prior_sampler(batch_size,
-                        dim_prior).double().to(device)
-                X = gen_net(sample)  
-                P = pred_net(X)
-                # Target creation
                 with torch.no_grad():
+                    sample = prior_sampler(n_data, dim_prior).double().to(device)
+                    X = gen_net(sample)  
+                    P = pred_net(X)
                     if bootstrapped:
                         V0 = torch.exp(P)
                         U, V = sink_vec(X[:, :dim], X[:, dim:],
                                         cost_mat, eps, V0, boot_no)
+                        U = torch.log(U)
                         V = torch.log(V)
-                        #V = V - torch.unsqueeze(V.mean(dim=1),
-                        #                       1).repeat(1, dim)
                     else:
                         V0 = torch.ones_like(X[:, :dim])
                         U, V = sink_vec(X[:, :dim], X[:, dim:],
                                         cost_mat, eps, V0, 1000)
+                        U = torch.log(U)
                         V = torch.log(V)
-                        #V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
-                    nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
-                        V).any(dim=1))
-
-                T = V[nan_mask]
-                P = P[nan_mask]
+                    nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V).any(dim=1)).to(device)
+                    n_batch = nan_mask.sum()
+                    X_gen, T_gen = get_X_T(X, U, V, n_batch, dim, nan_mask, device, center=True)
+                
+                X = X_gen
+                T = T_gen
+                P = pred_net(X)
 
                 gen_loss = -loss_func(P, T)
                 train_losses['gen'].append(gen_loss.item())
@@ -129,17 +129,15 @@ def the_hunt(
 
         # Training predictive neural net
         for loop in range(n_mini_loops_pred):
-            # Data creation
-            if learn_gen:
-                sample = prior_sampler(batch_size,
-                    dim_prior).double().to(device)
-                X = gen_net(sample)  
-            else:
-                X = rand_noise(batch_size, dim, dust_const,
-                               True).double().to(device)
-            P = pred_net(X)
-            # Target creation
             with torch.no_grad():
+                if learn_gen:
+                    sample = prior_sampler(n_data,
+                        dim_prior).double().to(device)
+                    X = gen_net(sample)  
+                else:
+                    X = rand_noise(n_data, dim, dust_const,
+                                True).double().to(device)
+                P = pred_net(X)
                 if bootstrapped:
                     V0 = torch.exp(P)
                     U, V = sink_vec(X[:, :dim], X[:, dim:],
@@ -152,41 +150,21 @@ def the_hunt(
                                     cost_mat, eps, V0, 1000)
                     U = torch.log(U)
                     V = torch.log(V)
-            nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V).any(dim=1))
-            for flip in [False, True]:
-                for rot in [0, 1, 2, 3]:
-                    if flip:
-                        MU = X[:, dim:][nan_mask]
-                        NU = X[:, :dim][nan_mask]
-                    else:
-                        MU = X[:, :dim][nan_mask]
-                        NU = X[:, dim:][nan_mask]
+                nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V).any(dim=1)).to(device)
+                n_batch = nan_mask.sum()
+                X_pred, T_pred = get_X_T(X, U, V, n_batch, dim, nan_mask, device, center=True)
 
-                    if (rot != 0):
-                        MU = torch.rot90(MU.reshape((-1,length, length)),
-                            k=rot, dims=(1, 2)).reshape((-1, dim))
-                        NU = torch.rot90(NU.reshape(-1,length, length),
-                            k=rot, dims=(1, 2)).reshape((-1, dim))
+            X = X_pred
+            T = T_pred
+            P = pred_net(X)
                     
-                    X_curr = torch.cat((MU, NU), dim=1)
-                    P = pred_net(X_curr)
+            pred_loss = loss_func(P, T)
+            train_losses['pred'].append(pred_loss.item())
 
-                    if flip:
-                        T = U[nan_mask]
-                    else:
-                        T = V[nan_mask]
-                    
-                    if (rot != 0):
-                        T = torch.rot90(T.reshape((-1,length, length)),
-                            k=rot, dims=(1, 2)).reshape((-1,dim))
-                    
-                    pred_loss = loss_func(P, T)
-                    train_losses['pred'].append(pred_loss.item())
-
-                    # Update
-                    pred_optimizer.zero_grad()
-                    pred_loss.backward(retain_graph=True)
-                    pred_optimizer.step()
+            # Update
+            pred_optimizer.zero_grad()
+            pred_loss.backward(retain_graph=True)
+            pred_optimizer.step()
 
 
         # Checkpointing
@@ -214,7 +192,7 @@ def the_hunt(
                                     f'{results_folder}/warm_start_{key}.png')
         
         if ((i+1) % test_iter == 0) or (i == 0):
-            plot_XPT(X_curr[0], P[0], T[0], dim)
+            plot_XPT(X[0], P[0], T[0], dim)
 
         # Updating learning rates
         if learn_gen:

@@ -74,10 +74,10 @@ deer.train()
 puma.train()
 
 # Training Hyperparams
-n_loops = 20000
+n_loops = 50000
 n_mini_loops_gen = 1
 n_mini_loops_pred = 1
-batch_size = 500
+batch_size = 8*100
 lr_gen = 0.1
 lr_pred = 0.01
 lr_factor = 1.0
