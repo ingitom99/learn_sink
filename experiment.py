@@ -177,5 +177,5 @@ test_warmstart_trials = {}
 for key in test_sets.keys():
     X_test = test_set_sampler(test_sets[key],
                               n_warmstart_samples).double().to(device)
-    test_warmstart_trials[key] = test_warmstart(puma, X_test, C, eps,
+    test_warmstart_trials[key] = test_warmstart(puma, X_test, cost_mat, eps,
                         dim, key, f'{stamp_folder_path}/warm_start_{key}.png')
