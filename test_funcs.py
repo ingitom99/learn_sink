@@ -50,9 +50,8 @@ def test_pred_loss(pred_net : PredNet, X : torch.Tensor,
         V0 = torch.ones_like(X[:, :dim])
         V = sink_vec(X[:, :dim], X[:, dim:], C, eps, V0, n_iters)[1]
         V = torch.log(V)
-        #V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
-
     T = V
+    T = T - torch.unsqueeze(T.mean(dim=1), 1).repeat(1, dim)
     loss = loss_func(P, T).item()
 
     if plot:
