@@ -156,13 +156,13 @@ def plot_train_losses(train_losses : dict, path: str = None) -> None:
     """
     
     plt.figure()
-    plt.subplot(1, 2, 1)
+    plt.subplot(2, 1, 1)
     plt.plot(train_losses['gen'])
     plt.title('Generative Training Loss')
     plt.xlabel('# training phases')
     plt.ylabel('loss')
     plt.grid()
-    plt.subplot(1, 2, 2)
+    plt.subplot(2, 1, 2)
     plt.plot(train_losses['pred'])
     plt.title('Predictive Training Loss')
     plt.xlabel('# training phases')
