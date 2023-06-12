@@ -50,7 +50,7 @@ test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
 cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
 
 # Regularization parameter
-eps = cost_mat.max() * 6e-4
+eps = cost_mat.max() * 4e-4
 print(f'Regularization parameter: {eps}')
 
 # Initialization of loss function
