@@ -84,6 +84,7 @@ lr_factor = 1.0
 learn_gen = True
 bootstrapped = True
 boot_no = 40
+extend_data = False
 test_iter = 1000
 n_test_samples = 200
 checkpoint = 10000
@@ -118,6 +119,7 @@ hyperparams = {
     'learn gen?': learn_gen,
     'bootstrapped?': bootstrapped,
     'no. bootstraps': boot_no,
+    'extend data?': extend_data,
     'checkpoint': checkpoint,
     'no warmstart samples': n_warmstart_samples
 }
@@ -153,6 +155,7 @@ train_losses, test_losses, test_rel_errs = the_hunt(
         learn_gen,
         bootstrapped,
         boot_no,
+        extend_data,
         test_iter,
         n_test_samples,
         stamp_folder_path,

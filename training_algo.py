@@ -9,7 +9,7 @@ from test_funcs import sink_vec, test_loss, test_rel_err, test_warmstart
 from utils import prior_sampler, plot_train_losses, plot_test_losses, plot_test_rel_errs, plot_XPT, test_set_sampler
 from data_creators import rand_noise
 from nets import GenNet, PredNet
-from targets_creator import get_X_T
+from extend_data import extend
 
 
 def the_hunt(
@@ -33,6 +33,7 @@ def the_hunt(
         learn_gen : bool,
         bootstrapped : bool,
         boot_no : int,
+        extend_data : bool,
         test_iter : int,
         n_test_samples : int,
         results_folder : str,
@@ -43,8 +44,7 @@ def the_hunt(
     """
 
     """
-    length = int(dim**.5)
-    n_data = batch_size // 8
+
     # Initializing loss and relative error collectors
     train_losses = {'gen': [], 'pred': []}
     test_losses = {}
@@ -96,24 +96,40 @@ def the_hunt(
         if learn_gen:
             for loop in range(n_mini_loops_gen):
                 with torch.no_grad():
+
+                    if extend_data:
+                        n_data = batch_size // 4
+                    else:
+                        n_data = batch_size
+
                     sample = prior_sampler(n_data, dim_prior).double().to(device)
-                    X = gen_net(sample)  
+                    X = gen_net(sample) 
+
                     P = pred_net(X)
+
                     if bootstrapped:
                         V0 = torch.exp(P)
-                        U, V = sink_vec(X[:, :dim], X[:, dim:],
-                                        cost_mat, eps, V0, boot_no)
+                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat, eps, V0, boot_no)
                         U = torch.log(U)
                         V = torch.log(V)
+
                     else:
                         V0 = torch.ones_like(X[:, :dim])
                         U, V = sink_vec(X[:, :dim], X[:, dim:],
                                         cost_mat, eps, V0, 1000)
                         U = torch.log(U)
                         V = torch.log(V)
+
                     nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V).any(dim=1)).to(device)
                     n_batch = nan_mask.sum()
-                    X_gen, T_gen = get_X_T(X, U, V, n_batch, dim, nan_mask, device, center=True)
+
+                    if extend_data:
+                        X_gen, T_gen = extend(X, U, V, n_batch, dim, nan_mask, device, center=True)
+
+                    else:
+                        X_gen = X[nan_mask]
+                        V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
+                        T_gen = V[nan_mask]
                 
                 X = X_gen
                 T = T_gen
@@ -130,29 +146,45 @@ def the_hunt(
         # Training predictive neural net
         for loop in range(n_mini_loops_pred):
             with torch.no_grad():
+
+                if extend_data:
+                    n_data = batch_size // 4
+                else:
+                    n_data = batch_size
+
                 if learn_gen:
                     sample = prior_sampler(n_data,
                         dim_prior).double().to(device)
-                    X = gen_net(sample)  
+                    X = gen_net(sample) 
+
                 else:
                     X = rand_noise(n_data, dim, dust_const,
                                 True).double().to(device)
-                P = pred_net(X)
+                    
                 if bootstrapped:
-                    V0 = torch.exp(P)
+                    V0 = torch.exp(pred_net(X))
                     U, V = sink_vec(X[:, :dim], X[:, dim:],
                                     cost_mat, eps, V0, boot_no)
                     U = torch.log(U)
                     V = torch.log(V)
+
                 else:
                     V0 = torch.ones_like(X[:, :dim])
                     U, V = sink_vec(X[:, :dim], X[:, dim:],
                                     cost_mat, eps, V0, 1000)
                     U = torch.log(U)
                     V = torch.log(V)
+                
                 nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V).any(dim=1)).to(device)
                 n_batch = nan_mask.sum()
-                X_pred, T_pred = get_X_T(X, U, V, n_batch, dim, nan_mask, device, center=True)
+
+                if extend_data:
+                    X_pred, T_pred = extend(X, U, V, n_batch, dim, nan_mask, device, center=True)
+                    
+                else:
+                    X_pred = X[nan_mask]
+                    V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
+                    T_pred = V[nan_mask]
 
             X = X_pred
             T = T_pred
