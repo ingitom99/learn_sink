@@ -95,23 +95,23 @@ def the_hunt(
          # Training generative neural net
         if learn_gen:
             for loop in range(n_mini_loops_gen):
+                
+                if extend_data:
+                    n_data = batch_size // 4
+                else:
+                    n_data = batch_size
+
+                sample = prior_sampler(n_data, dim_prior).double().to(device)
+                X = gen_net(sample) 
+
+                P = pred_net(X)
+
                 with torch.no_grad():
-
-                    if extend_data:
-                        n_data = batch_size // 4
-                    else:
-                        n_data = batch_size
-
-                    sample = prior_sampler(n_data, dim_prior).double().to(device)
-                    X = gen_net(sample) 
-
-                    P = pred_net(X)
-
                     if bootstrapped:
-                        V0 = torch.exp(P)
-                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat, eps, V0, boot_no)
-                        U = torch.log(U)
-                        V = torch.log(V)
+                            V0 = torch.exp(P)
+                            U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat, eps, V0, boot_no)
+                            U = torch.log(U)
+                            V = torch.log(V)
 
                     else:
                         V0 = torch.ones_like(X[:, :dim])
@@ -123,14 +123,14 @@ def the_hunt(
                     nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V).any(dim=1)).to(device)
                     n_batch = nan_mask.sum()
 
-                    if extend_data:
-                        X_gen, T_gen = extend(X, U, V, n_batch, dim, nan_mask, device, center=True)
+                if extend_data:
+                    X_gen, T_gen = extend(X, U, V, n_batch, dim, nan_mask, device, center=True)
 
-                    else:
-                        X_gen = X[nan_mask]
-                        V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
-                        T_gen = V[nan_mask]
-                
+                else:
+                    X_gen = X[nan_mask]
+                    V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
+                    T_gen = V[nan_mask]
+            
                 X = X_gen
                 T = T_gen
                 P = pred_net(X)
@@ -145,22 +145,22 @@ def the_hunt(
 
         # Training predictive neural net
         for loop in range(n_mini_loops_pred):
-            with torch.no_grad():
 
-                if extend_data:
-                    n_data = batch_size // 4
-                else:
-                    n_data = batch_size
+            if extend_data:
+                n_data = batch_size // 4
+            else:
+                n_data = batch_size
 
-                if learn_gen:
-                    sample = prior_sampler(n_data,
-                        dim_prior).double().to(device)
-                    X = gen_net(sample) 
+            if learn_gen:
+                sample = prior_sampler(n_data,
+                    dim_prior).double().to(device)
+                X = gen_net(sample) 
 
-                else:
-                    X = rand_noise(n_data, dim, dust_const,
-                                True).double().to(device)
-                    
+            else:
+                X = rand_noise(n_data, dim, dust_const,
+                            True).double().to(device)
+
+            with torch.no_grad(): 
                 if bootstrapped:
                     V0 = torch.exp(pred_net(X))
                     U, V = sink_vec(X[:, :dim], X[:, dim:],
@@ -178,13 +178,13 @@ def the_hunt(
                 nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V).any(dim=1)).to(device)
                 n_batch = nan_mask.sum()
 
-                if extend_data:
-                    X_pred, T_pred = extend(X, U, V, n_batch, dim, nan_mask, device, center=True)
-                    
-                else:
-                    X_pred = X[nan_mask]
-                    V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
-                    T_pred = V[nan_mask]
+            if extend_data:
+                X_pred, T_pred = extend(X, U, V, n_batch, dim, nan_mask, device, center=True)
+                
+            else:
+                X_pred = X[nan_mask]
+                V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
+                T_pred = V[nan_mask]
 
             X = X_pred
             T = T_pred
