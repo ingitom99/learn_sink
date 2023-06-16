@@ -28,9 +28,8 @@ def hilb_proj_loss(U, V):
 
     diff = U - V
     spectrum = torch.max(diff, dim=1)[0] - torch.min(diff, dim=1)[0]
-    loss = spectrum.mean()
 
-    return loss
+    return spectrum
 
 def preprocessor(dataset, length, constant):
     # Resize the dataset
@@ -50,6 +49,33 @@ def preprocessor(dataset, length, constant):
     processed_dataset /= processed_dataset.sum(dim=1, keepdim=True)
 
     return processed_dataset
+
+def normed_dusted(X : torch.Tensor, dust_const : float) -> torch.Tensor:
+
+    """
+    Add a small constant value to each element of a probability distribution.
+
+    Parameters
+    ----------
+    X : (n_samples, dim) torch.Tensor
+        Probability distributions.
+    dust_const : float
+        Constant value to add to each element of the probability distributions.
+    
+    Returns
+    -------
+    X : (n_samples, dim) torch.Tensor
+        Probability distributions with a small constant value added to each
+        element.
+    """
+
+    X = X / X.sum(dim=1, keepdim=True)
+    X = X + dust_const
+    X = X / X.sum(dim=1, keepdim=True)
+
+    return X
+
+
 
 def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
              ) -> None:

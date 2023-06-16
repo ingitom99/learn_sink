@@ -8,7 +8,7 @@ from sinkhorn_algos import sink_vec
 from utils import plot_XPT, test_set_sampler, plot_test_losses, plot_test_rel_errs
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from nets import PredNet
+from net import PredNet
 
 def test_pred_loss(pred_net : PredNet, X : torch.Tensor,
                    C : torch.Tensor, eps : float, dim : int, loss_func,
