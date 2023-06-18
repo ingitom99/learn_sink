@@ -10,7 +10,7 @@ from cost_matrices import l2_cost_mat
 from training_algo import the_hunt
 from net import PredNet
 from utils import hilb_proj_loss, plot_train_losses, plot_test_losses, plot_test_rel_errs, test_set_sampler, preprocessor
-from test import test_warmstart
+from test_funcs import test_warmstart
 
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
@@ -26,7 +26,7 @@ print(f'Device: {device}')
 length = 28
 dim = length**2
 dust_const = 5e-6
-mutation_sigma = 0.1
+mutation_sigma = 0.01
 width_pred = 4 * dim
 
 # Test sets
@@ -42,7 +42,7 @@ teddies = preprocessor(teddies, length, dust_const)
 
 test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
              'teddies': teddies}
-             
+
 # Initialization of cost matrix
 cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
 
@@ -66,15 +66,15 @@ n_layers_pred = len(puma.layers)
 puma.train()
 
 # Training Hyperparams
-n_loops = 5000
+n_loops = 50000
 n_batch = 500
-lr = 0.05
+lr = 0.01
 lr_factor = 1.0
 bootstrapped = True
-boot_no = 40
-test_iter = 500
-n_test_samples = 200
-checkpoint = 10000
+boot_no = 50
+test_iter = 1000
+n_test_samples = 50
+checkpoint = 10000000
 n_warmstart_samples = 50
 
 # Create txt file in stamp for hyperparams

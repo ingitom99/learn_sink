@@ -52,7 +52,8 @@ def test_pred_loss(pred_net : PredNet, X : torch.Tensor,
         V = torch.log(V)
     T = V
     T = T - torch.unsqueeze(T.mean(dim=1), 1).repeat(1, dim)
-    loss = loss_func(P, T).item()
+    loss = loss_func(P, T)
+    loss = loss.mean().item()
 
     if plot:
         plot_XPT(X[0], P[0], T[0], dim)
