@@ -77,7 +77,7 @@ puma.train()
 n_loops = 50000
 n_mini_loops_gen = 1
 n_mini_loops_pred = 1
-batch_size = 4*200
+batch_size = 500
 lr_gen = 0.1
 lr_pred = 0.05
 lr_factor = 1.0
@@ -105,6 +105,7 @@ hyperparams = {
     'no. layers pred': n_layers_pred,
     'hidden layer width gen': width_gen,
     'hidden layer width pred': width_pred,
+    'device': device,
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,
     'learning rates scale factor': lr_factor,
