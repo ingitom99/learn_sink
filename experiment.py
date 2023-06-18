@@ -87,6 +87,7 @@ hyperparams = {
     'dust constant': dust_const,
     'no. layers pred': n_layers_pred,
     'hidden layer width pred': width_pred,
+    'device': device,
     'learning rate': lr,
     'learning rates scale factor': lr_factor,
     'no. unique data points in training': n_loops*n_batch,
