@@ -7,8 +7,9 @@ from tqdm import tqdm
 from mutation import mutate
 from net import PredNet
 from sinkhorn import sink_vec
+from data_creators import rand_noise
 from utils import normed_dusted
-from test import test_loss, test_rel_err, test_warmstart
+from test_funcs import test_loss, test_rel_err, test_warmstart
 from utils import plot_train_losses, plot_test_losses, plot_test_rel_errs, plot_XPT, test_set_sampler
 
 
@@ -34,7 +35,7 @@ def the_hunt(
         n_warmstart_samples : int,
         results_folder: str,
         ):
-    
+
     # Initializing the optimizer
     optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr)
 
@@ -50,30 +51,36 @@ def the_hunt(
         test_rel_errs[i] = []
 
     # Initializing the worst point
-    x_worst = torch.rand(dim)
-    x_worst = x_worst / torch.sum(x_worst)
-    x_worst = x_worst + dust_const
-    x_worst = x_worst / torch.sum(x_worst)
-
+    x_worst = rand_noise(1, dim, dust_const, True).reshape(-1).double().to(device)
 
     for i in tqdm(range(n_loops)):
 
         # Testing Section
-        if ((i+1) % test_iter == 0) or (i == 0):
+        if ((i+1) % test_iter == 0): # or (i == 0):
 
             pred_net.eval()
 
             test_loss(pred_net, test_sets, n_test_samples, test_losses, device, cost_mat, eps, dim, loss_func, False)
             test_rel_err(pred_net, test_sets, test_rel_errs, n_test_samples, device, cost_mat, eps, dim, False)
-            
+
             plot_train_losses(train_losses, None)
             plot_test_losses(test_losses, None)
             plot_test_rel_errs(test_rel_errs, None)
-        
+
         # Generate data sampled around a point
 
-        X = mutate(x_worst, n_batch, dim, mutation_sigma)
-        X = normed_dusted(X, dust_const)
+        pred_net.train()
+
+        X = x_worst.repeat(n_batch, 1)
+        X = X + mutation_sigma * torch.randn(n_batch, 2*dim).double().to(device)
+        X = torch.nn.functional.relu(X)
+        X_a = X[:, :dim] / X[:, :dim].sum(dim=1, keepdim=True)
+        X_a = X_a + dust_const
+        X_a = X_a / X_a.sum(dim=1, keepdim=True)
+        X_b = X[:, dim:] / X[:, dim:].sum(dim=1, keepdim=True)
+        X_b = X_b + dust_const
+        X_b = X_b / X_b.sum(dim=1, keepdim=True)
+        X = torch.cat((X_a, X_b), dim=1)
 
         # Predictions and targets
         P = pred_net(X)
@@ -81,21 +88,22 @@ def the_hunt(
         with torch.no_grad():
             if bootstrapped:
                 V0 = torch.exp(P)
-                V = sink_vec(X[:, :dim], X[:, dim:], cost_mat, eps, V0, boot_no)[1]
+                U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat, eps, V0, boot_no)
                 V = torch.log(V)
 
             else:
                 V0 = torch.ones_like(X[:, :dim])
-                V = sink_vec(X[:, :dim], X[:, dim:], cost_mat, eps, V0, 1000)[1]
+                U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat, eps, V0, 1000)
+                U = torch.log(U)
                 V = torch.log(V)
 
             nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V).any(dim=1)).to(device)
-            n_batch = nan_mask.sum()
-        
+            #num = nan_mask.sum()
+
         X = X[nan_mask]
         P = P[nan_mask]
         T = V[nan_mask]
-        
+
         # Calculate loss
         loss = loss_func(P, T)
 
@@ -135,7 +143,7 @@ def the_hunt(
             for key in test_sets.keys():
                 X_test = test_set_sampler(test_sets[key], n_warmstart_samples).double().to(device)
                 test_warmstart_trials[key] = test_warmstart(pred_net, X_test, cost_mat, eps, dim, key, f'{results_folder}/warm_start_{key}.png')
-        
+
         if ((i+1) % test_iter == 0) or (i == 0):
             plot_XPT(X[0], P[0], T[0], dim)
 

@@ -29,7 +29,6 @@ dust_const = 5e-6
 mutation_sigma = 0.1
 width_pred = 4 * dim
 
-
 # Test sets
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')

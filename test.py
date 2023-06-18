@@ -1,4 +1,4 @@
-"""
+ """
 Auxiliary functions for testing the performance of the predictive network.
 """
 
