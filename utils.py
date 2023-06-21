@@ -4,8 +4,6 @@ Utility functions for this project.
 
 import torch
 import torch.nn.functional as F
-import numpy as np
-from skimage.draw import random_shapes
 import matplotlib.pyplot as plt
   
 def hilb_proj_loss(U, V):
@@ -92,57 +90,6 @@ def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
     plt.show()
 
     return None
-    
-def prior_sampler(n_samples : int, dim : int) -> torch.Tensor:
-
-    """
-    Sample from the prior distribution.
-
-    Parameters
-    ----------
-    n_samples : int
-        Number of samples.
-    dim : int
-        Dimension of the samples.
-
-    Returns
-    -------
-    samples : (n_samples, 2 * dim) torch.Tensor
-        Samples from the prior distribution.
-    """
-
-    samples = torch.randn((n_samples, 2 * dim))
-
-    return samples
-
-def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
-
-    """
-    Randomly sample from a given test set.
-
-    Parameters
-    ----------
-    test_set : (n_test_samples, 2 * dim) torch.Tensor
-        Test set.
-    n_samples : int
-        Number of samples.
-    
-    Returns
-    -------
-    test_sample : (n_samples, 2 * dim) torch.Tensor
-        Random sample from the test set.
-    """
-
-    rand_perm_a = torch.randperm(test_set.size(0))
-    rand_mask_a = rand_perm_a[:n_samples]
-    test_sample_a = test_set[rand_mask_a]
-    rand_perm_b= torch.randperm(test_set.size(0))
-    rand_mask_b = rand_perm_b[:n_samples]
-    test_sample_b = test_set[rand_mask_b]
-    test_sample = torch.cat((test_sample_a, test_sample_b), dim=1)
-    test_sample = torch.flatten(test_sample, start_dim=1)
-
-    return test_sample
 
 def plot_train_losses(train_losses : dict, path: str = None) -> None:
 
@@ -177,36 +124,13 @@ def plot_train_losses(train_losses : dict, path: str = None) -> None:
 
     return None
 
-def plot_test_losses(losses_test : dict[str, list], path: str = None) -> None:
-
-    plt.figure()
-
-    for key in losses_test.keys():
-        log_data = torch.log(torch.tensor(losses_test[key]))
-        plt.plot(log_data, label=key)
-
-    plt.title('Log Test Losses')
-    plt.xlabel('# test phases')
-    plt.ylabel('log loss')
-    plt.grid()
-    plt.legend()
-
-    if path:
-        plt.savefig(f'{path}')
-    else:
-        plt.show()
-
-    return None
-
-
-
-def plot_test_rel_errs(rel_errs : dict[str, list], path: str = None) -> None:
+def plot_test_rel_errs_emd(rel_errs : dict[str, list], path: str = None) -> None:
 
     plt.figure()
     for key in rel_errs.keys():
         data = rel_errs[key]
         plt.plot(data, label=key)
-    plt.title(' Rel Error: PredNet Dist VS ot.emd2')
+    plt.title(' Rel Error: PredNet Dist VS ot.emd2 (small eps)')
     plt.xlabel('# test phases')
     plt.ylabel('rel err')
     plt.yticks(torch.arange(0, 1.0001, 0.05))
@@ -219,3 +143,23 @@ def plot_test_rel_errs(rel_errs : dict[str, list], path: str = None) -> None:
         plt.show()
 
     return None
+
+def plot_test_rel_errs_sink(rel_errs : dict[str, list], path: str = None) -> None:
+    
+        plt.figure()
+        for key in rel_errs.keys():
+            data = rel_errs[key]
+            plt.plot(data, label=key)
+        plt.title(' Rel Error: PredNet Dist VS ot.sinkhorn2 (variable eps)')
+        plt.xlabel('# test phases')
+        plt.ylabel('rel err')
+        plt.yticks(torch.arange(0, 1.0001, 0.05))
+        plt.grid()
+        plt.legend()
+        
+        if path:
+            plt.savefig(f'{path}')
+        else:
+            plt.show()
+    
+        return None

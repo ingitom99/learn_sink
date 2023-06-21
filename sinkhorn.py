@@ -1,6 +1,6 @@
 """
-Implementing Sinkhorn algorithm for computing approximate solutions to the 
-entropic regularized optimal transport problem.
+Implementations the Sinkhorn algorithm for computing approximate solutions to
+the entropic regularized optimal transport problem.
 """
 
 # Imports
@@ -53,8 +53,9 @@ def sink(mu : torch.Tensor, nu : torch.Tensor, C : torch.Tensor, eps : float,
 
     return u, v, G, dist
 
-def sink_vec(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor, eps : float,
-             V0 : torch.Tensor, n_iters : int) -> torch.Tensor:
+def sink_vec(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor,
+             eps : torch.Tensor, V0 : torch.Tensor,
+             n_iters : int) -> torch.Tensor:
     
     """
     A vectorized version of the Sinkhorn algorithm for creating targets.
@@ -67,8 +68,8 @@ def sink_vec(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor, eps : float
         Second probability distributions.
     C : (dim, dim) torch.Tensor
         Cost matrix.
-    eps : float
-        Regularization parameter.
+    eps : (n_samples, 1) torch.Tensor
+        Regularization parameters.
     V0 : (n_samples, dim) torch.Tensor
         Initial guess for scaling factors V.
     n_iters : int
@@ -81,6 +82,7 @@ def sink_vec(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor, eps : float
     """
 
     K = torch.exp(-C/eps)
+
     V = V0
     
     for i in range(n_iters):
@@ -88,3 +90,49 @@ def sink_vec(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor, eps : float
         V = NU / (K.T @ U.T).T
 
     return U, V
+
+def sink_var_eps(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor,
+                 eps : torch.Tensor, V0 : torch.Tensor,
+                 n_iters : int) -> torch.Tensor:
+    """
+    An implementation of the Sinkhorn algorithm for variable regularization parameters.
+
+    Parameters
+    ----------
+    MU : (n_samples, dim) torch.Tensor
+        First probability distributions.
+    NU : (n_samples, dim) torch.Tensor
+        Second probability distributions.
+    C : (dim, dim) torch.Tensor
+        Cost matrix.
+    eps : (n_samples,) torch.Tensor
+        Regularization parameters.
+    V0 : (n_samples, dim) torch.Tensor
+        Initial guesses for scaling factors V.
+    n_iters : int
+        Maximum number of iterations.
+
+    Returns
+    -------
+    U : (n_samples, dim) torch.Tensor
+        1st Scaling factors.
+    V : (n_samples, dim) torch.Tensor
+        2nd Scaling factors.
+    """
+    U = torch.zeros_like(MU)
+    V = torch.zeros_like(NU)
+
+    for mu, nu, e, v0 in zip(MU, NU, eps, V0):
+
+        K = torch.exp(-C/e)
+        v = v0
+
+        for i in range(n_iters):
+            u = mu / (K @ v)
+            v = nu / (K.T @ u)
+
+        U[i] = u
+        V[i] = v
+
+    return U, V
+

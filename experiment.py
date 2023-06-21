@@ -3,34 +3,55 @@ Let the hunt begin!
 """
 
 # Imports
+import ot
 import datetime
 import os
 import torch
 from cost_matrices import l2_cost_mat
 from training_algo import the_hunt
 from nets import GenNet, PredNet
-from utils import hilb_proj_loss, plot_train_losses, plot_test_losses, plot_test_rel_errs, test_set_sampler, preprocessor
-from test_funcs import test_warmstart
+from utils import hilb_proj_loss, plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, preprocessor
 
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
 formatted_time = current_time.strftime('%m-%d_%H_%M_%S')
-stamp_folder_path = './stamp_'+formatted_time
+stamp_folder_path = './stamp_var_eps'+formatted_time
 os.mkdir(stamp_folder_path)
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Device: {device}')
 
-# Hyperparameters
-length_prior = 14
+# Scenario Hyperparams
+length_prior = 7
 length = 28
 dim_prior = length_prior**2
 dim = length**2
-dust_const = 5e-6
+dust_const = 1e-6
 skip_const = 0.8
-width_gen = 4 * dim
-width_pred = 4 * dim
+width_gen = 6 * dim
+width_pred = 6 * dim
+eps_test_const_val = 3e-4
+max_eps_var = 1e-2
+min_eps_var = 5e-4
+
+# Training Hyperparams
+n_loops = 50000
+n_mini_loops_gen = 1
+n_mini_loops_pred = 1
+n_batch = 500
+lr_gen = 0.05
+lr_pred = 0.05
+lr_factor = 1.0
+learn_gen = True
+bootstrapped = True
+boot_no = 50
+n_test = 500
+test_iter = 5000
+checkpoint = 10000
+
+# Initialization of cost matrix
+cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
 
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')
@@ -42,16 +63,46 @@ omniglot = preprocessor(omniglot, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
 teddies = preprocessor(teddies, length, dust_const)
 
+# Create random mask of n_test samples for each test set
+mask_mnist = torch.randperm(mnist.shape[0])[:n_test]
+mask_omniglot = torch.randperm(omniglot.shape[0])[:n_test]
+mask_cifar = torch.randperm(cifar.shape[0])[:n_test]
+mask_teddies = torch.randperm(teddies.shape[0])[:n_test]
+
+# Create test sets
+mnist = mnist[mask_mnist]
+omniglot = omniglot[mask_omniglot]
+cifar = cifar[mask_cifar]
+teddies = teddies[mask_teddies]
+
 # Create test sets dictionary
 test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
              'teddies': teddies}
-             
-# Initialization of cost matrix
-cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
 
-# Regularization parameter
-eps = cost_mat.max() * 4e-4
-print(f'Regularization parameter: {eps}')
+# create n_test x 1 vector of random epsilons
+eps_test_var = torch.rand(n_test, 1).double().to(device)
+eps_test_var = min_eps_var + (max_eps_var - min_eps_var) * eps_test_var
+
+eps_test_const = eps_test_const_val * torch.ones_like(eps_test_var) 
+
+# for each test set, create a dictionary of test emds and test sinks
+test_emd = {}
+test_sink = {}
+for key in test_sets.keys():
+    emds = []
+    sinks = []
+    for x, e in zip(test_sets[key], eps_test_var):
+
+        mu = x[:dim] / x[:dim].sum()
+        nu = x[dim:-1] / x[dim:-1].sum()
+        emd = ot.emd2(mu, nu, cost_mat)
+        emds.append(emd)
+        sink = ot.sinkhorn2(mu, nu, cost_mat, e, numItermax=2000)
+        sinks.append(sink)
+    emds = torch.tensor(emds)
+    sinks = torch.tensor(sinks)
+    test_emd[key] = emds
+    test_sink[key] = sinks
 
 # Initialization of loss function
 loss_func = hilb_proj_loss
@@ -73,23 +124,6 @@ n_layers_pred = len(puma.layers)
 deer.train()
 puma.train()
 
-# Training Hyperparams
-n_loops = 50000
-n_mini_loops_gen = 1
-n_mini_loops_pred = 1
-batch_size = 500
-lr_gen = 0.1
-lr_pred = 0.05
-lr_factor = 1.0
-learn_gen = True
-bootstrapped = True
-boot_no = 40
-extend_data = False
-test_iter = 1000
-n_test_samples = 200
-checkpoint = 10000
-n_warmstart_samples = 50
-
 # Create txt file in stamp for hyperparams
 current_date = datetime.datetime.now().strftime('%d.%m.%Y')
 hyperparams = {
@@ -98,7 +132,9 @@ hyperparams = {
     'data length': length,
     'prior distribution dimension': dim_prior,
     'data dimension': dim,
-    'regularization parameter': eps,
+    'small eps constant emd testing': eps_test_const_val,
+    'min eps var': min_eps_var,
+    'max eps var': max_eps_var,
     'dust constant': dust_const,
     'skip connection constant': skip_const,
     'no. layers gen': n_layers_gen,
@@ -109,59 +145,59 @@ hyperparams = {
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,
     'learning rates scale factor': lr_factor,
-    'no. unique data points gen': n_loops*n_mini_loops_gen*batch_size,
-    'no. unique data points pred': n_loops*n_mini_loops_pred*batch_size,
+    'no. unique data points gen': n_loops*n_mini_loops_gen*n_batch,
+    'no. unique data points pred': n_loops*n_mini_loops_pred*n_batch,
     'no. loops' : n_loops,
     'no. mini loops gen' : n_mini_loops_gen,
     'no. mini loops pred' : n_mini_loops_pred,
-    'batch size': batch_size,
+    'batch size': n_batch,
     'test_iter': test_iter,
-    'no. test samples': n_test_samples,
+    'no. test samples': n_test,
     'learn gen?': learn_gen,
     'bootstrapped?': bootstrapped,
     'no. bootstraps': boot_no,
-    'extend data?': extend_data,
     'checkpoint': checkpoint,
-    'no warmstart samples': n_warmstart_samples
 }
 
 # Define the output file path
 output_file = f'{stamp_folder_path}/params.txt'
 
 # Save the hyperparams to the text file
-with open(output_file, 'w') as file:
+with open(output_file, 'w', encoding='utf-8') as file:
     for key, value in hyperparams.items():
         file.write(f'{key}: {value}\n')
 
 
 # Run the hunt
-train_losses, test_losses, test_rel_errs = the_hunt(
+train_losses, test_rel_errs_emd, test_rel_errs_sink = the_hunt(
         deer,
         puma,
         loss_func,
-        cost_mat,        
-        eps,
+        cost_mat, 
+        min_eps_var,
+        max_eps_var,
+        eps_test_const,
+        eps_test_var,
         dust_const,
         dim_prior,
         dim,
         device,
         test_sets,
+        test_emd,
+        test_sink,
         n_loops,
         n_mini_loops_gen,
         n_mini_loops_pred,
-        batch_size,
+        n_batch,
         lr_pred,
         lr_gen,
         lr_factor,
         learn_gen,
         bootstrapped,
         boot_no,
-        extend_data,
         test_iter,
-        n_test_samples,
         stamp_folder_path,
         checkpoint,
-        n_warmstart_samples
         )
 
 # Testing mode
@@ -174,13 +210,7 @@ torch.save(puma.state_dict(), f'{stamp_folder_path}/puma.pt')
 
 # Plot the results
 plot_train_losses(train_losses, f'{stamp_folder_path}/train_losses.png')
-plot_test_losses(test_losses, f'{stamp_folder_path}/test_losses.png')
-plot_test_rel_errs(test_rel_errs, f'{stamp_folder_path}/test_rel_errs.png')
-
-# Test warmstart
-test_warmstart_trials = {}
-for key in test_sets.keys():
-    X_test = test_set_sampler(test_sets[key],
-                              n_warmstart_samples).double().to(device)
-    test_warmstart_trials[key] = test_warmstart(puma, X_test, cost_mat, eps,
-                        dim, key, f'{stamp_folder_path}/warm_start_{key}.png')
+plot_test_rel_errs_emd(test_rel_errs_emd,
+                       f'{stamp_folder_path}/test_rel_errs_emd.png')
+plot_test_rel_errs_sink(test_rel_errs_sink,
+                        f'{stamp_folder_path}/test_rel_errs_sink.png')
