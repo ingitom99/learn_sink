@@ -49,6 +49,21 @@ def preprocessor(dataset, length, constant):
 
     return processed_dataset
 
+def get_pred_dists(P, X, eps, C, dim):
+    dists = []
+    for p, x, e in zip(P, X, eps):
+        mu = x[:dim] / x[:dim].sum()
+        nu = x[dim:] / x[dim:].sum()
+        K = torch.exp(-C/e)
+        v = torch.exp(p)
+        u = mu / (K @ v)
+        v = nu / (K.T @ u)
+        G = torch.diag(u)@K@torch.diag(v)    
+        dist = torch.trace(C.T@G)
+        dists.append(dist)
+    dists = torch.tensor(dists)
+    return dists
+
 def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
              ) -> None:
 

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from sinkhorn import sink_var_eps
 from test_funcs import test_warmstart
-from utils import prior_sampler, plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, plot_XPT
+from utils import prior_sampler, plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, plot_XPT, get_pred_dists
 from data_creators import rand_noise
 from nets import GenNet, PredNet
 
@@ -86,8 +86,13 @@ def the_hunt(
                 X_test_eps_const = torch.cat((X_test, eps_test_const), dim=1)
                 X_test_eps_var = torch.cat((X_test, eps_test_var), dim=1)
 
-                pred_dist_const = pred_net(X_test_eps_const)
-                pred_dist_var = pred_net(X_test_eps_var)
+                P_const = pred_net(X_test_eps_const)
+                P_var = pred_net(X_test_eps_var)
+
+                pred_dist_const = get_pred_dists(P_const, X_test,
+                                                 eps_test_const, cost_mat, dim)
+                pred_dist_var = get_pred_dists(P_var, X_test,
+                                                  eps_test_var, cost_mat, dim)
 
                 emd = test_emd[j]
                 sink = test_sink[j]
