@@ -4,11 +4,9 @@ Hunting time!
 
 # Imports
 import torch
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 from sinkhorn import sink_var_eps
-from test_funcs import test_warmstart
-from utils import prior_sampler, plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, plot_XPT, get_pred_dists
+from utils import plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, plot_XPT, get_pred_dists
 from data_creators import rand_noise
 from nets import GenNet, PredNet
 
@@ -233,9 +231,6 @@ def the_hunt(
                                f'{results_folder}/test_rel_errs_emd.png')
             plot_test_rel_errs_sink(test_rel_errs_emd,
                                f'{results_folder}/test_rel_errs_sink.png')
-        
-        if ((i+2) % test_iter == test_iter//2) or (i == n_loops-1):
-            plt.close('all')
 
         # Updating learning rates
         if learn_gen:
