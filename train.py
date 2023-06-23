@@ -40,7 +40,6 @@ def the_hunt(
         test_iter : int,
         results_folder : str,
         checkpoint : int,
-        close_plots_iter : int,
         ) -> tuple[dict, dict, dict]:
 
     """
@@ -239,7 +238,7 @@ def the_hunt(
             gen_scheduler.step()
         pred_scheduler.step()
 
-        if ((i+1) % close_plots_iter == 0):
+        if ((i+2) % test_iter == 0):
             plt.close('all')
 
     return train_losses, test_rel_errs_emd, test_rel_errs_sink
