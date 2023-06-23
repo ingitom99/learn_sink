@@ -5,17 +5,17 @@ Hunting time!
 # Imports
 import torch
 from tqdm import tqdm
-from sinkhorn import sink_var_eps
 from utils import plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, plot_XPT, get_pred_dists
 from data_creators import rand_noise
 from nets import GenNet, PredNet
+from sinkhorn import sink_var_eps_vec
 
 
 def the_hunt(
         gen_net : GenNet,
         pred_net : PredNet,
         loss_func : callable,
-        cost_mat : torch.Tensor,    
+        cost_mat : torch.Tensor,
         min_eps_var : float,
         max_eps_var : float,
         eps_test_const : torch.Tensor,
@@ -41,7 +41,7 @@ def the_hunt(
         results_folder : str,
         checkpoint : int,
         ) -> tuple[dict, dict, dict]:
-    
+
     """
 
     """
@@ -57,7 +57,7 @@ def the_hunt(
     # Initializing optimizers
     pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
     if learn_gen:
-        gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_gen)   
+        gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_gen)
 
     # Initializing learning rate scheduler
     pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer,
@@ -65,7 +65,7 @@ def the_hunt(
     if learn_gen:
         gen_scheduler = torch.optim.lr_scheduler.ExponentialLR(gen_optimizer,
                                                                gamma=lr_factor)
-    
+
     # Batch loop
     for i in tqdm(range(n_loops)):
 
@@ -75,12 +75,12 @@ def the_hunt(
         pred_net.eval()
         if learn_gen:
             gen_net.eval()
-        
+
         # Testing predictive neural net
         if ((i+1) % test_iter == 0) or (i == 0):
             for j in test_sets.keys():
 
-                X_test = test_sets[j] 
+                X_test = test_sets[j]
                 X_test_eps_const = torch.cat((X_test, eps_test_const), dim=1)
                 X_test_eps_var = torch.cat((X_test, eps_test_var), dim=1)
 
@@ -101,11 +101,12 @@ def the_hunt(
                 test_rel_errs_emd[j].append(rel_errs_emd.mean().item())
                 test_rel_errs_sink[j].append(rel_errs_sink.mean().item())
 
-                plot_test_rel_errs_emd(test_rel_errs_emd)
-                plot_test_rel_errs_sink(test_rel_errs_sink)
-            
+            plot_test_rel_errs_emd(test_rel_errs_emd)
+            plot_test_rel_errs_sink(test_rel_errs_sink)
+
             plot_train_losses(train_losses)
-            plot_XPT(X[0, :2*dim], P[0], T[0], dim)
+            if (i !=0):
+                plot_XPT(X[0, :2*dim], P[0], T[0], dim)
 
 
         # Training Section
@@ -134,20 +135,20 @@ def the_hunt(
                 with torch.no_grad():
                     if bootstrapped:
                         V0 = torch.exp(pred_net(X_eps))
-                        U, V = sink_var_eps(MU, NU, cost_mat, eps, V0, boot_no)
+                        U, V = sink_var_eps_vec(MU, NU, cost_mat, eps, V0, boot_no)
                         U = torch.log(U)
                         V = torch.log(V)
 
                     else:
                         V0 = torch.ones_like(MU)
-                        U, V = sink_var_eps(MU, NU, cost_mat, eps, V0, 1000)
+                        U, V = sink_var_eps_vec(MU, NU, cost_mat, eps, V0, 1000)
                         U = torch.log(U)
                         V = torch.log(V)
-                    
-                    nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V
+
+                nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V
                                                         ).any(dim=1)).to(device)
-                    V = V[nan_mask] 
-            
+                V = V[nan_mask]
+
                 X = X_eps[nan_mask]
                 T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
                 P = pred_net(X)
@@ -176,7 +177,7 @@ def the_hunt(
                                ).double().to(device)
                 MU = X[:, :dim]
                 NU = X[:, dim:]
-                
+
             eps = torch.rand(n_batch, 1).double().to(device)
             eps = min_eps_var + (max_eps_var - min_eps_var) * eps
 
@@ -186,24 +187,24 @@ def the_hunt(
 
                 if bootstrapped:
                     V0 = torch.exp(pred_net(X_eps))
-                    U, V = sink_var_eps(MU, NU, cost_mat, eps, V0, boot_no)
+                    U, V = sink_var_eps_vec(MU, NU, cost_mat, eps, V0, boot_no)
                     U = torch.log(U)
                     V = torch.log(V)
 
                 else:
                     V0 = torch.ones_like(MU)
-                    U, V = sink_var_eps(MU, NU, cost_mat, eps, V0, 1000)
+                    U, V = sink_var_eps_vec(MU, NU, cost_mat, eps, V0, 1000)
                     U = torch.log(U)
                     V = torch.log(V)
-                
+
                 nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(V
                                                     ).any(dim=1)).to(device)
                 V = V[nan_mask]
 
             X = X_eps[nan_mask]
-            T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim) 
+            T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
             P = pred_net(X)
-                    
+
             pred_loss = loss_func(P, T)
             train_losses['pred'].append(pred_loss.item())
 

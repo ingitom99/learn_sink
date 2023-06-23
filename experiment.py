@@ -10,12 +10,12 @@ import torch
 from cost_matrices import l2_cost_mat
 from training_algo import the_hunt
 from nets import GenNet, PredNet
-from utils import hilb_proj_loss, plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, preprocessor
+from utils import hilb_proj_loss, plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, preprocessor, test_set_sampler
 
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
 formatted_time = current_time.strftime('%m-%d_%H_%M_%S')
-stamp_folder_path = './stamp_var_eps'+formatted_time
+stamp_folder_path = './stamp_var_eps_'+formatted_time
 os.mkdir(stamp_folder_path)
 
 # Device
@@ -28,27 +28,27 @@ length = 28
 dim_prior = length_prior**2
 dim = length**2
 dust_const = 1e-6
-skip_const = 0.8
+skip_const = 0.5
 width_gen = 6 * dim
 width_pred = 6 * dim
 eps_test_const_val = 3e-4
-max_eps_var = 1e-2
+max_eps_var = 5e-2
 min_eps_var = 5e-4
 
 # Training Hyperparams
-n_loops = 50000
-n_mini_loops_gen = 1
-n_mini_loops_pred = 1
-n_batch = 500
-lr_gen = 0.05
-lr_pred = 0.05
-lr_factor = 1.0
+n_loops = 10000
+n_mini_loops_gen = 3
+n_mini_loops_pred = 3
+n_batch = 300
+lr_gen = 0.1
+lr_pred = 0.1
+lr_factor = 0.9998
 learn_gen = True
 bootstrapped = True
-boot_no = 50
-n_test = 500
-test_iter = 5000
-checkpoint = 10000
+boot_no = 30
+n_test = 100
+test_iter = 1000
+checkpoint = 1000000
 
 # Initialization of cost matrix
 cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
@@ -63,17 +63,10 @@ omniglot = preprocessor(omniglot, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
 teddies = preprocessor(teddies, length, dust_const)
 
-# Create random mask of n_test samples for each test set
-mask_mnist = torch.randperm(mnist.shape[0])[:n_test]
-mask_omniglot = torch.randperm(omniglot.shape[0])[:n_test]
-mask_cifar = torch.randperm(cifar.shape[0])[:n_test]
-mask_teddies = torch.randperm(teddies.shape[0])[:n_test]
-
-# Create test sets
-mnist = mnist[mask_mnist]
-omniglot = omniglot[mask_omniglot]
-cifar = cifar[mask_cifar]
-teddies = teddies[mask_teddies]
+mnist = test_set_sampler(mnist, n_test).double().to(device)
+omniglot = test_set_sampler(omniglot, n_test).double().to(device)
+cifar = test_set_sampler(cifar, n_test).double().to(device)
+teddies = test_set_sampler(teddies, n_test).double().to(device)
 
 # Create test sets dictionary
 test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
@@ -82,8 +75,7 @@ test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
 # create n_test x 1 vector of random epsilons
 eps_test_var = torch.rand(n_test, 1).double().to(device)
 eps_test_var = min_eps_var + (max_eps_var - min_eps_var) * eps_test_var
-
-eps_test_const = eps_test_const_val * torch.ones_like(eps_test_var) 
+eps_test_const = eps_test_const_val * torch.ones_like(eps_test_var)
 
 # for each test set, create a dictionary of test emds and test sinks
 test_emd = {}
@@ -94,7 +86,7 @@ for key in test_sets.keys():
     for x, e in zip(test_sets[key], eps_test_var):
 
         mu = x[:dim] / x[:dim].sum()
-        nu = x[dim:-1] / x[dim:-1].sum()
+        nu = x[dim:] / x[dim:].sum()
         emd = ot.emd2(mu, nu, cost_mat)
         emds.append(emd)
         sink = ot.sinkhorn2(mu, nu, cost_mat, e, numItermax=2000)
@@ -173,7 +165,7 @@ train_losses, test_rel_errs_emd, test_rel_errs_sink = the_hunt(
         deer,
         puma,
         loss_func,
-        cost_mat, 
+        cost_mat,
         min_eps_var,
         max_eps_var,
         eps_test_const,

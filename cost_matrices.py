@@ -1,5 +1,5 @@
 """
-Function(s) for generating cost matrices for the optimal transport problem.
+Function(s) for generating cost matricesoptimal transport problems.
 """
 
 import torch
@@ -8,7 +8,7 @@ def l2_cost_mat(width : int, height : int, normed: bool = True
                    ) -> torch.Tensor:
 
     """
-    Create an L2 distance cost matrix for the optimal transport problem.
+    Create an L2 distance cost matrix.
 
     Parameters
     ----------

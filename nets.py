@@ -41,8 +41,10 @@ class GenNet(nn.Module):
                                  nn.BatchNorm1d(width), nn.ELU())
         self.l_3 = nn.Sequential(nn.Linear(width, width),
                                  nn.BatchNorm1d(width), nn.ELU())
-        self.l_4 = nn.Sequential(nn.Linear(width, 2*dim), nn.Sigmoid())
-        self.layers = [self.l_1, self.l_2, self.l_3, self.l_4]
+        self.l_4 = nn.Sequential(nn.Linear(width, width),
+                                 nn.BatchNorm1d(width), nn.ELU())
+        self.l_5 = nn.Sequential(nn.Linear(width, 2*dim), nn.Sigmoid())
+        self.layers = [self.l_1, self.l_2, self.l_3, self.l_4, self.l_5]
 
     def forward(self, x):
 
@@ -100,8 +102,10 @@ class PredNet(nn.Module):
                                  nn.ELU())
         self.l_3 = nn.Sequential(nn.Linear(width, width), nn.BatchNorm1d(width),
                                  nn.ELU())
-        self.l_4 = nn.Sequential(nn.Linear(width, dim))
-        self.layers = [self.l_1, self.l_2, self.l_3, self.l_4]
+        self.l_3 = nn.Sequential(nn.Linear(width, width), nn.BatchNorm1d(width),
+                                 nn.ELU())
+        self.l_5 = nn.Sequential(nn.Linear(width, dim))
+        self.layers = [self.l_1, self.l_2, self.l_3, self.l_4, self.l_5]
 
     def forward(self, x):
         for layer in self.layers:
