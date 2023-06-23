@@ -8,7 +8,7 @@ import datetime
 import os
 import torch
 from cost_matrices import l2_cost_mat
-from training_algo import the_hunt
+from train import the_hunt
 from nets import GenNet, PredNet
 from utils import hilb_proj_loss, plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, preprocessor, test_set_sampler
 
@@ -45,7 +45,7 @@ lr_pred = 0.1
 lr_factor = 0.9998
 learn_gen = True
 bootstrapped = True
-boot_no = 30
+boot_no = 40
 n_test = 100
 test_iter = 1000
 checkpoint = 1000000
