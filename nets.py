@@ -39,15 +39,13 @@ class GenNet(nn.Module):
                                  nn.BatchNorm1d(width), nn.ELU())
         self.l_2 = nn.Sequential(nn.Linear(width, width),
                                  nn.BatchNorm1d(width), nn.ELU())
-        self.l_3 = nn.Sequential(nn.Linear(width, width),
-                                 nn.BatchNorm1d(width), nn.ELU())
-        self.l_4 = nn.Sequential(nn.Linear(width, 2*dim), nn.Sigmoid())
-        self.layers = [self.l_1, self.l_2, self.l_3, self.l_4]
+        self.l_3 = nn.Sequential(nn.Linear(width, 2*dim), nn.Sigmoid())
+        self.layers = [self.l_1, self.l_2, self.l_3]
 
     def forward(self, x):
 
         # Creating a reshaped copy of the input to use as a skip connection
-        x_0 = x.detach().clone().reshape(2, x.size(0), self.length_prior,
+        x_0 = x.reshape(2, x.size(0), self.length_prior,
                                             self.length_prior)
         transform = torchvision.transforms.Resize(
             (self.length, self.length),
@@ -101,8 +99,10 @@ class PredNet(nn.Module):
                                  nn.ELU())
         self.l_3 = nn.Sequential(nn.Linear(width, width), nn.BatchNorm1d(width),
                                  nn.ELU())
-        self.l_4 = nn.Sequential(nn.Linear(width, dim))
-        self.layers = [self.l_1, self.l_2, self.l_3, self.l_4]
+        self.l_4 = nn.Sequential(nn.Linear(width, width), nn.BatchNorm1d(width),
+                            nn.ELU())
+        self.l_5 = nn.Sequential(nn.Linear(width, dim))
+        self.layers = [self.l_1, self.l_2, self.l_3, self.l_4, self.l_5]
 
     def forward(self, x):
         for layer in self.layers:
