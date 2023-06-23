@@ -64,6 +64,35 @@ def get_pred_dists(P, X, eps, C, dim):
     dists = torch.tensor(dists)
     return dists
 
+def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
+
+    """
+    Randomly sample from a given test set.
+
+    Parameters
+    ----------
+    test_set : (n_test_samples, 2 * dim) torch.Tensor
+        Test set.
+    n_samples : int
+        Number of samples.
+    
+    Returns
+    -------
+    test_sample : (n_samples, 2 * dim) torch.Tensor
+        Random sample from the test set.
+    """
+
+    rand_perm_a = torch.randperm(test_set.size(0))
+    rand_mask_a = rand_perm_a[:n_samples]
+    test_sample_a = test_set[rand_mask_a]
+    rand_perm_b= torch.randperm(test_set.size(0))
+    rand_mask_b = rand_perm_b[:n_samples]
+    test_sample_b = test_set[rand_mask_b]
+    test_sample = torch.cat((test_sample_a, test_sample_b), dim=1)
+    test_sample = torch.flatten(test_sample, start_dim=1)
+
+    return test_sample
+
 def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
              ) -> None:
 
