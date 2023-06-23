@@ -32,6 +32,23 @@ skip_const = 0.8
 width_gen = 4 * dim
 width_pred = 4 * dim
 
+# Training Hyperparams
+n_loops = 50000
+n_mini_loops_gen = 1
+n_mini_loops_pred = 1
+batch_size = 500
+lr_gen = 0.1
+lr_pred = 0.05
+lr_factor = 1.0
+learn_gen = True
+bootstrapped = True
+boot_no = 40
+extend_data = False
+test_iter = 1000
+n_test_samples = 200
+checkpoint = 10000
+n_warmstart_samples = 50
+
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')
 cifar = torch.load('./data/cifar_tensor.pt')
@@ -72,23 +89,6 @@ n_layers_pred = len(puma.layers)
 # Training mode
 deer.train()
 puma.train()
-
-# Training Hyperparams
-n_loops = 50000
-n_mini_loops_gen = 1
-n_mini_loops_pred = 1
-batch_size = 500
-lr_gen = 0.1
-lr_pred = 0.05
-lr_factor = 1.0
-learn_gen = True
-bootstrapped = True
-boot_no = 40
-extend_data = False
-test_iter = 1000
-n_test_samples = 200
-checkpoint = 10000
-n_warmstart_samples = 50
 
 # Create txt file in stamp for hyperparams
 current_date = datetime.datetime.now().strftime('%d.%m.%Y')

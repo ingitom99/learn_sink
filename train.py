@@ -4,6 +4,7 @@ Hunting time!
 
 # Imports
 import torch
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from test_funcs import test_loss, test_rel_err, test_warmstart
 from sinkhorn import sink_vec
