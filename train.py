@@ -238,7 +238,7 @@ def the_hunt(
             gen_scheduler.step()
         pred_scheduler.step()
 
-        if ((i+2) % test_iter == 0):
+        if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')
 
     return train_losses, test_rel_errs_emd, test_rel_errs_sink
