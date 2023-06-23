@@ -137,3 +137,25 @@ def plot_test_rel_errs_sink(rel_errs : dict[str, list], path: str = None) -> Non
             plt.show()
     
         return None
+
+def plot_warmstart(test_warmstart : dict[str, tuple], folder: str = None) -> None:
+    
+    for key in test_warmstart.keys():
+        plt.figure()
+        pred, ones = test_warmstart[key]
+        plt.plot(pred, label='predicted V0')
+        plt.plot(ones, label='ones V0')
+        plt.title(f'Warmstart (sinkhorn vs ot.emd2): {key}')
+        plt.xlabel('# iterations')
+        plt.ylabel('rel err')
+        plt.yticks(torch.arange(0, 1.0001, 0.05))
+        plt.grid()
+        plt.legend()
+    
+        if path:
+            path = folder + f'warmstart_{key}.png'
+            plt.savefig(f'{path}')
+        else:
+            plt.show()
+
+    return None

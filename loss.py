@@ -1,6 +1,6 @@
 import torch
 
-def hilb_proj_loss(U, V):
+def hilb_proj_loss(U: torch.Tensor, V: torch.Tensor) -> float:
 
     """
     Compute the mean Hilbert projective loss between pairs of vectors.

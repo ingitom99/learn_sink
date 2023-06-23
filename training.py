@@ -6,9 +6,9 @@ Hunting time!
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from test_funcs import test_loss, test_rel_err, test_warmstart, get_pred_dists
+from test_funcs import test_warmstart, get_pred_dists
 from sinkhorn import sink_vec
-from utils import prior_sampler, plot_train_losses, plot_test_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, plot_XPT, test_set_sampler
+from plot import plot_test_warmstart, plot_train_losses, plot_test_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, plot_XPT
 from data_funcs import rand_noise
 from nets import GenNet, PredNet
 from extend_data import extend
@@ -17,15 +17,15 @@ def the_hunt(
         gen_net : GenNet,
         pred_net : PredNet,
         loss_func : callable,
-        cost_mat : torch.Tensor,    
+        cost : torch.Tensor,    
         eps : float,
         dust_const : float,
         dim_prior : int,
         dim : int,
         device : torch.device,
         test_sets: dict,
-        test_emd : dict,
-        test_sink : dict,
+        test_emds : dict,
+        test_sinks : dict,
         test_T : dict,
         n_loops : int,
         n_mini_loops_gen : int,
@@ -33,7 +33,8 @@ def the_hunt(
         batch_size : int,
         lr_pred : float,
         lr_gen : float,
-        lr_factor : float,
+        lr_fact_gen : float,
+        lr_fact_pred : float,
         learn_gen : bool,
         bootstrapped : bool,
         boot_no : int,
@@ -41,7 +42,6 @@ def the_hunt(
         test_iter : int,
         results_folder : str,
         checkpoint : int,
-        n_warmstart_samples : int,
         ) -> tuple[dict, dict, dict]:
     
     """
@@ -64,11 +64,9 @@ def the_hunt(
         gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_gen)   
 
     # Initializing learning rate scheduler
-    pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer,
-                                                            gamma=lr_factor)
+    pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer, gamma=lr_fact_gen)
     if learn_gen:
-        gen_scheduler = torch.optim.lr_scheduler.ExponentialLR(gen_optimizer,
-                                                               gamma=lr_factor)
+        gen_scheduler = torch.optim.lr_scheduler.ExponentialLR(gen_optimizer, gamma=lr_fact_pred)
     
     # Batch loop
     for i in tqdm(range(n_loops)):
@@ -86,13 +84,13 @@ def the_hunt(
 
                 X_test = test_sets[key]
                 T = test_T[key]
-                emd = test_emd[key]
-                sink = test_sink[key]
+                emd = test_emds[key]
+                sink = test_sinks[key]
 
                 P = pred_net(X_test)
                 loss = loss_func(P, T)
                 
-                pred_dist = get_pred_dists(P, X_test, eps, cost_mat, dim)
+                pred_dist = get_pred_dists(P, X_test, eps, cost, dim)
 
                 rel_errs_emd = torch.abs(pred_dist - emd) / emd
                 rel_errs_sink = torch.abs(pred_dist - sink) / sink
@@ -132,14 +130,14 @@ def the_hunt(
                 with torch.no_grad():
                     if bootstrapped:
                         V0 = torch.exp(P)
-                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat, eps, V0, boot_no)
+                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost, eps, V0, boot_no)
                         U = torch.log(U)
                         V = torch.log(V)
 
                     else:
                         V0 = torch.ones_like(X[:, :dim])
                         U, V = sink_vec(X[:, :dim], X[:, dim:],
-                                        cost_mat, eps, V0, 1000)
+                                        cost, eps, V0, 1000)
                         U = torch.log(U)
                         V = torch.log(V)
 
@@ -174,26 +172,22 @@ def the_hunt(
                 n_data = batch_size
 
             if learn_gen:
-                sample = prior_sampler(n_data,
-                    dim_prior).double().to(device)
-                X = gen_net(sample) 
+                prior_sample = torch.randn((n_batch, 2 * dim_prior)).double().to(device)
+                X = gen_net(prior_sample) 
 
             else:
-                X = rand_noise(n_data, dim, dust_const,
-                            True).double().to(device)
+                X = rand_noise(n_data, dim, dust_const, True).double().to(device)
 
             with torch.no_grad(): 
                 if bootstrapped:
                     V0 = torch.exp(pred_net(X))
-                    U, V = sink_vec(X[:, :dim], X[:, dim:],
-                                    cost_mat, eps, V0, boot_no)
+                    U, V = sink_vec(X[:, :dim], X[:, dim:], cost, eps, V0, boot_no)
                     U = torch.log(U)
                     V = torch.log(V)
 
                 else:
                     V0 = torch.ones_like(X[:, :dim])
-                    U, V = sink_vec(X[:, :dim], X[:, dim:],
-                                    cost_mat, eps, V0, 1000)
+                    U, V = sink_vec(X[:, :dim], X[:, dim:], cost, eps, V0, 1000)
                     U = torch.log(U)
                     V = torch.log(V)
                 
@@ -222,27 +216,26 @@ def the_hunt(
 
 
         # Checkpointing
-        if ((i+1) % checkpoint == 0):
+        if ( i % checkpoint == 0) & (i != 0):
+            print(f'Checkpointing at epoch {i+1}...')
             # Testing mode
             gen_net.eval()
             pred_net.eval()
+
             # Saving nets
             torch.save(gen_net.state_dict(), f'{results_folder}/deer.pt')
             torch.save(pred_net.state_dict(), f'{results_folder}/puma.pt')
+
+            # Test warmstart
+            test_warmstarts = test_warmstart(pred_net, test_sets, test_emds, cost, eps, dim)
+
             # Plot the results
             plot_train_losses(train_losses, f'{results_folder}/train_losses.png')
             plot_test_losses(test_losses, f'{results_folder}/test_losses.png')
             plot_test_rel_errs_emd(test_rel_errs_emd, f'{results_folder}/test_rel_errs.png')
             plot_test_rel_errs_sink(test_rel_errs_sink, f'{results_folder}/test_rel_errs_sink.png')
-            # Test warmstart
-            test_warmstart_trials = {}
-            for key in test_sets.keys():
-                X_test = test_set_sampler(test_sets[key],
-                                        n_warmstart_samples).double().to(device)
-                test_warmstart_trials[key] = test_warmstart(pred_net, X_test,
-                                    cost_mat, eps, dim, key,
-                                    f'{results_folder}/warm_start_{key}.png')
-        
+            plot_test_warmstart(test_warmstarts, results_folder)
+
         if ((i+1) % test_iter == 0) or (i == 0):
             plot_XPT(X[0], P[0], T[0], dim)
         
@@ -254,4 +247,4 @@ def the_hunt(
             gen_scheduler.step()
         pred_scheduler.step()
 
-    return train_losses, test_losses, test_rel_errs_emd, test_rel_errs_sink
+    return train_losses, test_losses, test_rel_errs_emd, test_rel_errs_sink, test_warmstarts

@@ -6,9 +6,9 @@ Let the hunt begin!
 import datetime
 import os
 import torch
-from cost_matrices import l2_cost_mat
+from cost import l2_cost_mat
 from sinkhorn import sink_vec
-from train import the_hunt
+from training import the_hunt
 from nets import GenNet, PredNet
 from loss import hilb_proj_loss
 from plot import plot_train_losses, plot_test_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink
@@ -78,8 +78,8 @@ test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
              'teddies': teddies}
 
 # for each test set, create a dictionary of test emds and test sinks
-test_emd = {}
-test_sink = {}
+test_emds = {}
+test_sinks = {}
 test_T = {}
 
 for key in test_sets.keys():
@@ -104,8 +104,8 @@ for key in test_sets.keys():
             sinks.append(sink)
         emds = torch.tensor(emds)
         sinks = torch.tensor(sinks)
-        test_emd[key] = emds
-        test_sink[key] = sinks
+        test_emds[key] = emds
+        test_sinks[key] = sinks
 
 # Initialization of loss function
 loss_func = hilb_proj_loss
