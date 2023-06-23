@@ -69,25 +69,26 @@ def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
     dim : int
         Dimension of the probability distributions.
     """
+    length = int(dim**.5)
 
     plt.figure()
     plt.title('Mu')
-    plt.imshow(X[:784].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+    plt.imshow(X[:dim].cpu().detach().numpy().reshape(length, length), cmap='magma')
     plt.colorbar()
     plt.show()
     plt.figure()
     plt.title('Nu')
-    plt.imshow(X[784:].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+    plt.imshow(X[dim:].cpu().detach().numpy().reshape(length, length), cmap='magma')
     plt.colorbar()
     plt.show()
     plt.figure()
     plt.title('T')
-    plt.imshow(T.cpu().detach().numpy().reshape(28, 28), cmap='magma')
+    plt.imshow(T.cpu().detach().numpy().reshape(length, length), cmap='magma')
     plt.colorbar()
     plt.show()
     plt.figure()
     plt.title('P')
-    plt.imshow(P.cpu().detach().numpy().reshape(28, 28), cmap='magma')
+    plt.imshow(P.cpu().detach().numpy().reshape(length, length), cmap='magma')
     plt.colorbar()
     plt.show()
 

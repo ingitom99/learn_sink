@@ -5,7 +5,8 @@ Hunting time!
 # Imports
 import torch
 from tqdm import tqdm
-from test_funcs import sink_vec, test_loss, test_rel_err, test_warmstart
+from test_funcs import test_loss, test_rel_err, test_warmstart
+from sinkhorn import sink_vec
 from utils import prior_sampler, plot_train_losses, plot_test_losses, plot_test_rel_errs, plot_XPT, test_set_sampler
 from data_creators import rand_noise
 from nets import GenNet, PredNet
@@ -225,6 +226,9 @@ def the_hunt(
         
         if ((i+1) % test_iter == 0) or (i == 0):
             plot_XPT(X[0], P[0], T[0], dim)
+        
+        if ((i+2) % test_iter == 0) or (i == n_loops-1):
+            plt.close('all')
 
         # Updating learning rates
         if learn_gen:

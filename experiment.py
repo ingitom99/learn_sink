@@ -7,7 +7,7 @@ import datetime
 import os
 import torch
 from cost_matrices import l2_cost_mat
-from training_algo import the_hunt
+from train import the_hunt
 from nets import GenNet, PredNet
 from utils import hilb_proj_loss, plot_train_losses, plot_test_losses, plot_test_rel_errs, test_set_sampler, preprocessor
 from test_funcs import test_warmstart
