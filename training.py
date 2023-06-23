@@ -30,14 +30,14 @@ def the_hunt(
         n_loops : int,
         n_mini_loops_gen : int,
         n_mini_loops_pred : int,
-        batch_size : int,
+        n_batch : int,
         lr_pred : float,
         lr_gen : float,
         lr_fact_gen : float,
         lr_fact_pred : float,
         learn_gen : bool,
         bootstrapped : bool,
-        boot_no : int,
+        n_boot : int,
         extend_data : bool,
         test_iter : int,
         results_folder : str,
@@ -104,7 +104,7 @@ def the_hunt(
             plot_test_losses(test_losses)
             plot_train_losses(train_losses)
 
-            if (i !=0):
+            if (i != 0):
                 plot_XPT(X[0], P[0], T[0], dim)
          
         # Training Section
@@ -119,9 +119,9 @@ def the_hunt(
             for loop in range(n_mini_loops_gen):
                 
                 if extend_data:
-                    n_data = batch_size // 4
+                    n_data = n_batch // 4
                 else:
-                    n_data = batch_size
+                    n_data = n_batch
                 prior_sample = torch.randn((n_batch, 2 * dim_prior)).double().to(device)
                 X = gen_net(prior_sample) 
 
@@ -130,7 +130,7 @@ def the_hunt(
                 with torch.no_grad():
                     if bootstrapped:
                         V0 = torch.exp(P)
-                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost, eps, V0, boot_no)
+                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost, eps, V0, n_boot)
                         U = torch.log(U)
                         V = torch.log(V)
 
@@ -167,9 +167,9 @@ def the_hunt(
         for loop in range(n_mini_loops_pred):
 
             if extend_data:
-                n_data = batch_size // 4
+                n_data = n_batch // 4
             else:
-                n_data = batch_size
+                n_data = n_batch
 
             if learn_gen:
                 prior_sample = torch.randn((n_batch, 2 * dim_prior)).double().to(device)
@@ -181,7 +181,7 @@ def the_hunt(
             with torch.no_grad(): 
                 if bootstrapped:
                     V0 = torch.exp(pred_net(X))
-                    U, V = sink_vec(X[:, :dim], X[:, dim:], cost, eps, V0, boot_no)
+                    U, V = sink_vec(X[:, :dim], X[:, dim:], cost, eps, V0, n_boot)
                     U = torch.log(U)
                     V = torch.log(V)
 
@@ -216,8 +216,10 @@ def the_hunt(
 
 
         # Checkpointing
-        if ( i % checkpoint == 0) & (i != 0):
+        if ((i % checkpoint == 0) or (i == n_loops)) & (i != 0):
+
             print(f'Checkpointing at epoch {i+1}...')
+
             # Testing mode
             gen_net.eval()
             pred_net.eval()
@@ -235,9 +237,6 @@ def the_hunt(
             plot_test_rel_errs_emd(test_rel_errs_emd, f'{results_folder}/test_rel_errs.png')
             plot_test_rel_errs_sink(test_rel_errs_sink, f'{results_folder}/test_rel_errs_sink.png')
             plot_test_warmstart(test_warmstarts, results_folder)
-
-        if ((i+1) % test_iter == 0) or (i == 0):
-            plot_XPT(X[0], P[0], T[0], dim)
         
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')

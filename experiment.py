@@ -11,8 +11,6 @@ from sinkhorn import sink_vec
 from training import the_hunt
 from nets import GenNet, PredNet
 from loss import hilb_proj_loss
-from plot import plot_train_losses, plot_test_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink
-from test_funcs import test_warmstart
 from data_funcs import preprocessor, test_set_sampler
 
 # Create 'stamp' folder for saving results
@@ -38,7 +36,8 @@ n_mini_loops_pred = 3
 n_batch = 500
 lr_gen = 0.1
 lr_pred = 0.1
-lr_factor = 0.9998
+lr_fact_gen = 0.9998
+lr_fact_pred = 0.9998
 learn_gen = True
 bootstrapped = True
 n_boot = 40
@@ -46,17 +45,16 @@ extend_data = True
 test_iter = 1000
 n_test = 200
 checkpoint = 10000
-n_warmstart = 50
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Device: {device}')
 
 # Initialization of cost matrix
-cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
+cost = l2_cost_mat(length, length, normed=True).double().to(device)
 
 # Regularization parameter
-eps = cost_mat.max() * 4e-4
+eps = cost.max() * 4e-4
 
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')
@@ -77,7 +75,7 @@ teddies = test_set_sampler(teddies, n_test).double().to(device)
 test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
              'teddies': teddies}
 
-# for each test set, create a dictionary of test emds and test sinks
+# For each test set, create a dictionary of test emds, test sinks, and test targets
 test_emds = {}
 test_sinks = {}
 test_T = {}
@@ -88,7 +86,7 @@ for key in test_sets.keys():
         X = test_sets[key]
 
         V0 = torch.ones_like(X[:, :dim])
-        V = sink_vec(X[:, :dim], X[:, dim:], cost_mat, eps, V0, 2000)[1]
+        V = sink_vec(X[:, :dim], X[:, dim:], cost, eps, V0, 2000)[1]
         V = torch.log(V)
         T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
         test_T[key] = T
@@ -98,9 +96,9 @@ for key in test_sets.keys():
         for x in X:
             mu = x[:dim] / x[:dim].sum()
             nu = x[dim:] / x[dim:].sum()
-            emd = ot.emd2(mu, nu, cost_mat)
+            emd = ot.emd2(mu, nu, cost)
             emds.append(emd)
-            sink = ot.sinkhorn2(mu, nu, cost_mat, eps, numItermax=2000)
+            sink = ot.sinkhorn2(mu, nu, cost, eps, numItermax=2000)
             sinks.append(sink)
         emds = torch.tensor(emds)
         sinks = torch.tensor(sinks)
@@ -145,7 +143,8 @@ hyperparams = {
     'device': device,
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,
-    'learning rates scale factor': lr_factor,
+    'learning rate scale factor gen': lr_fact_gen,
+    'learning rate scale factor pred': lr_fact_pred,
     'no. unique data points gen': n_loops*n_mini_loops_gen*n_batch,
     'no. unique data points pred': n_loops*n_mini_loops_pred*n_batch,
     'no. loops' : n_loops,
@@ -159,7 +158,6 @@ hyperparams = {
     'no. bootstraps': n_boot,
     'extend data?': extend_data,
     'checkpoint': checkpoint,
-    'no warmstart samples': n_warmstart
 }
 
 # Define the output file path
@@ -170,54 +168,34 @@ with open(output_file, 'w', encoding='utf-8') as file:
     for key, value in hyperparams.items():
         file.write(f'{key}: {value}\n')
 
-
 # Run the hunt
-train_losses, test_losses, test_rel_errs = the_hunt(
+train_losses, test_losses, test_rel_errs_emd, test_rel_errs_sink, test_warmstarts = the_hunt(
         deer,
         puma,
         loss_func,
-        cost_mat,        
+        cost,    
         eps,
         dust_const,
         dim_prior,
         dim,
         device,
         test_sets,
+        test_emds,
+        test_sinks,
+        test_T,
         n_loops,
         n_mini_loops_gen,
         n_mini_loops_pred,
         n_batch,
         lr_pred,
         lr_gen,
-        lr_factor,
+        lr_fact_gen,
+        lr_fact_pred,
         learn_gen,
         bootstrapped,
         n_boot,
         extend_data,
         test_iter,
-        n_test,
         stamp_folder_path,
         checkpoint,
-        n_warmstart
         )
-
-# Testing mode
-deer.eval()
-puma.eval()
-
-# Saving nets
-torch.save(deer.state_dict(), f'{stamp_folder_path}/deer.pt')
-torch.save(puma.state_dict(), f'{stamp_folder_path}/puma.pt')
-
-# Plot the results
-plot_train_losses(train_losses, f'{stamp_folder_path}/train_losses.png')
-plot_test_losses(test_losses, f'{stamp_folder_path}/test_losses.png')
-plot_test_rel_errs(test_rel_errs, f'{stamp_folder_path}/test_rel_errs.png')
-
-# Test warmstart
-test_warmstart_trials = {}
-for key in test_sets.keys():
-    X_test = test_set_sampler(test_sets[key],
-                              n_warmstart).double().to(device)
-    test_warmstart_trials[key] = test_warmstart(puma, X_test, cost_mat, eps,
-                        dim, key, f'{stamp_folder_path}/warm_start_{key}.png')
