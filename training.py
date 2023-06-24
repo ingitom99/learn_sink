@@ -25,7 +25,6 @@ def the_hunt(
         device : torch.device,
         test_sets: dict,
         test_emds : dict,
-        test_sinks : dict,
         test_T : dict,
         n_loops : int,
         n_mini_loops_gen : int,
@@ -52,12 +51,10 @@ def the_hunt(
     train_losses = {'gen': [], 'pred': []}
     test_losses = {}
     test_rel_errs_emd = {}
-    test_rel_errs_sink = {}
     warmstarts = {}
     for key in test_sets.keys():
         test_losses[key] = []
         test_rel_errs_emd[key] = []
-        test_rel_errs_sink[key] = []
 
     # Initializing optimizers
     pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
@@ -85,7 +82,6 @@ def the_hunt(
                 X_test = test_sets[key]
                 T = test_T[key]
                 emd = test_emds[key]
-                sink = test_sinks[key]
 
                 P = pred_net(X_test)
                 loss = loss_func(P, T)
@@ -93,14 +89,11 @@ def the_hunt(
                 pred_dist = get_pred_dists(P, X_test, eps, cost, dim)
 
                 rel_errs_emd = torch.abs(pred_dist - emd) / emd
-                rel_errs_sink = torch.abs(pred_dist - sink) / sink
 
                 test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
-                test_rel_errs_sink[key].append(rel_errs_sink.mean().item())
                 test_losses[key].append(loss.item())
 
             plot_test_rel_errs_emd(test_rel_errs_emd)
-            plot_test_rel_errs_sink(test_rel_errs_sink)
             plot_test_losses(test_losses)
             plot_train_losses(train_losses)
          
@@ -212,11 +205,10 @@ def the_hunt(
             pred_optimizer.step()
 
         if ((i+1) % test_iter == 0) or (i == 0):
-
+            plot_XPT(X[0], P[0], T[0], dim)
         # Checkpointing
         if ((i+1) % checkpoint == 0):
-            plot_XPT(X[0], P[0], T[0], dim)
-
+        
             print(f'Checkpointing at epoch {i+1}...')
 
             # Testing mode
@@ -245,4 +237,4 @@ def the_hunt(
             gen_scheduler.step()
         pred_scheduler.step()
 
-    return train_losses, test_losses, test_rel_errs_emd, test_rel_errs_sink, warmstarts
+    return train_losses, test_losses, test_rel_errs_emd, warmstarts

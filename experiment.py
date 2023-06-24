@@ -29,7 +29,7 @@ dim = length**2
 dust_const = 1e-6
 skip_const = 0.5
 width_gen = 4 * dim
-width_pred = 6 * dim
+width_pred = 4 * dim
 
 # Training Hyperparams
 n_loops = 50
@@ -80,7 +80,6 @@ test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
 
 # For each test set, create a dictionary of test emds, test sinks, and test targets
 test_emds = {}
-test_sinks = {}
 test_T = {}
 
 print('Computing test emds, sinks, and targets...')
@@ -97,18 +96,13 @@ for key in test_sets.keys():
         test_T[key] = T
     
         emds = []
-        sinks = []
         for x in tqdm(X):
             mu = x[:dim] / x[:dim].sum()
             nu = x[dim:] / x[dim:].sum()
             emd = ot.emd2(mu, nu, cost)
             emds.append(emd)
-            sink = ot.sinkhorn2(mu, nu, cost, eps, numItermax=2000)
-            sinks.append(sink)
         emds = torch.tensor(emds)
-        sinks = torch.tensor(sinks)
         test_emds[key] = emds
-        test_sinks[key] = sinks
 
 # Initialization of loss function
 loss_func = hilb_proj_loss
@@ -174,7 +168,7 @@ with open(output_file, 'w', encoding='utf-8') as file:
         file.write(f'{key}: {value}\n')
 
 # Run the hunt
-train_losses, test_losses, test_rel_errs_emd, test_rel_errs_sink, test_warmstarts = the_hunt(
+train_losses, test_losses, test_rel_errs_emd, test_warmstarts = the_hunt(
         deer,
         puma,
         loss_func,
@@ -186,7 +180,6 @@ train_losses, test_losses, test_rel_errs_emd, test_rel_errs_sink, test_warmstart
         device,
         test_sets,
         test_emds,
-        test_sinks,
         test_T,
         n_loops,
         n_mini_loops_gen,
