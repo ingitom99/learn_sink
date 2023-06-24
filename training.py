@@ -71,16 +71,15 @@ def the_hunt(
     
     # Batch loop
     for i in tqdm(range(n_loops)):
-       
-        # Test Section
-
-        # Setting networks to eval mode
-        pred_net.eval()
-        if learn_gen:
-            gen_net.eval()
 
         # Testing predictive neural net
         if ((i+1) % test_iter == 0) or (i == 0):
+
+            # Setting networks to eval mode
+            pred_net.eval()
+            if learn_gen:
+                gen_net.eval()
+
             for key in test_sets.keys():
 
                 X_test = test_sets[key]
@@ -104,9 +103,6 @@ def the_hunt(
             plot_test_rel_errs_sink(test_rel_errs_sink)
             plot_test_losses(test_losses)
             plot_train_losses(train_losses)
-
-            if (i != 0):
-                plot_XPT(X[0], P[0], T[0], dim)
          
         # Training Section
 
@@ -215,9 +211,11 @@ def the_hunt(
             pred_loss.backward(retain_graph=True)
             pred_optimizer.step()
 
+        if ((i+1) % test_iter == 0) or (i == 0):
 
         # Checkpointing
         if ((i+1) % checkpoint == 0):
+            plot_XPT(X[0], P[0], T[0], dim)
 
             print(f'Checkpointing at epoch {i+1}...')
 
