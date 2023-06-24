@@ -22,20 +22,20 @@ stamp_folder_path = './stamp_main_'+formatted_time
 os.mkdir(stamp_folder_path)
 
 # Hyperparameters
-length_prior = 7
+length_prior = 14
 length = 28
 dim_prior = length_prior**2
 dim = length**2
-dust_const = 1e-6
+dust_const = 5e-6
 skip_const = 0.5
-width_gen = 4 * dim
-width_pred = 4 * dim
+width_gen = 6 * dim
+width_pred = 6 * dim
 
 # Training Hyperparams
-n_loops = 50
+n_loops = 50000
 n_mini_loops_gen = 2
 n_mini_loops_pred = 2
-n_batch = 50
+n_batch = 500
 lr_gen = 0.05
 lr_pred = 0.05
 lr_fact_gen = 1.0
@@ -44,9 +44,9 @@ learn_gen = True
 bootstrapped = True
 n_boot = 50
 extend_data = False
-test_iter = 100
-n_test = 5
-checkpoint = 25
+test_iter = 1000
+n_test = 500
+checkpoint = 25000
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
