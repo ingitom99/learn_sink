@@ -217,7 +217,7 @@ def the_hunt(
 
 
         # Checkpointing
-        if ((i % checkpoint == 0) or (i == n_loops)) & (i != 0):
+        if ((i+1) % checkpoint == 0):
 
             print(f'Checkpointing at epoch {i+1}...')
 
