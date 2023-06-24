@@ -6,6 +6,8 @@ Let the hunt begin!
 import datetime
 import os
 import torch
+import ot
+from tqdm import tqdm
 from cost import l2_cost_mat
 from sinkhorn import sink_vec
 from training import the_hunt
@@ -80,7 +82,9 @@ test_emds = {}
 test_sinks = {}
 test_T = {}
 
+print('Computing test emds, sinks, and targets...')
 for key in test_sets.keys():
+    print(f'{key}:')
     with torch.no_grad():
 
         X = test_sets[key]
@@ -93,7 +97,7 @@ for key in test_sets.keys():
     
         emds = []
         sinks = []
-        for x in X:
+        for x in tqdm(X):
             mu = x[:dim] / x[:dim].sum()
             nu = x[dim:] / x[dim:].sum()
             emd = ot.emd2(mu, nu, cost)

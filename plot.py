@@ -138,7 +138,7 @@ def plot_test_rel_errs_sink(rel_errs : dict[str, list], path: str = None) -> Non
     
         return None
 
-def plot_warmstart(test_warmstart : dict[str, tuple], folder: str = None) -> None:
+def plot_warmstarts(test_warmstart : dict[str, tuple], folder: str = None) -> None:
     
     for key in test_warmstart.keys():
         plt.figure()
@@ -152,8 +152,8 @@ def plot_warmstart(test_warmstart : dict[str, tuple], folder: str = None) -> Non
         plt.grid()
         plt.legend()
     
-        if path:
-            path = folder + f'warmstart_{key}.png'
+        if folder:
+            path = folder + f'/warmstart_{key}.png'
             plt.savefig(f'{path}')
         else:
             plt.show()
