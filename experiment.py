@@ -18,7 +18,7 @@ from data_funcs import preprocessor, test_set_sampler
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
 formatted_time = current_time.strftime('%m-%d_%H_%M_%S')
-stamp_folder_path = './stamp_'+formatted_time
+stamp_folder_path = './stamp_main_'+formatted_time
 os.mkdir(stamp_folder_path)
 
 # Hyperparameters
@@ -32,21 +32,21 @@ width_gen = 4 * dim
 width_pred = 6 * dim
 
 # Training Hyperparams
-n_loops = 50000
-n_mini_loops_gen = 3
-n_mini_loops_pred = 3
-n_batch = 500
-lr_gen = 0.1
-lr_pred = 0.1
-lr_fact_gen = 0.9998
-lr_fact_pred = 0.9998
+n_loops = 50
+n_mini_loops_gen = 2
+n_mini_loops_pred = 2
+n_batch = 50
+lr_gen = 0.05
+lr_pred = 0.05
+lr_fact_gen = 1.0
+lr_fact_pred = 1.0
 learn_gen = True
 bootstrapped = True
-n_boot = 40
-extend_data = True
-test_iter = 1000
-n_test = 200
-checkpoint = 10000
+n_boot = 50
+extend_data = False
+test_iter = 100
+n_test = 5
+checkpoint = 25
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -57,6 +57,7 @@ cost = l2_cost_mat(length, length, normed=True).double().to(device)
 
 # Regularization parameter
 eps = cost.max() * 4e-4
+print(f'Regularization param: {eps}')
 
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')
