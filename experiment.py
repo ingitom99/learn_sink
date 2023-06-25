@@ -14,7 +14,7 @@ import os
 import torch
 import ot
 from tqdm import tqdm
-from cost import l2_cost_mat
+from cost import l2_cost
 from sinkhorn import sink_vec
 from train import the_hunt
 from nets import GenNet, PredNet
@@ -59,7 +59,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Device: {device}')
 
 # Initialization of cost matrix
-cost = l2_cost_mat(length, length, normed=True).double().to(device)
+cost = l2_cost(length, length, normed=True).double().to(device)
 
 # Regularization parameter
 eps = cost.max() * 4e-4
