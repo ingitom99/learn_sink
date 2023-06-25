@@ -190,7 +190,7 @@ def the_hunt(
                     n_data = n_batch // 4
                 else:
                     n_data = n_batch
-                prior_sample = torch.randn((n_batch,
+                prior_sample = torch.randn((n_data,
                                             2 * dim_prior)).double().to(device)
                 X = gen_net(prior_sample) 
 
@@ -243,7 +243,7 @@ def the_hunt(
                 n_data = n_batch
 
             if learn_gen:
-                prior_sample = torch.randn((n_batch,
+                prior_sample = torch.randn((n_data,
                                             2 * dim_prior)).double().to(device)
                 X = gen_net(prior_sample) 
 
