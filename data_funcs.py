@@ -1,12 +1,80 @@
 """
-Functions to create datasets for testing.
+data_funcs.py
+-------------
+
+Functions to create and process data for training and testing.
 """
 
 import torch
 import torchvision
 import numpy as np
 from skimage.draw import random_shapes
+import torch.nn.functional as F
 
+def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
+
+    """
+    Randomly sample from a given test set to create pairs of samples for
+    testing.
+
+    Parameters
+    ----------
+    test_set : (n_test_set, dim) torch.Tensor
+        Test set.
+    n_samples : int
+        Number of samples.
+    
+    Returns
+    -------
+    test_sample : (n_samples, 2 * dim) torch.Tensor
+        Random sample from the test set.
+    """
+
+    rand_perm = torch.randperm(test_set.size(0))
+    rand_mask_a = rand_perm[:n_samples]
+    rand_mask_b = rand_perm[n_samples:2*n_samples]
+    test_sample_a = test_set[rand_mask_a]
+    test_sample_b = test_set[rand_mask_b]
+    test_sample = torch.cat((test_sample_a, test_sample_b), dim=1)
+    test_sample = torch.flatten(test_sample, start_dim=1)
+
+    return test_sample
+
+def preprocessor(dataset : torch.Tensor, length : int, dust_const : float
+                    ) -> torch.Tensor:
+    
+    """
+    Preprocess (resize, normalize, dust) a dataset for training.
+
+    Parameters
+    ----------
+    dataset : (n, dim) torch.Tensor
+        Dataset to be preprocessed.
+    length : int
+        Length of the side of each image in the dataset.
+    dust_const : float
+        Constant added to the dataset to avoid zero values (dusting).
+
+    Returns
+    -------
+    processed_dataset : (n, dim) torch.Tensor
+        Preprocessed dataset.
+    """
+
+    resized_dataset = F.interpolate(dataset.unsqueeze(1), size=(length, length),
+                                mode='bilinear', align_corners=False).squeeze(1)
+
+    flattened_dataset = resized_dataset.view(-1, length**2)
+
+    normalized_dataset = flattened_dataset / flattened_dataset.sum(dim=1,
+                                                                   keepdim=True)
+
+    processed_dataset = normalized_dataset + dust_const
+
+    processed_dataset =  processed_dataset / processed_dataset.sum(dim=1,
+                                                                   keepdim=True)
+
+    return processed_dataset
 
 def rand_noise(n_samples : int, dim : int, dust_const : float,
                pairs : bool) -> torch.Tensor:
@@ -325,4 +393,3 @@ def get_flowers(length, dust_const, download=True) -> torch.Tensor:
     flowers = flowers + dust_const
     flowers = flowers / torch.unsqueeze(flowers.sum(dim=1), 1)
     return flowers
-

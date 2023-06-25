@@ -1,8 +1,10 @@
 """
-Pytorch neural network class for the predictive network.
+net.py
+-------
+
+Pytorch neural network class for the predictive networks.
 """
-    
-import torch
+
 import torch.nn as nn
 
 class PredNet(nn.Module):
@@ -38,3 +40,4 @@ class PredNet(nn.Module):
         for layer in self.layers:
             x = layer(x)
         return x
+    
