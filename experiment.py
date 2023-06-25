@@ -31,7 +31,6 @@ os.mkdir(stamp_folder_path)
 length = 28
 dim = length**2
 dust_const = 5e-6
-skip_const = 0.5
 width_pred = 6 * dim
 mutation_sigma = 0.1
 
@@ -124,7 +123,6 @@ hyperparams = {
     'data dimension': dim,
     'regularization parameter': eps,
     'dust constant': dust_const,
-    'skip connection constant': skip_const,
     'no. layers pred': n_layers_pred,
     'hidden layer width pred': width_pred,
     'device': device,
