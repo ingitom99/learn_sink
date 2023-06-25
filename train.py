@@ -147,6 +147,8 @@ def the_hunt(
         # Testing predictive neural net
         if ((i+1) % test_iter == 0) or (i == 0):
 
+            print(f'Testing pred net at iter: {i}')
+
             # Setting networks to eval mode
             pred_net.eval()
             if learn_gen:
