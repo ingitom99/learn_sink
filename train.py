@@ -141,7 +141,13 @@ def the_hunt(
     if learn_gen:
         gen_scheduler = torch.optim.lr_scheduler.ExponentialLR(gen_optimizer,
                                                                gamma=lr_fact_pred)
-    
+                                                               
+    # Adjusting generated data numbers to keep batch size accurate with extension
+    if extend_data:
+        n_data = n_batch // 4
+    else:
+        n_data = n_batch
+
     for i in tqdm(range(n_loops)):
 
         # Testing predictive neural net
@@ -185,11 +191,7 @@ def the_hunt(
         # Training generative neural net
         if learn_gen:
             for _ in range(n_mini_loops_gen):
-                
-                if extend_data:
-                    n_data = n_batch // 4
-                else:
-                    n_data = n_batch
+
                 prior_sample = torch.randn((n_data,
                                             2 * dim_prior)).double().to(device)
                 X = gen_net(prior_sample) 
@@ -236,11 +238,6 @@ def the_hunt(
 
         # Training predictive neural net
         for _ in range(n_mini_loops_pred):
-
-            if extend_data:
-                n_data = n_batch // 4
-            else:
-                n_data = n_batch
 
             if learn_gen:
                 prior_sample = torch.randn((n_data,
