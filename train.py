@@ -266,7 +266,6 @@ def the_hunt(
                 
                 nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
                     V).any(dim=1)).to(device)
-                n_batch = nan_mask.sum()
 
             if extend_data:
                 X_pred, T_pred = extend(X, U, V, dim, nan_mask, device)

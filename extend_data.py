@@ -40,12 +40,12 @@ def extend(X : torch.Tensor, U : torch.Tensor, V : torch.Tensor,
         The extended, centered 'V' Sinkhorn scaling factors (i.e. the targets).
     """
 
-    n_batch = nan_mask.sum()
+    n_nonan = nan_mask.sum()
     length = int(dim**0.5)
 
-    T = torch.zeros(4*n_batch, dim).double().to(device)
-    MU = torch.zeros(4*n_batch, dim).double().to(device)
-    NU = torch.zeros(4*n_batch, dim).double().to(device)
+    T = torch.zeros(4*n_nonan, dim).double().to(device)
+    MU = torch.zeros(4*n_nonan, dim).double().to(device)
+    NU = torch.zeros(4*n_nonan, dim).double().to(device)
 
     for flip_i, flip in enumerate([False, True]):
         for rot_i, rot in enumerate([0, 2]):
@@ -76,9 +76,9 @@ def extend(X : torch.Tensor, U : torch.Tensor, V : torch.Tensor,
                 T_curr = torch.rot90(T_curr.reshape((-1,length, length)),
                     k=rot, dims=(1, 2)).reshape((-1,dim))
 
-            T[mini_i*n_batch:(mini_i+1)*n_batch] = T_curr
-            MU[mini_i*n_batch:(mini_i+1)*n_batch] = MU_curr
-            NU[mini_i*n_batch:(mini_i+1)*n_batch] = NU_curr
+            T[mini_i*n_nonan:(mini_i+1)*n_nonan] = T_curr
+            MU[mini_i*n_nonan:(mini_i+1)*n_nonan] = MU_curr
+            NU[mini_i*n_nonan:(mini_i+1)*n_nonan] = NU_curr
 
     T = T - torch.unsqueeze(T.mean(dim=1), 1).repeat(1, dim)
     X = torch.cat((MU, NU), dim=1)
