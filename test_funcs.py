@@ -1,4 +1,7 @@
 """
+test_funcs.py
+-------------
+
 Auxiliary functions for testing the performance of the predictive network.
 """
 
@@ -6,7 +9,32 @@ import torch
 from tqdm import tqdm
 from nets import PredNet
 
-def get_pred_dists(P, X, eps, C, dim):
+def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
+                   C : torch.Tensor, dim : int) -> torch.Tensor:
+    
+    """
+    Get the predicted Sinkhorn distances for a set of pairs of probability
+    distributions.
+
+    Parameters
+    ----------
+    P : (n_samples, dim) torch.Tensor
+        Predicted 'V' scaling factors to be used as V0
+    X : (n_samples, 2*dim) torch.Tensor
+        Pairs of probability distributions.
+    eps : float
+        Regularization parameter.
+    C : (dim, dim) torch.Tensor
+        Cost matrix.
+    dim : int
+        Dimension of the probability distributions.
+
+    Returns
+    -------
+    dists : (n_samples,) torch.Tensor
+        Predicted Sinkhorn distances.
+    """
+
     dists = []
     K = torch.exp(-C/eps)
     for p, x in zip(P, X):
@@ -21,10 +49,12 @@ def get_pred_dists(P, X, eps, C, dim):
     dists = torch.tensor(dists)
     return dists
 
-def test_warmstart(pred_net : PredNet, test_sets : dict, test_emds, C : torch.Tensor, eps : float, dim : int) -> tuple[list, list]:
+def test_warmstart(pred_net : PredNet, test_sets : dict, test_emds,
+                   C : torch.Tensor, eps : float,
+                   dim : int) -> tuple[list, list]:
   
     """
-    Test the performance of the predictive network as a 'warmstart' for the 
+    Track the performance of the predictive network as a 'warmstart' for the 
     Sinkhorn algorithm.
 
     Parameters
@@ -67,7 +97,7 @@ def test_warmstart(pred_net : PredNet, test_sets : dict, test_emds, C : torch.Te
         rel_err_means_ones = []
 
         # Looping over 1000 iterations of Sinkhorn algorithm
-        for i in tqdm(range(1000)):
+        for _ in tqdm(range(1000)):
 
             # Performing a step of Sinkhorn algorithm for predicted V0
             U_pred = MU / (K @ V_pred.T).T

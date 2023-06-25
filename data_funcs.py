@@ -1,5 +1,8 @@
 """
-Functions to create datasets for testing.
+data_funcs.py
+-------------
+
+Functions to create and process data for training and testing.
 """
 
 import torch
@@ -11,11 +14,12 @@ import torch.nn.functional as F
 def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
 
     """
-    Randomly sample from a given test set.
+    Randomly sample from a given test set to create pairs of samples for
+    testing.
 
     Parameters
     ----------
-    test_set : (n_test_samples, 2 * dim) torch.Tensor
+    test_set : (n_test_set, dim) torch.Tensor
         Test set.
     n_samples : int
         Number of samples.
@@ -26,33 +30,49 @@ def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
         Random sample from the test set.
     """
 
-    rand_perm_a = torch.randperm(test_set.size(0))
-    rand_mask_a = rand_perm_a[:n_samples]
+    rand_perm = torch.randperm(test_set.size(0))
+    rand_mask_a = rand_perm[:n_samples]
+    rand_mask_b = rand_perm[n_samples:2*n_samples]
     test_sample_a = test_set[rand_mask_a]
-    rand_perm_b= torch.randperm(test_set.size(0))
-    rand_mask_b = rand_perm_b[:n_samples]
     test_sample_b = test_set[rand_mask_b]
     test_sample = torch.cat((test_sample_a, test_sample_b), dim=1)
     test_sample = torch.flatten(test_sample, start_dim=1)
 
     return test_sample
 
-def preprocessor(dataset, length, constant):
-    # Resize the dataset
-    resized_dataset = F.interpolate(dataset.unsqueeze(1), size=(length, length),
-                                    mode='bilinear', align_corners=False).squeeze(1)
+def preprocessor(dataset : torch.Tensor, length : int, dust_const : float
+                    ) -> torch.Tensor:
+    
+    """
+    Preprocess (resize, normalize, dust) a dataset for training.
 
-    # Flatten the dataset
+    Parameters
+    ----------
+    dataset : (n, dim) torch.Tensor
+        Dataset to be preprocessed.
+    length : int
+        Length of the side of each image in the dataset.
+    dust_const : float
+        Constant added to the dataset to avoid zero values (dusting).
+
+    Returns
+    -------
+    processed_dataset : (n, dim) torch.Tensor
+        Preprocessed dataset.
+    """
+
+    resized_dataset = F.interpolate(dataset.unsqueeze(1), size=(length, length),
+                                mode='bilinear', align_corners=False).squeeze(1)
+
     flattened_dataset = resized_dataset.view(-1, length**2)
 
-    # Normalize the dataset to sum to one in the second dimension
-    normalized_dataset = flattened_dataset / flattened_dataset.sum(dim=1, keepdim=True)
+    normalized_dataset = flattened_dataset / flattened_dataset.sum(dim=1,
+                                                                   keepdim=True)
 
-    # Add a small constant value to each element
-    processed_dataset = normalized_dataset + constant
+    processed_dataset = normalized_dataset + dust_const
 
-    # Normalize the dataset again to sum to one in the second dimension
-    processed_dataset /= processed_dataset.sum(dim=1, keepdim=True)
+    processed_dataset =  processed_dataset / processed_dataset.sum(dim=1,
+                                                                   keepdim=True)
 
     return processed_dataset
 

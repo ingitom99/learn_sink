@@ -1,4 +1,7 @@
 """
+nets.py
+-------
+
 Pytorch neural network classes for the generative and predictive networks.
 """
     

@@ -1,4 +1,10 @@
 """
+experiment.py
+-------------
+
+Script for creating, training and testing a puma and a deer and saving the
+results.
+
 Let the hunt begin!
 """
 
@@ -10,7 +16,7 @@ import ot
 from tqdm import tqdm
 from cost import l2_cost_mat
 from sinkhorn import sink_vec
-from training import the_hunt
+from train import the_hunt
 from nets import GenNet, PredNet
 from loss import hilb_proj_loss
 from data_funcs import preprocessor, test_set_sampler
@@ -21,7 +27,7 @@ formatted_time = current_time.strftime('%m-%d_%H_%M_%S')
 stamp_folder_path = './stamp_main_'+formatted_time
 os.mkdir(stamp_folder_path)
 
-# Hyperparameters
+# Problem hyperparameters
 length_prior = 14
 length = 28
 dim_prior = length_prior**2
@@ -32,21 +38,21 @@ width_gen = 6 * dim
 width_pred = 6 * dim
 
 # Training Hyperparams
-n_loops = 50000
-n_mini_loops_gen = 2
-n_mini_loops_pred = 2
-n_batch = 500
+n_loops = 10000
+n_mini_loops_gen = 3
+n_mini_loops_pred = 3
+n_batch = 200
 lr_gen = 0.05
 lr_pred = 0.05
 lr_fact_gen = 1.0
 lr_fact_pred = 1.0
 learn_gen = True
 bootstrapped = True
-n_boot = 50
+n_boot = 100
 extend_data = False
 test_iter = 1000
 n_test = 500
-checkpoint = 25000
+checkpoint = 10000
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -57,8 +63,9 @@ cost = l2_cost_mat(length, length, normed=True).double().to(device)
 
 # Regularization parameter
 eps = cost.max() * 4e-4
-print(f'Regularization param: {eps}')
+print(f'Entropic egularization param: {eps}')
 
+# Loading, preprocessing, and sampling for the test sets dictionary
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')
 cifar = torch.load('./data/cifar_tensor.pt')
@@ -74,11 +81,10 @@ omniglot = test_set_sampler(omniglot, n_test).double().to(device)
 cifar = test_set_sampler(cifar, n_test).double().to(device)
 teddies = test_set_sampler(teddies, n_test).double().to(device)
 
-# Create test sets dictionary
 test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
              'teddies': teddies}
 
-# For each test set, create a dictionary of test emds, test sinks, and test targets
+# Creating a dictionary of test emds, and test targets for each test set
 test_emds = {}
 test_T = {}
 
@@ -159,6 +165,10 @@ hyperparams = {
     'checkpoint': checkpoint,
 }
 
+# Print hyperparams
+for key, value in hyperparams.items():
+    print(f'{key}: {value}')
+
 # Define the output file path
 output_file = f'{stamp_folder_path}/params.txt'
 
@@ -197,3 +207,5 @@ train_losses, test_losses, test_rel_errs_emd, test_warmstarts = the_hunt(
         stamp_folder_path,
         checkpoint,
         )
+
+print('The hunt is over. Time to rest.')

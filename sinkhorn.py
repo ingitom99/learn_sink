@@ -1,6 +1,9 @@
 """
-Implementing Sinkhorn algorithm for computing approximate solutions to the 
-entropic regularized optimal transport problem.
+sinkhorn.py
+-----------
+
+Implementation(s) of the Sinkhorn algorithm for computing approximate solutions
+to the entropic regularized optimal transport problem.
 """
 
 # Imports
@@ -12,7 +15,7 @@ def sink(mu : torch.Tensor, nu : torch.Tensor, C : torch.Tensor, eps : float,
                                                     torch.Tensor, float]: 
 
     """
-    The Sinkhorn algorithm!
+    The standard Sinkhorn algorithm!
 
     Parameters
     ----------
@@ -36,7 +39,7 @@ def sink(mu : torch.Tensor, nu : torch.Tensor, C : torch.Tensor, eps : float,
     v : (dim,) torch.Tensor
         2nd Scaling factor.
     G : (dim, dim) torch.Tensor
-        Optimal transport matrix.
+        Optimal transport plan.
     dist : float
         Optimal transport distance.
     """
@@ -44,7 +47,7 @@ def sink(mu : torch.Tensor, nu : torch.Tensor, C : torch.Tensor, eps : float,
     K = torch.exp(-C/eps)
     v = v0
 
-    for i in range(maxiter):
+    for _ in range(maxiter):
         u = mu / (K @ v)
         v = nu / (K.T @ u)
 
@@ -53,11 +56,12 @@ def sink(mu : torch.Tensor, nu : torch.Tensor, C : torch.Tensor, eps : float,
 
     return u, v, G, dist
 
-def sink_vec(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor, eps : float,
-             V0 : torch.Tensor, n_iters : int) -> torch.Tensor:
+def sink_vec(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor,
+             eps : float, V0 : torch.Tensor, n_iters : int) -> torch.Tensor:
     
     """
-    A vectorized version of the Sinkhorn algorithm for creating targets.
+    A vectorized version of the Sinkhorn algorithm to create scaling factors
+    to be used for generating targets.
 
     Parameters
     ----------
@@ -83,7 +87,7 @@ def sink_vec(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor, eps : float
     K = torch.exp(-C/eps)
     V = V0
     
-    for i in range(n_iters):
+    for _ in range(n_iters):
         U = MU / (K @ V.T).T
         V = NU / (K.T @ U.T).T
 

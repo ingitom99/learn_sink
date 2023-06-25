@@ -1,3 +1,10 @@
+"""
+loss.py
+-------
+
+Function(s) for computing loss values.
+"""
+
 import torch
 
 def hilb_proj_loss(U: torch.Tensor, V: torch.Tensor) -> float:
@@ -15,7 +22,7 @@ def hilb_proj_loss(U: torch.Tensor, V: torch.Tensor) -> float:
     Returns
     -------
     loss : float
-        Loss value.
+        Mean loss value.
     """
 
     diff = U - V
