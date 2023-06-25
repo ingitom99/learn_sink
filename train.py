@@ -147,7 +147,7 @@ def the_hunt(
         # Testing predictive neural net
         if ((i+1) % test_iter == 0) or (i == 0):
 
-            print(f'Testing pred net at iter: {i}')
+            print(f'Testing pred net at iter: {i+1}')
 
             # Setting networks to eval mode
             pred_net.eval()
@@ -294,7 +294,7 @@ def the_hunt(
         # Checkpointing
         if ((i+1) % checkpoint == 0):
         
-            print(f'Checkpointing at epoch {i+1}...')
+            print(f'Checkpointing at iter: {i+1}')
 
             # Testing mode
             gen_net.eval()
