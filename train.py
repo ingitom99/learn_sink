@@ -201,6 +201,7 @@ def the_hunt(
 
         if ((i+1) % test_iter == 0) or (i == 0):
             plot_XPT(X[0], P[0], T[0], dim)
+            print(f'lr: {pred_scheduler.get_last_lr()}')
 
         # Checkpointing
         if ((i+1) % checkpoint == 0):
