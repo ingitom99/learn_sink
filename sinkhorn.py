@@ -1,4 +1,6 @@
 """
+sinkhorn.py
+
 Implementations the Sinkhorn algorithm for computing approximate solutions to
 the entropic regularized optimal transport problem.
 """

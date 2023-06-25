@@ -7,10 +7,10 @@ import ot
 import datetime
 import os
 import torch
-from cost_matrices import l2_cost_mat
+from cost import l2_cost_mat
 from train import the_hunt
 from nets import GenNet, PredNet
-from utils import hilb_proj_loss, plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, preprocessor, test_set_sampler
+from test_funcs import hilb_proj_loss, plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, preprocessor, test_set_sampler
 
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
@@ -31,18 +31,20 @@ dust_const = 1e-6
 skip_const = 0.5
 width_gen = 6 * dim
 width_pred = 6 * dim
-eps_test_const_val = 3e-4
-max_eps_var = 5e-2
+eps_test_const_val = 4e-4
 min_eps_var = 5e-4
+max_eps_var = 1e-3
+
 
 # Training Hyperparams
 n_loops = 10000
 n_mini_loops_gen = 3
 n_mini_loops_pred = 3
-n_batch = 300
+n_batch = 200
 lr_gen = 0.1
 lr_pred = 0.1
-lr_factor = 0.9998
+lr_fact_gen = 1.0
+lr_fact_pred = 1.0
 learn_gen = True
 bootstrapped = True
 boot_no = 40
@@ -136,7 +138,8 @@ hyperparams = {
     'device': device,
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,
-    'learning rates scale factor': lr_factor,
+    'gen net learning rate factor': lr_fact_gen,
+    'pred net learning rate factor': lr_fact_pred,
     'no. unique data points gen': n_loops*n_mini_loops_gen*n_batch,
     'no. unique data points pred': n_loops*n_mini_loops_pred*n_batch,
     'no. loops' : n_loops,
@@ -183,7 +186,8 @@ train_losses, test_rel_errs_emd, test_rel_errs_sink = the_hunt(
         n_batch,
         lr_pred,
         lr_gen,
-        lr_factor,
+        lr_fact_gen,
+        lr_fact_pred,
         learn_gen,
         bootstrapped,
         boot_no,

@@ -1,11 +1,79 @@
 """
-Functions to create datasets for testing.
+data_funcs.py
+
+Functions to create and process data.
 """
 
 import torch
 import torchvision
+import torchvision.transforms.functional as F
 import numpy as np
 from skimage.draw import random_shapes
+
+def preprocessor(dataset : torch.Tensor, length : int,
+                 dust_const : float) -> torch.Tensor:
+    
+    """
+    Resize, dust and normalize a dataset.
+
+    Parameters
+    ----------
+    dataset : (n, dim) torch.Tensor
+        Dataset.
+    length : int
+        Length of the resized dataset.
+    dust_const : float
+        Dust constant.
+
+    Returns
+    -------
+    processed_dataset : (n, dim) torch.Tensor
+        Processed dataset.
+    """
+    
+    resized_dataset = F.interpolate(dataset.unsqueeze(1), size=(length, length),
+                                    mode='bilinear',
+                                    align_corners=False).squeeze(1)
+
+    flattened_dataset = resized_dataset.view(-1, length**2)
+
+    normalized_dataset = flattened_dataset / flattened_dataset.sum(dim=1,
+                                                                   keepdim=True)
+
+    processed_dataset = normalized_dataset + dust_const
+
+    processed_dataset /= processed_dataset.sum(dim=1, keepdim=True)
+
+    return processed_dataset
+
+def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
+
+    """
+    Randomly sample from a given test set.
+
+    Parameters
+    ----------
+    test_set : (n_test_samples, 2 * dim) torch.Tensor
+        Test set.
+    n_samples : int
+        Number of samples.
+    
+    Returns
+    -------
+    test_sample : (n_samples, 2 * dim) torch.Tensor
+        Random sample from the test set.
+    """
+
+    rand_perm_a = torch.randperm(test_set.size(0))
+    rand_mask_a = rand_perm_a[:n_samples]
+    test_sample_a = test_set[rand_mask_a]
+    rand_perm_b= torch.randperm(test_set.size(0))
+    rand_mask_b = rand_perm_b[:n_samples]
+    test_sample_b = test_set[rand_mask_b]
+    test_sample = torch.cat((test_sample_a, test_sample_b), dim=1)
+    test_sample = torch.flatten(test_sample, start_dim=1)
+
+    return test_sample
 
 
 def rand_noise(n_samples : int, dim : int, dust_const : float,
