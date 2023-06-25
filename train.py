@@ -130,7 +130,7 @@ def the_hunt(
                 emd = test_emds[key]
 
                 P = pred_net(X_test)
-                loss = loss_func(P, T)
+                loss = loss_func(P, T).mean()
                 
                 pred_dist = get_pred_dists(P, X_test, eps, cost_mat, dim)
 
@@ -177,17 +177,19 @@ def the_hunt(
         T= V[nan_mask]
         P = pred_net(X)
                 
-        pred_loss = loss_func(P, T)
-        train_losses.append(pred_loss.mean().item())
+        pred_losses = loss_func(P, T)
 
         # Find worst point
-        arg_worst = loss.argmax()
+        arg_worst = pred_losses.argmax()
 
         # Update x_worst
         x_worst = X[arg_worst]
 
         # Calculate mean loss
-        loss = loss.mean()
+        pred_loss = pred_losses.mean()
+        
+        # Update train_losses
+        train_losses.append(pred_loss.item())
 
         # Update
         pred_optimizer.zero_grad()
