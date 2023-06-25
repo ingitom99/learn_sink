@@ -228,6 +228,7 @@ def the_hunt(
             T = T_gen
             P = pred_net(X)
 
+            gen_loss = 0
             gen_loss_0 = -loss_func(P, T).item()
             gen_loss_iters = 0
 
@@ -327,6 +328,7 @@ def the_hunt(
         T = T_pred
         P = pred_net(X)  
 
+        pred_loss = float('inf')
         pred_loss_0 = loss_func(P, T).item()
         pred_loss_iters = 0
 
