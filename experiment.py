@@ -38,11 +38,12 @@ width_gen = 6 * dim
 width_pred = 6 * dim
 
 # Training Hyperparams
-n_loops = 10000
-n_mini_loops_gen = 3
-n_mini_loops_pred = 3
+n_loops = 1000
+while_fact_gen = 1.1
+while_fact_pred = 0.9
+maxiter_mini = 100
 n_batch = 200
-lr_gen = 0.05
+lr_gen = 0.1
 lr_pred = 0.05
 lr_fact_gen = 1.0
 lr_fact_pred = 1.0
@@ -150,11 +151,10 @@ hyperparams = {
     'pred net learning rate': lr_pred,
     'learning rate scale factor gen': lr_fact_gen,
     'learning rate scale factor pred': lr_fact_pred,
-    'no. unique data points gen': n_loops*n_mini_loops_gen*n_batch,
-    'no. unique data points pred': n_loops*n_mini_loops_pred*n_batch,
     'no. loops' : n_loops,
-    'no. mini loops gen' : n_mini_loops_gen,
-    'no. mini loops pred' : n_mini_loops_pred,
+    'while loop factor gen': while_fact_gen,
+    'while loop factor pred': while_fact_pred,
+    'maxiter mini': maxiter_mini,
     'batch size': n_batch,
     'test_iter': test_iter,
     'no. test samples': n_test,
@@ -192,8 +192,9 @@ train_losses, test_losses, test_rel_errs_emd, test_warmstarts = the_hunt(
         test_emds,
         test_T,
         n_loops,
-        n_mini_loops_gen,
-        n_mini_loops_pred,
+        while_fact_gen,
+        while_fact_pred,
+        maxiter_mini,
         n_batch,
         lr_pred,
         lr_gen,
