@@ -1,12 +1,13 @@
 """
 cost.py
+-------
 
 Function(s) for generating cost matrices for optimal transport problems.
 """
 
 import torch
 
-def l2_cost_mat(width : int, height : int, normed: bool = True
+def l2_cost(width : int, height : int, normed: bool = True
                    ) -> torch.Tensor:
 
     """
@@ -23,12 +24,12 @@ def l2_cost_mat(width : int, height : int, normed: bool = True
 
     Returns
     -------
-    C : (n, n) torch.Tensor
-        The cost matrix.
+    cost_mat: (n, n) torch.Tensor
+        The cost matrix. n = width * height.
     """
 
     n = width * height
-    C = torch.zeros([n, n])
+    cost_mat = torch.zeros([n, n])
 
     for a in range(n):
         for b in range(n):
@@ -36,9 +37,9 @@ def l2_cost_mat(width : int, height : int, normed: bool = True
             ay = a % width
             bx = b // width
             by = b % width
-            C[a][b] = ((ax - bx)**2 + (ay - by)**2)*.5
+            cost_mat[a][b] = ((ax - bx)**2 + (ay - by)**2)*.5
 
     if normed:
-        C = C / C.max()
+        cost_mat = cost_mat / cost_mat.max()
 
-    return C
+    return cost_mat

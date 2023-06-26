@@ -3,14 +3,15 @@ Let the hunt begin!
 """
 
 # Imports
-import ot
 import datetime
 import os
 import torch
-from cost import l2_cost_mat
+import ot
+from cost import l2_cost
 from train import the_hunt
 from nets import GenNet, PredNet
-from test_funcs import hilb_proj_loss, plot_train_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, preprocessor, test_set_sampler
+from loss import hilb_proj_loss
+from data_funcs import preprocessor, test_set_sampler
 
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
@@ -52,8 +53,16 @@ n_test = 100
 test_iter = 1000
 checkpoint = 1000000
 
+# Device
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f'Device: {device}')
+
 # Initialization of cost matrix
-cost_mat = l2_cost_mat(length, length, normed=True).double().to(device)
+cost = l2_cost(length, length, normed=True).double().to(device)
+
+# Regularization parameter
+eps = cost.max() * 4e-4
+print(f'Entropic egularization param: {eps}')
 
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')
@@ -164,15 +173,15 @@ with open(output_file, 'w', encoding='utf-8') as file:
 
 
 # Run the hunt
-train_losses, test_rel_errs_emd, test_rel_errs_sink = the_hunt(
+train_losses, test_losses, test_rel_errs_emd, warmstarts = the_hunt(
         deer,
         puma,
         loss_func,
-        cost_mat,
+        cost, 
         min_eps_var,
         max_eps_var,
         eps_test_const,
-        eps_test_var,
+        eps_test_var,   
         dust_const,
         dim_prior,
         dim,
@@ -180,6 +189,7 @@ train_losses, test_rel_errs_emd, test_rel_errs_sink = the_hunt(
         test_sets,
         test_emd,
         test_sink,
+        test_T,
         n_loops,
         n_mini_loops_gen,
         n_mini_loops_pred,
@@ -190,23 +200,9 @@ train_losses, test_rel_errs_emd, test_rel_errs_sink = the_hunt(
         lr_fact_pred,
         learn_gen,
         bootstrapped,
-        boot_no,
-        test_iter,
-        stamp_folder_path,
-        checkpoint,
+        n_boot : int,
+        extend_data : bool,
+        test_iter : int,
+        results_folder : str,
+        checkpoint : int,
         )
-
-# Testing mode
-deer.eval()
-puma.eval()
-
-# Saving nets
-torch.save(deer.state_dict(), f'{stamp_folder_path}/deer.pt')
-torch.save(puma.state_dict(), f'{stamp_folder_path}/puma.pt')
-
-# Plot the results
-plot_train_losses(train_losses, f'{stamp_folder_path}/train_losses.png')
-plot_test_rel_errs_emd(test_rel_errs_emd,
-                       f'{stamp_folder_path}/test_rel_errs_emd.png')
-plot_test_rel_errs_sink(test_rel_errs_sink,
-                        f'{stamp_folder_path}/test_rel_errs_sink.png')

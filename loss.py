@@ -1,12 +1,13 @@
 """
 loss.py
+-------
 
-Loss function(s).
+Function(s) for computing loss values.
 """
 
 import torch
 
-def hilb_proj_loss(U, V):
+def hilb_proj_loss(U: torch.Tensor, V: torch.Tensor) -> float:
 
     """
     Compute the mean Hilbert projective loss between pairs of vectors.
@@ -21,7 +22,7 @@ def hilb_proj_loss(U, V):
     Returns
     -------
     loss : float
-        Loss value.
+        Mean loss value.
     """
 
     diff = U - V
