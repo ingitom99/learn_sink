@@ -28,7 +28,7 @@ stamp_folder_path = './stamp_main_'+formatted_time
 os.mkdir(stamp_folder_path)
 
 # Problem hyperparameters
-length_prior = 14
+length_prior = 7
 length = 28
 dim_prior = length_prior**2
 dim = length**2
