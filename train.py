@@ -137,10 +137,10 @@ def the_hunt(
 
     # Initializing learning rate schedulers
     pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer,
-                                                            gamma=lr_fact_gen)
+                                                            gamma=lr_fact_pred)
     if learn_gen:
         gen_scheduler = torch.optim.lr_scheduler.ExponentialLR(gen_optimizer,
-                                                               gamma=lr_fact_pred)
+                                                            gamma=lr_fact_gen)
                                                                
     # Adjusting generated data numbers to keep batch size accurate with extension
     if extend_data:
