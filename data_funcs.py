@@ -222,6 +222,21 @@ def rand_noise_and_shapes(n_samples : int, dim : int, dust_const : float,
         return sample
 
 def get_mnist(n_samples : int, path : str) -> None:
+
+    """
+    Download and save a set of MNIST images as a pytorch tensor in a '.pt' file.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the MNIST dataset.
+    path : str
+        Path to save the dataset.
+
+    Returns
+    -------
+    None
+    """
     
     dataset = torchvision.datasets.MNIST(root="./data", download=True,
                                 transform=torchvision.transforms.ToTensor())
@@ -236,6 +251,22 @@ def get_mnist(n_samples : int, path : str) -> None:
     
 
 def get_omniglot(n_samples : int, path : str) -> None:
+
+    """
+    Download and save a set of Omniglot images as a pytorch tensor in a '.pt'
+    file.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the Omniglot dataset.
+    path : str
+        Path to save the dataset.
+
+    Returns
+    -------
+    None
+    """
 
     dataset = torchvision.datasets.Omniglot(root="./data", download=True,
                                 transform=torchvision.transforms.ToTensor())
@@ -253,6 +284,23 @@ def get_omniglot(n_samples : int, path : str) -> None:
     return None
     
 def get_cifar(n_samples : int, path : str) -> None:
+
+    """
+    Download and save a set of CIFAR10 images as a pytorch tensor in a '.pt'
+    file.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the CIFAR10 dataset.
+    path : str
+        Path to save the dataset.
+
+    Returns
+    -------
+    None
+    """
+
     dataset = torchvision.datasets.CIFAR10(root="./data", download=True,
                                 transform=torchvision.transforms.Grayscale())
     transformer = torchvision.transforms.ToTensor()
@@ -263,9 +311,27 @@ def get_cifar(n_samples : int, path : str) -> None:
     rand_perm = torch.randperm(len(cifar))
     cifar_save = cifar[rand_perm][:n_samples]
     torch.save(cifar_save, path)
+
     return None
 
 def get_lfw(n_samples : int, path : str) -> None:
+
+    """
+    Download and save a set of LFW images as a pytorch tensor in a '.pt'
+    file.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the LFW dataset.
+    path : str
+        Path to save the dataset.
+
+    Returns
+    -------
+    None
+    """
+
     dataset = torchvision.datasets.LFWPeople(root="./data", download=True, 
                                 transform=torchvision.transforms.Grayscale())
     transformer = torchvision.transforms.ToTensor()
@@ -282,6 +348,26 @@ def get_lfw(n_samples : int, path : str) -> None:
 
 def get_quickdraw(n_samples : int, root_np : str, path_torch : str,
                   class_name : str) -> None:
+    
+    """
+    Download and save a set of Quickdraw images of a specified class as a
+    pytorch tensor in a '.pt' file using an intermediary numpy array and file.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the Quickdraw dataset.
+    root_np : str
+        Path to folder to save the numpy array.
+    path_torch : str
+        Path to save the pytorch tensor.
+    class_name : str
+        Name of the class of images to download.
+
+    Returns
+    -------
+    None
+    """
 
     # Create directory if it does not exist
     if not os.path.exists(root_np):
@@ -314,6 +400,19 @@ def get_quickdraw(n_samples : int, root_np : str, path_torch : str,
 
 def get_quickdraw_class_names():
 
+    """
+    Get the list of class names for the Quickdraw dataset.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    class_names : list
+        List of class names.
+    """
+
     url = "https://raw.githubusercontent.com/googlecreativelab/quickdraw-dataset/master/categories.txt"
     response = urllib.request.urlopen(url)
 
@@ -324,44 +423,4 @@ def get_quickdraw_class_names():
 
     return class_names
 
-def get_quickdraw_all(n_samples : int, root_np : str, path_torch : str) -> None:
-
-    class_names = get_quickdraw_class_names()
-
-    dataset_global = torch.zeros((len(class_names), n_samples, 28, 28))
-
-    for i, class_name in enumerate(class_names):
-        # Create directory if it does not exist
-        if not os.path.exists(root_np):
-            os.makedirs(root_np)
-
-        # Define class-specific URL and filename
-        url = f"https://storage.googleapis.com/quickdraw_dataset/full/numpy_bitmap/{class_name}.npy"
-        filename = os.path.join(root_np, f"{class_name}.npy")
-
-        # Download the dataset file
-        urllib.request.urlretrieve(url, filename)
-
-        # Replace spaces in class name with underscores
-        class_name = class_name.replace(' ', '_')
-        filename = os.path.join(root_np, f"{class_name}.npy")
-
-        # Load numpy array and convert to tensor
-        data_array = np.load(filename)
-        dataset = torch.from_numpy(data_array).float()
-
-        # Concatenate tensors along the first dimension
-        dataset = dataset.reshape(-1, 28, 28)
-
-        rand_perm = torch.randperm(len(dataset))
-        dataset = dataset[rand_perm][:n_samples]
-
-        dataset_global[i] = dataset
-    
-    rand_perm = torch.randperm(len(dataset_global))
-    dataset_global = dataset_global[rand_perm][:n_samples]
-
-    torch.save(dataset, path_torch)
-
-    return None
 
