@@ -176,7 +176,7 @@ def the_hunt(
                 test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
                 test_losses[key].append(loss.item())
 
-                plot_XPT(X_test, P, T, dim)
+                plot_XPT(X_test[0], P[0], T[0], dim)
 
             # Plotting
             plot_train_losses(train_losses)
