@@ -176,6 +176,8 @@ def the_hunt(
                 test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
                 test_losses[key].append(loss.item())
 
+                plot_XPT(X_test, P, T, dim)
+
             # Plotting
             plot_train_losses(train_losses)
             plot_test_losses(test_losses)
@@ -287,7 +289,13 @@ def the_hunt(
             pred_optimizer.step()
 
         if ((i+1) % test_iter == 0) or (i == 0):
+
             plot_XPT(X[0], P[0], T[0], dim)
+
+            # print current learning rates
+            print(f'gen lr: {gen_optimizer.param_groups[0]["lr"]}')
+            print(f'pred lr: {pred_optimizer.param_groups[0]["lr"]}')
+
         # Checkpointing
         if ((i+1) % checkpoint == 0):
         
@@ -302,10 +310,12 @@ def the_hunt(
             torch.save(pred_net.state_dict(), f'{results_folder}/puma.pt')
 
             # Test warmstart
-            warmstarts = test_warmstart(pred_net, test_sets, test_emds, cost_mat, eps, dim)
+            warmstarts = test_warmstart(pred_net, test_sets, test_emds,
+                                        cost_mat, eps, dim)
 
             # Plot the results
-            plot_train_losses(train_losses, f'{results_folder}/train_losses.png')
+            plot_train_losses(train_losses,
+                              f'{results_folder}/train_losses.png')
             plot_test_losses(test_losses, f'{results_folder}/test_losses.png')
             plot_test_rel_errs_emd(test_rel_errs_emd,
                                    f'{results_folder}/test_rel_errs.png')
