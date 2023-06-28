@@ -496,4 +496,3 @@ def get_quickdraw_multi(n_samples : int, n_classes : int, root_np : str,
     torch.save(dataset, path_torch)
 
     return None
-
