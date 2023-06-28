@@ -200,8 +200,12 @@ def the_hunt(
         pred_scheduler.step()
 
         if ((i+1) % test_iter == 0) or (i == 0):
+
+            # Plot an example of the data and predictions from current iter
             plot_XPT(X[0], P[0], T[0], dim)
-            print(f'lr: {pred_scheduler.get_last_lr()}')
+
+            # print current learning rate
+            print(f'pred lr: {pred_optimizer.param_groups[0]["lr"]}')
 
         # Checkpointing
         if ((i+1) % checkpoint == 0):
@@ -228,5 +232,6 @@ def the_hunt(
         
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')
+
 
     return train_losses, test_losses, test_rel_errs_emd, warmstarts
