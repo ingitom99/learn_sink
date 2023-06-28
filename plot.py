@@ -73,7 +73,7 @@ def plot_train_losses(train_losses : dict, path: str = None) -> None:
 
     Returns
     -------
-    None.
+    None
     """
     
     plt.figure()
@@ -113,7 +113,7 @@ def plot_test_losses(test_losses : dict[str, list], path: str = None) -> None:
 
     Returns
     -------
-    None.
+    None
     """
 
     plt.figure()
@@ -149,7 +149,7 @@ def plot_test_rel_errs_emd(rel_errs_emd : dict[str, list],
 
     Returns
     -------
-    None.
+    None
     """
 
     plt.figure()
@@ -224,7 +224,7 @@ def plot_warmstarts(test_warmstart : dict[str, tuple],
 
     Returns
     -------
-    None.
+    None
     """
       
     for key in test_warmstart.keys():

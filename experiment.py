@@ -131,6 +131,12 @@ n_layers_pred = len(puma.layers)
 deer.train()
 puma.train()
 
+# Get total number of trainable parameters
+n_params_gen = sum(p.numel() for p in deer.parameters() if p.requires_grad)
+n_params_pred = sum(p.numel() for p in puma.parameters() if p.requires_grad)
+print(f'No. trainable parameters in gen net: {n_params_gen}')
+print(f'No. trainable parameters in pred net: {n_params_pred}')
+
 # Create txt file in stamp for hyperparams
 current_date = datetime.datetime.now().strftime('%d.%m.%Y')
 hyperparams = {
@@ -146,6 +152,8 @@ hyperparams = {
     'no. layers pred': n_layers_pred,
     'hidden layer width gen': width_gen,
     'hidden layer width pred': width_pred,
+    'total no. trainable parameters gen': n_params_gen,
+    'total no. trainable parameters pred': n_params_pred,
     'device': device,
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,

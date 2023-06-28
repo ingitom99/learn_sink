@@ -78,10 +78,12 @@ def the_hunt(
         The test set target log-centered Sinkhorn scaling factors.
     n_loops : int
         The number of global loops of the training algorithm.
-    n_mini_loops_gen : int
-        The number of mini loops for the generative neural network.
-    n_mini_loops_pred : int
-        The number of mini loops for the predictive neural network.
+    while_fact_gen : float
+        The loss increase factor for the generative neural network training
+        loop.
+    while_fact_pred : float
+        The loss decrease factor for the predictive neural network training
+        loop.
     n_batch : int
         The batch size.
     lr_pred : float
@@ -176,11 +178,6 @@ def the_hunt(
 
                 test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
                 test_losses[key].append(loss.item())
-
-            # Plotting
-            plot_train_losses(train_losses)
-            plot_test_losses(test_losses)
-            plot_test_rel_errs_emd(test_rel_errs_emd)
                  
         # Training Section
 
@@ -395,7 +392,22 @@ def the_hunt(
         pred_scheduler.step()
 
         if ((i+1) % test_iter == 0) or (i == 0):
+            
+            # Plotting a sample of data, target and prediction for current iter
             plot_XPT(X[0], P[0], T[0], dim)
+
+            # Plotting losses and rel errs
+            plot_train_losses(train_losses)
+            plot_test_losses(test_losses)
+            plot_test_rel_errs_emd(test_rel_errs_emd)
+
+            # print nan_mask sum
+            print(f'non nan batch size: {nan_mask.sum()}')
+
+            # print current learning rates
+            print(f'gen lr: {gen_optimizer.param_groups[0]["lr"]}')
+            print(f'pred lr: {pred_optimizer.param_groups[0]["lr"]}')
+            
 
         # Checkpointing
         if ((i+1) % checkpoint == 0):
