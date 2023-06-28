@@ -177,11 +177,6 @@ def the_hunt(
                 test_losses[key].append(loss.item())
 
                 plot_XPT(X_test[0], P[0], T[0], dim)
-
-            # Plotting
-            plot_train_losses(train_losses)
-            plot_test_losses(test_losses)
-            plot_test_rel_errs_emd(test_rel_errs_emd)
                  
         # Training Section
 
@@ -290,7 +285,13 @@ def the_hunt(
 
         if ((i+1) % test_iter == 0) or (i == 0):
 
+            # Plotting a sample of data, target and prediction for current iter
             plot_XPT(X[0], P[0], T[0], dim)
+
+            # Plotting losses and rel errs
+            plot_train_losses(train_losses)
+            plot_test_losses(test_losses)
+            plot_test_rel_errs_emd(test_rel_errs_emd)
 
             # print current learning rates
             print(f'gen lr: {gen_optimizer.param_groups[0]["lr"]}')
