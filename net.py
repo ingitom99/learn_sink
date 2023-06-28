@@ -2,7 +2,7 @@
 net.py
 -------
 
-Pytorch neural network class for the predictive networks.
+Pytorch neural network class for the predictive network.
 """
 
 import torch.nn as nn
