@@ -423,4 +423,76 @@ def get_quickdraw_class_names():
 
     return class_names
 
+def get_quickdraw_multi(n_samples : int, n_classes : int, root_np : str,
+                        path_torch : str) -> None:
+
+    """
+    Download and save a set of Quickdraw images from a specified number of
+    random classes as a pytorch tensor in a '.pt' file using intermediary numpy
+    arrays and files.
+
+    WARNING: SLOWWWW!
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the Quickdraw dataset.
+    n_classes : int
+        Number of random classes to use.
+    root_np : str
+        Path to folder to save the numpy arrays.
+    path_torch : str
+        Path to save the pytorch tensor.
+
+    Returns
+    -------
+    None
+    """
+    
+    datasets = []
+
+    class_names = get_quickdraw_class_names()
+
+    rand_mask = np.random.choice(len(class_names), n_classes, replace=False)
+
+    class_names = np.array(class_names)[rand_mask]
+
+    for class_name in tqdm(class_names):
+
+        # if class_name is two words, replace space with %20
+        if ' ' in class_name:
+            class_name = class_name.replace(' ', '%20')
+
+        # Create directory if it does not exist
+        if not os.path.exists(root_np):
+            os.makedirs(root_np)
+
+        # Define class-specific URL and filename
+        url = f"https://storage.googleapis.com/quickdraw_dataset/full/numpy_bitmap/{class_name}.npy"
+        filename = os.path.join(root_np, f"{class_name}.npy")
+
+        # Download the dataset file
+        urllib.request.urlretrieve(url, filename)
+
+        # Replace spaces in class name with underscores
+        class_name = class_name.replace(' ', '_')
+        filename = os.path.join(root_np, f"{class_name}.npy")
+
+        # Load numpy array and convert to tensor
+        data_array = np.load(filename)
+        dataset = torch.from_numpy(data_array).float()
+
+        # Concatenate tensors along the first dimension
+        dataset = dataset.reshape(-1, 28, 28)
+
+        datasets.append(dataset)
+    
+    dataset = torch.cat(datasets, dim=0)
+
+    rand_perm = torch.randperm(len(dataset))
+    dataset = dataset[rand_perm][:n_samples]
+
+    torch.save(dataset, path_torch)
+
+    return None
 

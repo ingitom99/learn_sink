@@ -69,20 +69,23 @@ print(f'Entropic egularization param: {eps}')
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')
 cifar = torch.load('./data/cifar_tensor.pt')
-teddies = torch.load('./data/teddies_tensor.pt')
+bear = torch.load('./data/bear_tensor.pt')
+quickdraw = torch.load('./data/quickdraw_tensor.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 omniglot = preprocessor(omniglot, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
-teddies = preprocessor(teddies, length, dust_const)
+bear = preprocessor(bear, length, dust_const)
+quickdraw = preprocessor(quickdraw, length, dust_const)
 
 mnist = test_set_sampler(mnist, n_test).double().to(device)
 omniglot = test_set_sampler(omniglot, n_test).double().to(device)
 cifar = test_set_sampler(cifar, n_test).double().to(device)
-teddies = test_set_sampler(teddies, n_test).double().to(device)
+bear = test_set_sampler(bear, n_test).double().to(device)
+quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
 
 test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
-             'teddies': teddies}
+             'bear': bear, 'quickdraw': quickdraw}
 
 # Creating a dictionary of test emds, and test targets for each test set
 test_emds = {}
@@ -130,6 +133,12 @@ n_layers_pred = len(puma.layers)
 deer.train()
 puma.train()
 
+# Get total number of trainable parameters
+n_params_gen = sum(p.numel() for p in deer.parameters() if p.requires_grad)
+n_params_pred = sum(p.numel() for p in puma.parameters() if p.requires_grad)
+print(f'No. trainable parameters in gen net: {n_params_gen}')
+print(f'No. trainable parameters in pred net: {n_params_pred}')
+
 # Create txt file in stamp for hyperparams
 current_date = datetime.datetime.now().strftime('%d.%m.%Y')
 hyperparams = {
@@ -145,6 +154,8 @@ hyperparams = {
     'no. layers pred': n_layers_pred,
     'hidden layer width gen': width_gen,
     'hidden layer width pred': width_pred,
+    'total no. trainable parameters gen': n_params_gen,
+    'total no. trainable parameters pred': n_params_pred,
     'device': device,
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,
