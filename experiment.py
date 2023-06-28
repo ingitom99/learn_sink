@@ -24,7 +24,7 @@ from data_funcs import preprocessor, test_set_sampler
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
 formatted_time = current_time.strftime('%m-%d_%H_%M_%S')
-stamp_folder_path = './stamp_main_'+formatted_time
+stamp_folder_path = './stamp_while_'+formatted_time
 os.mkdir(stamp_folder_path)
 
 # Problem hyperparameters
