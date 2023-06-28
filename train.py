@@ -138,11 +138,6 @@ def the_hunt(
 
                 test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
                 test_losses[key].append(loss.item())
-
-            # Plotting
-            plot_train_losses(train_losses)
-            plot_test_losses(test_losses)
-            plot_test_rel_errs_emd(test_rel_errs_emd)
                  
         # Training Section
 
@@ -203,6 +198,11 @@ def the_hunt(
 
             # Plot an example of the data and predictions from current iter
             plot_XPT(X[0], P[0], T[0], dim)
+
+            # Plotting losses and rel errs
+            plot_train_losses(train_losses)
+            plot_test_losses(test_losses)
+            plot_test_rel_errs_emd(test_rel_errs_emd)
 
             # print current learning rate
             print(f'pred lr: {pred_optimizer.param_groups[0]["lr"]}')
