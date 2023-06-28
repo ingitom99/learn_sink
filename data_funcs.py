@@ -458,6 +458,8 @@ def get_quickdraw_multi(n_samples : int, n_classes : int, root_np : str,
 
     class_names = np.array(class_names)[rand_mask]
 
+    n_samples_class = n_samples // n_classes
+
     for class_name in tqdm(class_names):
 
         # if class_name is two words, replace space with %20
@@ -485,6 +487,9 @@ def get_quickdraw_multi(n_samples : int, n_classes : int, root_np : str,
 
         # Concatenate tensors along the first dimension
         dataset = dataset.reshape(-1, 28, 28)
+
+        rand_perm = torch.randperm(len(dataset))
+        dataset = dataset[rand_perm][:n_samples_class]
 
         datasets.append(dataset)
     
