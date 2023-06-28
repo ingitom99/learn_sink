@@ -140,10 +140,10 @@ def the_hunt(
 
     # Initializing learning rate schedulers
     pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer,
-                                                            gamma=lr_fact_gen)
+                                                            gamma=lr_fact_pred)
     if learn_gen:
         gen_scheduler = torch.optim.lr_scheduler.ExponentialLR(gen_optimizer,
-                                                               gamma=lr_fact_pred)
+                                                            gamma=lr_fact_gen)
     
     # Adjust number of generated data points if extending data
     if extend_data:
@@ -178,7 +178,7 @@ def the_hunt(
 
                 test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
                 test_losses[key].append(loss.item())
-                
+
                 plot_XPT(X_test[0], P[0], T[0], dim)
                  
         # Training Section
