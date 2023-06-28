@@ -55,23 +55,29 @@ eps = cost_mat.max() * 4e-4
 print(f'Entropic regularization param: {eps}')
 
 # Loading, preprocessing, and sampling for the test sets dictionary
-mnist = torch.load('./data/mnist_tensor.pt')
-omniglot = torch.load('./data/omniglot_tensor.pt')
-cifar = torch.load('./data/cifar_tensor.pt')
-teddies = torch.load('./data/teddies_tensor.pt')
+mnist = torch.load('./data/mnist.pt')
+omniglot = torch.load('./data/omniglot.pt')
+cifar = torch.load('./data/cifar.pt')
+lfw = torch.load('./data/lfw.pt')
+bear = torch.load('./data/bear.pt')
+quickdraw = torch.load('./data/quickdraw.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 omniglot = preprocessor(omniglot, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
-teddies = preprocessor(teddies, length, dust_const)
+lfw = preprocessor(lfw, length, dust_const)
+bear = preprocessor(bear, length, dust_const)
+quickdraw = preprocessor(quickdraw, length, dust_const)
 
 mnist = test_set_sampler(mnist, n_test).double().to(device)
 omniglot = test_set_sampler(omniglot, n_test).double().to(device)
 cifar = test_set_sampler(cifar, n_test).double().to(device)
-teddies = test_set_sampler(teddies, n_test).double().to(device)
+lfw = test_set_sampler(lfw, n_test).double().to(device)
+bear = test_set_sampler(bear, n_test).double().to(device)
+quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
 
 test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
-             'teddies': teddies}
+             'lfw' : lfw, 'bear': bear, 'quickdraw': quickdraw}
 
 # Creating a dictionary of test emds, and test targets for each test set
 test_emds = {}
@@ -115,8 +121,12 @@ n_layers_pred = len(puma.layers)
 # Training mode
 puma.train()
 
+# Get total trainable parameters
+total_params_puma = sum(p.numel() for p in puma.parameters() if p.requires_grad)
+
 # Create txt file in stamp for hyperparams
 current_date = datetime.datetime.now().strftime('%d.%m.%Y')
+
 hyperparams = {
     'date': current_date,
     'data length': length,
@@ -125,6 +135,7 @@ hyperparams = {
     'dust constant': dust_const,
     'no. layers pred': n_layers_pred,
     'hidden layer width pred': width_pred,
+    'total trainable parameters': total_params_puma,
     'device': device,
     'learning rate': lr,
     'learning rate scale factor': lr_fact,
