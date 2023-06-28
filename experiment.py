@@ -88,8 +88,8 @@ lfw = test_set_sampler(lfw, n_test).double().to(device)
 bear = test_set_sampler(bear, n_test).double().to(device)
 quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
 
-test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar, 'lfw': lfw,  
-             'bear': bear, quickdraw: 'quickdraw'}
+test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar, 'lfw': lfw,
+            'bear': bear, 'quickdraw': quickdraw}
 
 # Creating a dictionary of test emds, and test targets for each test set
 test_emds = {}
