@@ -115,7 +115,6 @@ puma = PredNet(dim, width_pred).double().to(device)
 n_layers_pred = len(puma.layers)
 
 # Load model state dict
-#deer.load_state_dict(torch.load(f'{stamp_folder_path}/deer.pt'))
 #puma.load_state_dict(torch.load(f'{stamp_folder_path}/puma.pt'))
 
 # Training mode
