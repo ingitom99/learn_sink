@@ -424,11 +424,13 @@ def get_quickdraw_class_names():
 
     return class_names
 
-def get_quickdraw_all(n_samples : int, root_np : str, path_torch : str) -> None:
+def get_quickdraw_multi(n_samples : int, n_classes : int, root_np : str,
+                        path_torch : str) -> None:
 
     """
-    Download and save a set of Quickdraw images of all classes as a pytorch
-    tensor in a '.pt'
+    Download and save a set of Quickdraw images from a specified number of
+    random classes as a pytorch tensor in a '.pt' file using intermediary numpy
+    arrays and files.
 
     WARNING: SLOWWWW!
 
@@ -436,6 +438,8 @@ def get_quickdraw_all(n_samples : int, root_np : str, path_torch : str) -> None:
     ----------
     n_samples : int
         Number of samples from the Quickdraw dataset.
+    n_classes : int
+        Number of random classes to use.
     root_np : str
         Path to folder to save the numpy arrays.
     path_torch : str
@@ -448,7 +452,13 @@ def get_quickdraw_all(n_samples : int, root_np : str, path_torch : str) -> None:
     
     datasets = []
 
-    for class_name in tqdm(get_quickdraw_class_names()):
+    class_names = get_quickdraw_class_names()
+
+    rand_mask = np.random.choice(len(class_names), n_classes, replace=False)
+
+    class_names = np.array(class_names)[rand_mask]
+
+    for class_name in tqdm(class_names):
 
         # if class_name is two words, replace space with %20
         if ' ' in class_name:
