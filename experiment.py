@@ -70,22 +70,25 @@ print(f'Entropic egularization param: {eps}')
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')
 cifar = torch.load('./data/cifar_tensor.pt')
+lfw = torch.load('./data/lfw_tensor.pt')
 bear = torch.load('./data/bear_tensor.pt')
 quickdraw = torch.load('./data/quickdraw_tensor.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 omniglot = preprocessor(omniglot, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
+lfw = preprocessor(lfw, length, dust_const)
 bear = preprocessor(bear, length, dust_const)
 quickdraw = preprocessor(quickdraw, length, dust_const)
 
 mnist = test_set_sampler(mnist, n_test).double().to(device)
 omniglot = test_set_sampler(omniglot, n_test).double().to(device)
 cifar = test_set_sampler(cifar, n_test).double().to(device)
+lfw = test_set_sampler(lfw, n_test).double().to(device)
 bear = test_set_sampler(bear, n_test).double().to(device)
 quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
 
-test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
+test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar, 'lfw': lfw,  
              'bear': bear, quickdraw: 'quickdraw'}
 
 # Creating a dictionary of test emds, and test targets for each test set
