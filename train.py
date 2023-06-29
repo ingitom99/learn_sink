@@ -10,7 +10,7 @@ import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from test_funcs import test_warmstarts, get_pred_dists
-from sinkhorn import sink_vec
+from sinkhorn import sink_var_eps_vec
 from plot import plot_warmstarts, plot_train_losses, plot_test_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, plot_XPT
 from data_funcs import rand_noise
 from nets import GenNet, PredNet
@@ -20,15 +20,15 @@ def the_hunt(
         gen_net : GenNet,
         pred_net : PredNet,
         loss_func : callable,
-        cost_mat : torch.Tensor, 
-        min_eps_var : float,
-        max_eps_var : float,
-        eps_test_const : torch.Tensor,
-        eps_test_var : torch.Tensor,   
+        cost : torch.Tensor,  
         dust_const : float,
         dim_prior : int,
         dim : int,
         device : torch.device,
+        min_eps_var : float,
+        max_eps_var : float, 
+        eps_test_const : torch.Tensor,
+        eps_test_var : torch.Tensor, 
         test_sets: dict,
         test_emd : dict,
         test_sink : dict,
@@ -61,16 +61,8 @@ def the_hunt(
         The predictive neural network.
     loss_func : callable
         The loss function.
-    cost_mat : torch.Tensor
+    cost : torch.Tensor
         The cost matrix.
-    min_eps_var : float
-        The min regularization parameter size.
-    max_eps_var : float
-        The max regularization parameter size.
-    eps_test_const : torch.Tensor
-        The constant regularization parameter for testing.
-    eps_test_var : torch.Tensor
-        The variable regularization parameter vector for testing.
     eps : float
         The entropic regularization parameter.
     dust_const : float
@@ -81,6 +73,14 @@ def the_hunt(
         The dimension of the data.
     device : torch.device
         The device on which to run the algorithm.
+    min_eps_var : float
+        The min regularization parameter size.
+    max_eps_var : float
+        The max regularization parameter size.
+    eps_test_const : torch.Tensor
+        The constant regularization parameter for testing.
+    eps_test_var : torch.Tensor
+        The variable regularization parameter vector for testing.
     test_sets : dict
         The test sets.
     test_emds : dict
@@ -147,16 +147,17 @@ def the_hunt(
         test_rel_errs_sink[key] = []
 
     # Initializing optimizers
-    pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
     if learn_gen:
-        gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_gen)   
+        gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_gen)
+    pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
+       
 
     # Initializing learning rate schedulers
-    pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer,
-                                                            gamma=lr_fact_gen)
     if learn_gen:
         gen_scheduler = torch.optim.lr_scheduler.ExponentialLR(gen_optimizer,
-                                                               gamma=lr_fact_pred)
+                                                            gamma=lr_fact_gen)
+    pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer,
+                                                            gamma=lr_fact_pred)
                                                                
     # Adjusting generated data numbers to keep batch size accurate with extension
     if extend_data:
@@ -172,10 +173,10 @@ def the_hunt(
             print(f'Testing pred net at iter: {i+1}')
 
             # Setting networks to eval mode
-            pred_net.eval()
             if learn_gen:
                 gen_net.eval()
-
+            pred_net.eval()
+            
             for key in test_sets.keys():
 
                 X_test = test_sets[key]
@@ -186,9 +187,9 @@ def the_hunt(
                 P_var = pred_net(X_test_eps_var)
 
                 pred_dist_const = get_pred_dists(P_const, X_test,
-                                                 eps_test_const, cost_mat, dim)
+                                                 eps_test_const, cost, dim)
                 pred_dist_var = get_pred_dists(P_var, X_test,
-                                                  eps_test_var, cost_mat, dim)
+                                                  eps_test_var, cost, dim)
 
                 emd = test_emd[key]
                 sink = test_sink[key]
@@ -202,11 +203,6 @@ def the_hunt(
                 test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
                 test_rel_errs_sink[key].append(rel_errs_sink.mean().item())
                 test_losses[key].append(loss.item())
-
-            plot_test_rel_errs_emd(test_rel_errs_emd)
-            plot_test_rel_errs_sink(test_rel_errs_sink)
-            plot_test_losses(test_losses)
-            plot_train_losses(train_losses)
 
         # Training Section
 
@@ -234,30 +230,23 @@ def the_hunt(
                 with torch.no_grad():
                     if bootstrapped:
                         V0 = torch.exp(pred_net(X_eps))
-                        U, V = sink_vec(MU, NU, cost_mat,
-                                        eps, V0, n_boot)
+                        U, V = sink_var_eps_vec(MU, NU, cost, eps, V0, n_boot)
                         U = torch.log(U)
                         V = torch.log(V)
+                        V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
 
                     else:
                         V0 = torch.ones_like(MU)
-                        U, V = sink_vec(MU, NU, cost_mat, eps, V0, 1000)
+                        U, V = sink_var_eps_vec(MU, NU, cost, eps, V0, 1000)
                         U = torch.log(U)
                         V = torch.log(V)
+                        V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
 
                     nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
                         V).any(dim=1)).to(device)
 
-                if extend_data:
-                    X_gen, T_gen = extend(X, U, V, dim, nan_mask, device)
-
-                else:
-                    X_gen = X[nan_mask]
-                    V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
-                    T_gen = V[nan_mask]
-            
-                X = X_gen
-                T = T_gen
+                X = X_eps[nan_mask]
+                T = V[nan_mask]
                 P = pred_net(X)
 
                 gen_loss = -loss_func(P, T)
@@ -291,32 +280,25 @@ def the_hunt(
             X_eps = torch.cat((X, eps), dim=1)
 
             with torch.no_grad():
-
                 if bootstrapped:
                     V0 = torch.exp(pred_net(X_eps))
-                    U, V = sink_var_eps_vec(MU, NU, cost_mat, eps, V0, n_boot)
+                    U, V = sink_var_eps_vec(MU, NU, cost, eps, V0, n_boot)
                     U = torch.log(U)
                     V = torch.log(V)
+                    V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
 
                 else:
                     V0 = torch.ones_like(MU)
-                    U, V = sink_var_eps_vec(MU, NU, cost_mat, eps, V0, 1000)
+                    U, V = sink_var_eps_vec(MU, NU, cost, eps, V0, 1000)
                     U = torch.log(U)
                     V = torch.log(V)
-                
+                    V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
+
                 nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
-                    V).any(dim=1)).to(device)
+                                                    V).any(dim=1)).to(device)
 
-            if extend_data:
-                X_pred, T_pred = extend(X, U, V, dim, nan_mask, device)
-                
-            else:
-                X_pred = X[nan_mask]
-                V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
-                T_pred = V[nan_mask]
-
-            X = X_pred
-            T = T_pred
+            X = X_eps[nan_mask]
+            T = V[nan_mask]
             P = pred_net(X)
                     
             pred_loss = loss_func(P, T)
@@ -328,7 +310,18 @@ def the_hunt(
             pred_optimizer.step()
 
         if ((i+1) % test_iter == 0):
-            plot_XPT(X[0, :2*dim], P[0], T[0], dim)
+
+            # Plotting a sample of data, target and prediction for current iter
+            plot_XPT(X[0], P[0], T[0], dim)
+
+            # Plotting losses and rel errs
+            plot_train_losses(train_losses)
+            plot_test_losses(test_losses)
+            plot_test_rel_errs_emd(test_rel_errs_emd)
+
+            # print current learning rates
+            print(f'gen lr: {gen_optimizer.param_groups[0]["lr"]}')
+            print(f'pred lr: {pred_optimizer.param_groups[0]["lr"]}')
 
          # Checkpointing
         if ((i+1) % checkpoint == 0):
@@ -345,7 +338,7 @@ def the_hunt(
 
             # Test warmstart
             warmstarts = test_warmstarts(pred_net, test_sets, test_emd,
-                                         cost_mat, eps, dim)
+                                         cost, eps, dim)
 
             # Plot the results
             plot_train_losses(train_losses,
@@ -365,4 +358,10 @@ def the_hunt(
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')
 
-    return train_losses, test_losses, test_rel_errs_emd, warmstarts
+    return (
+        train_losses,
+        test_losses,
+        test_rel_errs_emd,
+        test_rel_errs_sink,
+        warmstarts
+    )

@@ -9,7 +9,7 @@ import torch
 from tqdm import tqdm
 from nets import PredNet
 
-def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : torch.Tensor,
+def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
                    C : torch.Tensor, dim : int) -> torch.Tensor:
     
     """
@@ -22,8 +22,8 @@ def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : torch.Tensor,
         Predicted 'V' scaling factors to be used as V0
     X : (n_samples, 2*dim) torch.Tensor
         Pairs of probability distributions.
-    eps : (n_samples,) torch.Tensor
-        Regularization parameters.
+    eps : float
+        Regularization parameter.
     C : (dim, dim) torch.Tensor
         Cost matrix.
     dim : int
@@ -36,9 +36,8 @@ def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : torch.Tensor,
     """
 
     dists = []
-    
-    for p, x, e in zip(P, X, eps):
-        K = torch.exp(-C/e)
+    K = torch.exp(-C/eps)
+    for p, x in zip(P, X):
         mu = x[:dim] / x[:dim].sum()
         nu = x[dim:] / x[dim:].sum()
         v = torch.exp(p)

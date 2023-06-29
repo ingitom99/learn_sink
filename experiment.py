@@ -12,6 +12,7 @@ from train import the_hunt
 from nets import GenNet, PredNet
 from loss import hilb_proj_loss
 from data_funcs import preprocessor, test_set_sampler
+from sinkhorn import sink_vec
 
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
@@ -64,24 +65,27 @@ cost = l2_cost(length, length, normed=True).double().to(device)
 eps = cost.max() * 4e-4
 print(f'Entropic egularization param: {eps}')
 
+# Loading, preprocessing, and sampling for the test sets dictionary
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')
 cifar = torch.load('./data/cifar_tensor.pt')
-teddies = torch.load('./data/teddies_tensor.pt')
+bear = torch.load('./data/bear_tensor.pt')
+quickdraw = torch.load('./data/quickdraw_tensor.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 omniglot = preprocessor(omniglot, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
-teddies = preprocessor(teddies, length, dust_const)
+bear = preprocessor(bear, length, dust_const)
+quickdraw = preprocessor(quickdraw, length, dust_const)
 
 mnist = test_set_sampler(mnist, n_test).double().to(device)
 omniglot = test_set_sampler(omniglot, n_test).double().to(device)
 cifar = test_set_sampler(cifar, n_test).double().to(device)
-teddies = test_set_sampler(teddies, n_test).double().to(device)
+bear = test_set_sampler(bear, n_test).double().to(device)
+quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
 
-# Create test sets dictionary
 test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
-             'teddies': teddies}
+             'bear': bear, 'quickdraw': quickdraw}
 
 # create n_test x 1 vector of random epsilons
 eps_test_var = torch.rand(n_test, 1).double().to(device)
@@ -89,23 +93,36 @@ eps_test_var = min_eps_var + (max_eps_var - min_eps_var) * eps_test_var
 eps_test_const = eps_test_const_val * torch.ones_like(eps_test_var)
 
 # for each test set, create a dictionary of test emds and test sinks
-test_emd = {}
-test_sink = {}
-for key in test_sets.keys():
-    emds = []
-    sinks = []
-    for x, e in zip(test_sets[key], eps_test_var):
+test_emds = {}
+test_sinks = {}
+test_T = {}
 
-        mu = x[:dim] / x[:dim].sum()
-        nu = x[dim:] / x[dim:].sum()
-        emd = ot.emd2(mu, nu, cost_mat)
-        emds.append(emd)
-        sink = ot.sinkhorn2(mu, nu, cost_mat, e, numItermax=2000)
-        sinks.append(sink)
-    emds = torch.tensor(emds)
-    sinks = torch.tensor(sinks)
-    test_emd[key] = emds
-    test_sink[key] = sinks
+print('Computing test emds, sinks, and targets...')
+for key in test_sets.keys():
+    print(f'{key}:')
+    with torch.no_grad():
+
+        X = test_sets[key]
+
+        V0 = torch.ones_like(X[:, :dim])
+        V = sink_vec(X[:, :dim], X[:, dim:], cost, eps, V0, 2000)[1]
+        V = torch.log(V)
+        T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
+        test_T[key] = T
+    
+        emds = []
+        sinks = []
+        for x, e in zip(X, eps_test_var):
+            mu = x[:dim] / x[:dim].sum()
+            nu = x[dim:] / x[dim:].sum()
+            emd = ot.emd2(mu, nu, cost)
+            emds.append(emd)
+            sink = ot.sinkhorn2(mu, nu, cost, e, 2000)
+            sinks.append(sink)
+        emds = torch.tensor(emds)
+        sinks = torch.tensor(sinks)
+        test_emds[key] = emds
+        test_sinks[key] = sinks
 
 # Initialization of loss function
 loss_func = hilb_proj_loss
@@ -127,6 +144,12 @@ n_layers_pred = len(puma.layers)
 deer.train()
 puma.train()
 
+# Total number of parameters for each net
+n_params_gen = sum(p.numel() for p in deer.parameters())
+n_params_pred = sum(p.numel() for p in puma.parameters())
+print(f'No. parameters in gen net: {n_params_gen}')
+print(f'No. parameters in pred net: {n_params_pred}')
+
 # Create txt file in stamp for hyperparams
 current_date = datetime.datetime.now().strftime('%d.%m.%Y')
 hyperparams = {
@@ -144,6 +167,8 @@ hyperparams = {
     'no. layers pred': n_layers_pred,
     'hidden layer width gen': width_gen,
     'hidden layer width pred': width_pred,
+    'No. trainable parameters gen': n_params_gen,
+    'No. trainable parameters pred': n_params_pred,
     'device': device,
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,
@@ -174,18 +199,18 @@ with open(output_file, 'w', encoding='utf-8') as file:
 
 # Run the hunt
 train_losses, test_losses, test_rel_errs_emd, warmstarts = the_hunt(
-        deer,
-        puma,
+        gen_net,
+        pred_net,
         loss_func,
-        cost, 
-        min_eps_var,
-        max_eps_var,
-        eps_test_const,
-        eps_test_var,   
+        cost,  
         dust_const,
         dim_prior,
         dim,
         device,
+        min_eps_var,
+        max_eps_var, 
+        eps_test_const,
+        eps_test_var, 
         test_sets,
         test_emd,
         test_sink,
@@ -200,9 +225,11 @@ train_losses, test_losses, test_rel_errs_emd, warmstarts = the_hunt(
         lr_fact_pred,
         learn_gen,
         bootstrapped,
-        n_boot : int,
-        extend_data : bool,
-        test_iter : int,
-        results_folder : str,
-        checkpoint : int,
-        )
+        n_boot,
+        extend_data,
+        test_iter,
+        results_folder,
+        checkpoint,
+        ) -> tuple[dict, dict, dict]:
+
+print('The hunt is over. Time to rest.')

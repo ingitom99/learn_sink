@@ -224,7 +224,7 @@ def plot_warmstarts(test_warmstart : dict[str, tuple],
 
     Returns
     -------
-    None
+    None.
     """
       
     for key in test_warmstart.keys():

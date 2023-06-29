@@ -7,8 +7,7 @@ Function(s) for generating cost matrices for optimal transport problems.
 
 import torch
 
-def l2_cost(width : int, height : int, normed: bool = True
-                   ) -> torch.Tensor:
+def l2_cost(width : int, height : int, normed: bool = True) -> torch.Tensor:
 
     """
     Create an L2 distance cost matrix.
@@ -24,12 +23,12 @@ def l2_cost(width : int, height : int, normed: bool = True
 
     Returns
     -------
-    cost_mat: (n, n) torch.Tensor
+    cost: (n, n) torch.Tensor
         The cost matrix. n = width * height.
     """
 
     n = width * height
-    cost_mat = torch.zeros([n, n])
+    cost = torch.zeros([n, n])
 
     for a in range(n):
         for b in range(n):
@@ -37,9 +36,9 @@ def l2_cost(width : int, height : int, normed: bool = True
             ay = a % width
             bx = b // width
             by = b % width
-            cost_mat[a][b] = ((ax - bx)**2 + (ay - by)**2)*.5
+            cost[a][b] = ((ax - bx)**2 + (ay - by)**2)*.5
 
     if normed:
-        cost_mat = cost_mat / cost_mat.max()
+        cost = cost / cost.max()
 
-    return cost_mat
+    return cost

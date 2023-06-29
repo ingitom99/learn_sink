@@ -98,7 +98,7 @@ class PredNet(nn.Module):
         super(PredNet, self).__init__()
         self.dim = dim
         self.width = width
-        self.l_1 = nn.Sequential(nn.Linear(2*dim, width), nn.BatchNorm1d(width),
+        self.l_1 = nn.Sequential(nn.Linear(2*dim + 1, width), nn.BatchNorm1d(width),
                                 nn.ELU())
         self.l_2 = nn.Sequential(nn.Linear(width, width), nn.BatchNorm1d(width),
                                  nn.ELU())

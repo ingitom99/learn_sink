@@ -6,16 +6,18 @@ Functions to create and process data for training and testing.
 """
 
 import torch
+import torch.nn.functional as F
 import torchvision
 import numpy as np
+import os
+import urllib
 from skimage.draw import random_shapes
-import torch.nn.functional as F
+
 
 def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
 
     """
-    Randomly sample from a given test set to create pairs of samples for
-    testing.
+    Randomly sample from a data set to create pairs of samples for testing.
 
     Parameters
     ----------
@@ -36,7 +38,6 @@ def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
     test_sample_a = test_set[rand_mask_a]
     test_sample_b = test_set[rand_mask_b]
     test_sample = torch.cat((test_sample_a, test_sample_b), dim=1)
-    test_sample = torch.flatten(test_sample, start_dim=1)
 
     return test_sample
 
@@ -174,40 +175,7 @@ def rand_shapes(n_samples : int, dim : int, dust_const : float,
     else:
         return sample_a
     
-def get_lfw(length : int, dust_const : float, download: bool = True
-              ) -> (torch.Tensor):
-    
-    """
-    Get the lfw dataset and process it.
-
-    Parameters
-    ----------
-    length : int
-        Length of the reshaped images.
-    dust_const : float
-        Constant to add to the images to avoid zero entries.
-    download : bool, optional
-        Whether to download the dataset or not. The default is True.
-    
-    Returns
-    -------
-    lfw : (n_samples, length**2) torch.Tensor
-        Processed lfw dataset.
-    """
-    dataset = torchvision.datasets.LFWPeople(root='./data', download=True,
-                                transform=torchvision.transforms.Grayscale())
-    totensor = torchvision.transforms.ToTensor()
-    resizer = torchvision.transforms.Resize((length, length), antialias=True)
-    lfw = torch.zeros((len(dataset), length**2))
-    for i, data_point in enumerate(dataset):
-        img = totensor(data_point[0])
-        img = resizer(img).reshape(-1)
-        lfw[i] = img
-    lfw = lfw / torch.unsqueeze(lfw.sum(dim=1), 1)
-    lfw = lfw + dust_const
-    lfw = lfw / torch.unsqueeze(lfw.sum(dim=1), 1)
-    
-    return lfw 
+                      
 
 def rand_noise_and_shapes(n_samples : int, dim : int, dust_const : float,
                           pairs : bool) -> torch.Tensor:
@@ -253,144 +221,283 @@ def rand_noise_and_shapes(n_samples : int, dim : int, dust_const : float,
         sample = sample / torch.unsqueeze(sample.sum(dim=1), 1)
         return sample
 
-def get_mnist(length : int, dust_const : float, download: bool = True
-              ) -> (torch.Tensor):
-    
+def get_mnist(n_samples : int, path : str) -> None:
+
     """
-    Get the MNIST dataset and process it.
+    Download and save a set of MNIST images as a pytorch tensor in a '.pt' file.
 
     Parameters
     ----------
-    length : int
-        Length of the reshaped images.
-    dust_const : float
-        Constant to add to the images to avoid zero entries.
-    download : bool, optional
-        Whether to download the dataset or not. The default is True.
-    
+    n_samples : int
+        Number of samples from the MNIST dataset.
+    path : str
+        Path to save the dataset.
+
     Returns
     -------
-    mnist : (n_samples, length**2) torch.Tensor
-        Processed MNIST dataset.
+    None
     """
-
-    mnist = torchvision.datasets.MNIST(
-    root='./data',
-    train=False,
-    download=download,
-    transform=torchvision.transforms.Resize((length, length), antialias=True)
-    )
-    mnist = torch.flatten(mnist.data, start_dim=1)
-    mnist = mnist / torch.unsqueeze(mnist.sum(dim=1), 1)
-    mnist = mnist  + dust_const
-    mnist = mnist / torch.unsqueeze(mnist .sum(dim=1), 1)
-    return mnist 
-
-def get_omniglot(length : int, dust_const : float, download: bool=True
-                 ) -> torch.Tensor:
-    """
-    Get the omniglot dataset and process it.
-
-    Parameters
-    ----------
-    length : int
-        Length of the reshaped images.
-    dust_const : float
-        Constant to add to the images to avoid zero entries.
-    download : bool, optional
-        Whether to download the dataset or not. The default is True.
     
-    Returns
-    -------
-    omniglot : (n_samples, length**2) torch.Tensor
-        Processed omniglot dataset.
-    """
-    dataset = torchvision.datasets.Omniglot(
-    root="./data",
-    download=download,
-    transform=torchvision.transforms.ToTensor()
-    )
-    omniglot = torch.ones((len(dataset), length**2))
-    resizer = torchvision.transforms.Resize((length, length), antialias=True)
+    dataset = torchvision.datasets.MNIST(root="./data", download=True,
+                                transform=torchvision.transforms.ToTensor())
+    mnist = torch.zeros((len(dataset), 28, 28))
     for i, datapoint in enumerate(dataset):
-        img = 1 - resizer(datapoint[0]).reshape(-1)
-        omniglot[i] = img
-    omniglot = (omniglot / torch.unsqueeze(omniglot.sum(dim=1), 1))
-    omniglot = omniglot + dust_const
-    omniglot = omniglot / torch.unsqueeze(omniglot.sum(dim=1), 1)
-    return omniglot
-  
-def get_cifar(length : int, dust_const : int, download: bool = True
-              ) -> torch.Tensor:
-
-    """
-    Get the CIFAR10 dataset and process it.
-
-    Parameters
-    ----------
-    length : int
-        Length of the reshaped images.
-    dust_const : float
-        Constant to add to the images to avoid zero entries.
-    download : bool, optional
-        Whether to download the dataset or not. The default is True.
-
-    Returns
-    -------
-    cifar : (n_samples, length**2) torch.Tensor
-        Processed CIFAR10 dataset.
-    """
-
-    dataset = torchvision.datasets.CIFAR100(
-    root="./data", download=download, 
-    transform=torchvision.transforms.Grayscale()
-    )
-    totensor = torchvision.transforms.ToTensor()
-    resizer = torchvision.transforms.Resize((length, length), antialias=True)
-    cifar = torch.zeros((len(dataset), length**2))
-    for i, data_point in enumerate(dataset):
-        img = totensor(data_point[0])
-        img = resizer(img).reshape(-1)
-        cifar[i] = img
-    cifar = cifar / torch.unsqueeze(cifar.sum(dim=1), 1)
-    cifar = cifar + dust_const
-    cifar = cifar / torch.unsqueeze(cifar.sum(dim=1), 1)
-    return cifar
-
-def get_flowers(length, dust_const, download=True) -> torch.Tensor:
-
-    """
-    Get the FLOWERS102 dataset and process it.
-
-    Parameters
-    ----------
-    length : int
-        Length of the reshaped images.
-    dust_const : float
-        Constant to add to the images to avoid zero entries.
-    download : bool, optional
-        Whether to download the dataset or not. The default is True.
+        image = datapoint[0]
+        mnist[i] = image
+    rand_perm = torch.randperm(len(mnist))
+    mnist_save = mnist[rand_perm][:n_samples]
+    torch.save(mnist_save, path)
+    return None
     
+
+def get_omniglot(n_samples : int, path : str) -> None:
+
+    """
+    Download and save a set of Omniglot images as a pytorch tensor in a '.pt'
+    file.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the Omniglot dataset.
+    path : str
+        Path to save the dataset.
+
     Returns
     -------
-    flowers : (n_samples, length**2) torch.Tensor
-        Processed FLOWERS102 dataset.
+    None
     """
 
-    dataset = torchvision.datasets.Flowers102(
-        root="./data",
-        download=download,
-        transform=torchvision.transforms.Grayscale()
-        )
-    totensor = torchvision.transforms.ToTensor()
-    resizer = torchvision.transforms.Resize((length, length), antialias=True)
-    flowers = torch.zeros((len(dataset), length**2))
+    dataset = torchvision.datasets.Omniglot(root="./data", download=True,
+                                transform=torchvision.transforms.ToTensor())
+    
+    omniglot = torch.zeros((len(dataset), 105, 105))
     for i, datapoint in enumerate(dataset):
-        img = totensor(datapoint[0])
-        img = resizer(img).reshape(-1)
-        flowers[i] = img
-    flowers = (flowers / torch.unsqueeze(flowers.sum(dim=1), 1))
-    flowers = flowers + dust_const
-    flowers = flowers / torch.unsqueeze(flowers.sum(dim=1), 1)
-    return flowers
+        image = datapoint[0]
+        omniglot[i] = image
+    
+    rand_perm = torch.randperm(len(omniglot))
+    omniglot_save = omniglot[rand_perm][:n_samples]
+
+    torch.save(omniglot_save, path)
+
+    return None
+    
+def get_cifar(n_samples : int, path : str) -> None:
+
+    """
+    Download and save a set of CIFAR10 images as a pytorch tensor in a '.pt'
+    file.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the CIFAR10 dataset.
+    path : str
+        Path to save the dataset.
+
+    Returns
+    -------
+    None
+    """
+
+    dataset = torchvision.datasets.CIFAR10(root="./data", download=True,
+                                transform=torchvision.transforms.Grayscale())
+    transformer = torchvision.transforms.ToTensor()
+    cifar = torch.zeros((len(dataset), 32, 32))
+    for i, datapoint in enumerate(dataset):
+        image = transformer(datapoint[0])
+        cifar[i] = image
+    rand_perm = torch.randperm(len(cifar))
+    cifar_save = cifar[rand_perm][:n_samples]
+    torch.save(cifar_save, path)
+
+    return None
+
+def get_lfw(n_samples : int, path : str) -> None:
+
+    """
+    Download and save a set of LFW images as a pytorch tensor in a '.pt'
+    file.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the LFW dataset.
+    path : str
+        Path to save the dataset.
+
+    Returns
+    -------
+    None
+    """
+
+    dataset = torchvision.datasets.LFWPeople(root="./data", download=True, 
+                                transform=torchvision.transforms.Grayscale())
+    transformer = torchvision.transforms.ToTensor()
+    lfw = torch.zeros((len(dataset), 250, 250))
+
+    for i, datapoint in enumerate(dataset):
+        image = transformer(datapoint[0])
+        lfw[i] = image
+    
+    rand_perm = torch.randperm(len(lfw))
+    lfw_save = lfw[rand_perm][:n_samples]
+    torch.save(lfw_save, path)
+    return None 
+
+def get_quickdraw(n_samples : int, root_np : str, path_torch : str,
+                  class_name : str) -> None:
+    
+    """
+    Download and save a set of Quickdraw images of a specified class as a
+    pytorch tensor in a '.pt' file using an intermediary numpy array and file.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the Quickdraw dataset.
+    root_np : str
+        Path to folder to save the numpy array.
+    path_torch : str
+        Path to save the pytorch tensor.
+    class_name : str
+        Name of the class of images to download.
+
+    Returns
+    -------
+    None
+    """
+
+    # Create directory if it does not exist
+    if not os.path.exists(root_np):
+        os.makedirs(root_np)
+
+    # Define class-specific URL and filename
+    url = f"https://storage.googleapis.com/quickdraw_dataset/full/numpy_bitmap/{class_name}.npy"
+    filename = os.path.join(root_np, f"{class_name}.npy")
+
+    # Download the dataset file
+    urllib.request.urlretrieve(url, filename)
+
+    # Replace spaces in class name with underscores
+    class_name = class_name.replace(' ', '_')
+    filename = os.path.join(root_np, f"{class_name}.npy")
+
+    # Load numpy array and convert to tensor
+    data_array = np.load(filename)
+    dataset = torch.from_numpy(data_array).float()
+
+    # Concatenate tensors along the first dimension
+    dataset = dataset.reshape(-1, 28, 28)
+
+    rand_perm = torch.randperm(len(dataset))
+    dataset = dataset[rand_perm][:n_samples]
+
+    torch.save(dataset, path_torch)
+
+    return None
+
+def get_quickdraw_class_names():
+
+    """
+    Get the list of class names for the Quickdraw dataset.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    class_names : list
+        List of class names.
+    """
+
+    url = "https://raw.githubusercontent.com/googlecreativelab/quickdraw-dataset/master/categories.txt"
+    response = urllib.request.urlopen(url)
+
+    class_names = []
+    for line in response:
+        class_name = line.decode('utf-8').strip()
+        class_names.append(class_name)
+
+    return class_names
+
+def get_quickdraw_multi(n_samples : int, n_classes : int, root_np : str,
+                        path_torch : str) -> None:
+
+    """
+    Download and save a set of Quickdraw images from a specified number of
+    random classes as a pytorch tensor in a '.pt' file using intermediary numpy
+    arrays and files.
+
+    WARNING: SLOWWWW!
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples from the Quickdraw dataset.
+    n_classes : int
+        Number of random classes to use.
+    root_np : str
+        Path to folder to save the numpy arrays.
+    path_torch : str
+        Path to save the pytorch tensor.
+
+    Returns
+    -------
+    None
+    """
+    
+    datasets = []
+
+    class_names = get_quickdraw_class_names()
+
+    rand_mask = np.random.choice(len(class_names), n_classes, replace=False)
+
+    class_names = np.array(class_names)[rand_mask]
+
+    n_samples_class = n_samples // n_classes
+
+    for class_name in tqdm(class_names):
+
+        # if class_name is two words, replace space with %20
+        if ' ' in class_name:
+            class_name = class_name.replace(' ', '%20')
+
+        # Create directory if it does not exist
+        if not os.path.exists(root_np):
+            os.makedirs(root_np)
+
+        # Define class-specific URL and filename
+        url = f"https://storage.googleapis.com/quickdraw_dataset/full/numpy_bitmap/{class_name}.npy"
+        filename = os.path.join(root_np, f"{class_name}.npy")
+
+        # Download the dataset file
+        urllib.request.urlretrieve(url, filename)
+
+        # Replace spaces in class name with underscores
+        class_name = class_name.replace(' ', '_')
+        filename = os.path.join(root_np, f"{class_name}.npy")
+
+        # Load numpy array and convert to tensor
+        data_array = np.load(filename)
+        dataset = torch.from_numpy(data_array).float()
+
+        # Concatenate tensors along the first dimension
+        dataset = dataset.reshape(-1, 28, 28)
+
+        rand_perm = torch.randperm(len(dataset))
+        dataset = dataset[rand_perm][:n_samples_class]
+
+        datasets.append(dataset)
+    
+    dataset = torch.cat(datasets, dim=0)
+
+    rand_perm = torch.randperm(len(dataset))
+    dataset = dataset[rand_perm][:n_samples]
+
+    torch.save(dataset, path_torch)
+
+    return None
 
