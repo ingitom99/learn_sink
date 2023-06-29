@@ -1,3 +1,4 @@
+train.py
 """
 train.py
 -------
@@ -9,7 +10,7 @@ The algorithm(s) for training the neural network(s).
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from test_funcs import test_warmstarts, get_pred_dists
+from test_funcs import test_warmstart, get_pred_dists
 from sinkhorn import sink_var_eps_vec
 from plot import plot_warmstarts, plot_train_losses, plot_test_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, plot_XPT
 from data_funcs import rand_noise
@@ -20,15 +21,15 @@ def the_hunt(
         gen_net : GenNet,
         pred_net : PredNet,
         loss_func : callable,
-        cost : torch.Tensor,  
+        cost : torch.Tensor,
         dust_const : float,
         dim_prior : int,
         dim : int,
         device : torch.device,
         min_eps_var : float,
-        max_eps_var : float, 
+        max_eps_var : float,
         eps_test_const : torch.Tensor,
-        eps_test_var : torch.Tensor, 
+        eps_test_var : torch.Tensor,
         test_sets: dict,
         test_emd : dict,
         test_sink : dict,
@@ -44,12 +45,11 @@ def the_hunt(
         learn_gen : bool,
         bootstrapped : bool,
         n_boot : int,
-        extend_data : bool,
         test_iter : int,
         results_folder : str,
         checkpoint : int,
         ) -> tuple[dict, dict, dict]:
-    
+
     """
     The puma sharpens its teeth.
 
@@ -113,15 +113,13 @@ def the_hunt(
     n_boot : int
         The number iterations used to create targets in the bootstrapping
         method.
-    extend_data : bool
-        Whether or not to extend the data set using rotations and flips.
     test_iter : int
         The number of iterations between testing.
     results_folder : str
         The folder in which to save the results.
     checkpoint : int
         The number of iterations between checkpoints.
-    
+
     Returns
     -------
     train_losses : dict
@@ -150,7 +148,7 @@ def the_hunt(
     if learn_gen:
         gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_gen)
     pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
-       
+
 
     # Initializing learning rate schedulers
     if learn_gen:
@@ -158,12 +156,8 @@ def the_hunt(
                                                             gamma=lr_fact_gen)
     pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer,
                                                             gamma=lr_fact_pred)
-                                                               
-    # Adjusting generated data numbers to keep batch size accurate with extension
-    if extend_data:
-        n_data = n_batch // 4
-    else:
-        n_data = n_batch
+
+    n_data = n_batch
 
     for i in tqdm(range(n_loops)):
 
@@ -176,7 +170,7 @@ def the_hunt(
             if learn_gen:
                 gen_net.eval()
             pred_net.eval()
-            
+
             for key in test_sets.keys():
 
                 X_test = test_sets[key]
@@ -194,8 +188,10 @@ def the_hunt(
                 emd = test_emd[key]
                 sink = test_sink[key]
                 T = test_T[key]
-                
+
                 loss = loss_func(P_const, T)
+
+                plot_XPT(X_test[0], P_const[0], T[0], dim)
 
                 rel_errs_emd = torch.abs(pred_dist_const - emd) / emd
                 rel_errs_sink = torch.abs(pred_dist_var - sink) / sink
@@ -300,7 +296,7 @@ def the_hunt(
             X = X_eps[nan_mask]
             T = V[nan_mask]
             P = pred_net(X)
-                    
+
             pred_loss = loss_func(P, T)
             train_losses['pred'].append(pred_loss.item())
 
@@ -309,15 +305,16 @@ def the_hunt(
             pred_loss.backward(retain_graph=True)
             pred_optimizer.step()
 
-        if ((i+1) % test_iter == 0):
+        if ((i+1) % test_iter == 0) or (i == 0):
 
             # Plotting a sample of data, target and prediction for current iter
-            plot_XPT(X[0], P[0], T[0], dim)
+            plot_XPT(X[0, :2*dim], P[0], T[0], dim)
 
             # Plotting losses and rel errs
             plot_train_losses(train_losses)
             plot_test_losses(test_losses)
             plot_test_rel_errs_emd(test_rel_errs_emd)
+            plot_test_rel_errs_sink(test_rel_errs_sink)
 
             # print current learning rates
             print(f'gen lr: {gen_optimizer.param_groups[0]["lr"]}')
@@ -325,7 +322,7 @@ def the_hunt(
 
          # Checkpointing
         if ((i+1) % checkpoint == 0):
-        
+
             print(f'Checkpointing at epoch {i+1}...')
 
             # Testing mode
@@ -337,8 +334,8 @@ def the_hunt(
             torch.save(pred_net.state_dict(), f'{results_folder}/puma.pt')
 
             # Test warmstart
-            warmstarts = test_warmstarts(pred_net, test_sets, test_emd,
-                                         cost, eps, dim)
+            warmstarts = test_warmstart(pred_net, test_sets, test_emd,
+                                         cost, eps_test_const, dim)
 
             # Plot the results
             plot_train_losses(train_losses,

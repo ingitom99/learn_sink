@@ -7,6 +7,7 @@ import datetime
 import os
 import torch
 import ot
+from tqdm import tqdm
 from cost import l2_cost
 from train import the_hunt
 from nets import GenNet, PredNet
@@ -26,7 +27,7 @@ length = 28
 dim_prior = length_prior**2
 dim = length**2
 dust_const = 1e-6
-skip_const = 0.5
+skip_const = 0.7
 width_gen = 6 * dim
 width_pred = 6 * dim
 eps_test_const_val = 4e-4
@@ -35,19 +36,19 @@ max_eps_var = 1e-3
 
 # Training Hyperparams
 n_loops = 10000
-n_mini_loops_gen = 3
-n_mini_loops_pred = 3
-n_batch = 200
-lr_gen = 0.1
-lr_pred = 0.1
+n_mini_loops_gen = 1
+n_mini_loops_pred = 1
+n_batch = 500
+lr_gen = 0.05
+lr_pred = 0.05
 lr_fact_gen = 1.0
 lr_fact_pred = 1.0
 learn_gen = True
 bootstrapped = True
 n_boot = 40
-n_test = 100
-test_iter = 1000
-checkpoint = 1000000
+n_test = 50
+test_iter = 100
+checkpoint = 5000
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -107,15 +108,15 @@ for key in test_sets.keys():
         V = torch.log(V)
         T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
         test_T[key] = T
-    
+
         emds = []
         sinks = []
-        for x, e in zip(X, eps_test_var):
+        for x, e in tqdm(zip(X, eps_test_var)):
             mu = x[:dim] / x[:dim].sum()
             nu = x[dim:] / x[dim:].sum()
             emd = ot.emd2(mu, nu, cost)
             emds.append(emd)
-            sink = ot.sinkhorn2(mu, nu, cost, e, 2000)
+            sink = ot.sinkhorn2(mu, nu, cost, e, numItermax=2000)
             sinks.append(sink)
         emds = torch.tensor(emds)
         sinks = torch.tensor(sinks)
@@ -196,22 +197,28 @@ with open(output_file, 'w', encoding='utf-8') as file:
 
 
 # Run the hunt
-train_losses, test_losses, test_rel_errs_emd, warmstarts = the_hunt(
-        gen_net,
-        pred_net,
+(
+train_losses,
+test_losses,
+test_rel_errs_emd,
+test_rel_errs_sink,
+warmstarts
+ ) = the_hunt(
+        deer,
+        puma,
         loss_func,
-        cost,  
+        cost,
         dust_const,
         dim_prior,
         dim,
         device,
         min_eps_var,
-        max_eps_var, 
+        max_eps_var,
         eps_test_const,
-        eps_test_var, 
+        eps_test_var,
         test_sets,
-        test_emd,
-        test_sink,
+        test_emds,
+        test_sinks,
         test_T,
         n_loops,
         n_mini_loops_gen,
@@ -224,10 +231,11 @@ train_losses, test_losses, test_rel_errs_emd, warmstarts = the_hunt(
         learn_gen,
         bootstrapped,
         n_boot,
-        extend_data,
         test_iter,
-        results_folder,
+        stamp_folder_path,
         checkpoint,
-        ) -> tuple[dict, dict, dict]:
+        )
+
+print('The hunt is over. Time to rest.')
 
 print('The hunt is over. Time to rest.')
