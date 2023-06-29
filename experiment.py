@@ -20,10 +20,6 @@ formatted_time = current_time.strftime('%m-%d_%H_%M_%S')
 stamp_folder_path = './stamp_var_eps_'+formatted_time
 os.mkdir(stamp_folder_path)
 
-# Device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f'Device: {device}')
-
 # Scenario Hyperparams
 length_prior = 7
 length = 28
@@ -37,7 +33,6 @@ eps_test_const_val = 4e-4
 min_eps_var = 5e-4
 max_eps_var = 1e-3
 
-
 # Training Hyperparams
 n_loops = 10000
 n_mini_loops_gen = 3
@@ -49,7 +44,7 @@ lr_fact_gen = 1.0
 lr_fact_pred = 1.0
 learn_gen = True
 bootstrapped = True
-boot_no = 40
+n_boot = 40
 n_test = 100
 test_iter = 1000
 checkpoint = 1000000
@@ -69,23 +64,26 @@ print(f'Entropic egularization param: {eps}')
 mnist = torch.load('./data/mnist_tensor.pt')
 omniglot = torch.load('./data/omniglot_tensor.pt')
 cifar = torch.load('./data/cifar_tensor.pt')
+lfw = torch.load('./data/lfw_tensor.pt')
 bear = torch.load('./data/bear_tensor.pt')
 quickdraw = torch.load('./data/quickdraw_tensor.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 omniglot = preprocessor(omniglot, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
+lfw = preprocessor(lfw, length, dust_const)
 bear = preprocessor(bear, length, dust_const)
 quickdraw = preprocessor(quickdraw, length, dust_const)
 
 mnist = test_set_sampler(mnist, n_test).double().to(device)
 omniglot = test_set_sampler(omniglot, n_test).double().to(device)
 cifar = test_set_sampler(cifar, n_test).double().to(device)
+lfw = test_set_sampler(lfw, n_test).double().to(device)
 bear = test_set_sampler(bear, n_test).double().to(device)
 quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
 
-test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
-             'bear': bear, 'quickdraw': quickdraw}
+test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar, 'lfw': lfw,
+            'bear': bear, 'quickdraw': quickdraw}
 
 # create n_test x 1 vector of random epsilons
 eps_test_var = torch.rand(n_test, 1).double().to(device)
@@ -184,7 +182,7 @@ hyperparams = {
     'no. test samples': n_test,
     'learn gen?': learn_gen,
     'bootstrapped?': bootstrapped,
-    'no. bootstraps': boot_no,
+    'no. bootstraps': n_boot,
     'checkpoint': checkpoint,
 }
 
