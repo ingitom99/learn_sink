@@ -61,12 +61,12 @@ eps = cost.max() * 4e-4
 print(f'Entropic egularization param: {eps}')
 
 # Loading, preprocessing, and sampling for the test sets dictionary
-mnist = torch.load('./data/mnist_tensor.pt')
-omniglot = torch.load('./data/omniglot_tensor.pt')
-cifar = torch.load('./data/cifar_tensor.pt')
-lfw = torch.load('./data/lfw_tensor.pt')
-bear = torch.load('./data/bear_tensor.pt')
-quickdraw = torch.load('./data/quickdraw_tensor.pt')
+mnist = torch.load('./data/mnist.pt')
+omniglot = torch.load('./data/omniglot.pt')
+cifar = torch.load('./data/cifar.pt')
+lfw = torch.load('./data/lfw.pt')
+bear = torch.load('./data/bear.pt')
+quickdraw = torch.load('./data/quickdraw.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 omniglot = preprocessor(omniglot, length, dust_const)
