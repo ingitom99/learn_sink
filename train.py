@@ -20,7 +20,7 @@ def the_hunt(
         gen_net : GenNet,
         pred_net : PredNet,
         loss_func : callable,
-        cost_mat : torch.Tensor,    
+        cost : torch.Tensor,    
         eps : float,
         dust_const : float,
         dim_prior : int,
@@ -57,7 +57,7 @@ def the_hunt(
         The predictive neural network.
     loss_func : callable
         The loss function.
-    cost_mat : torch.Tensor
+    cost : torch.Tensor
         The cost matrix.
     eps : float
         The entropic regularization parameter.
@@ -169,7 +169,7 @@ def the_hunt(
                 P = pred_net(X_test)
                 loss = loss_func(P, T)
                 
-                pred_dist = get_pred_dists(P, X_test, eps, cost_mat, dim)
+                pred_dist = get_pred_dists(P, X_test, eps, cost, dim)
 
                 rel_errs_emd = torch.abs(pred_dist - emd) / emd
 
@@ -198,7 +198,7 @@ def the_hunt(
                 with torch.no_grad():
                     if bootstrapped:
                         V0 = torch.exp(P)
-                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat,
+                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost,
                                         eps, V0, n_boot)
                         U = torch.log(U)
                         V = torch.log(V)
@@ -206,7 +206,7 @@ def the_hunt(
                     else:
                         V0 = torch.ones_like(X[:, :dim])
                         U, V = sink_vec(X[:, :dim], X[:, dim:],
-                                        cost_mat, eps, V0, 1000)
+                                        cost, eps, V0, 1000)
                         U = torch.log(U)
                         V = torch.log(V)
 
@@ -249,13 +249,13 @@ def the_hunt(
                 if bootstrapped:
                     V0 = torch.exp(pred_net(X))
                     U, V = sink_vec(X[:, :dim], X[:, dim:],
-                                    cost_mat, eps, V0, n_boot)
+                                    cost, eps, V0, n_boot)
                     U = torch.log(U)
                     V = torch.log(V)
 
                 else:
                     V0 = torch.ones_like(X[:, :dim])
-                    U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat,
+                    U, V = sink_vec(X[:, :dim], X[:, dim:], cost,
                                     eps, V0, 1000)
                     U = torch.log(U)
                     V = torch.log(V)
@@ -312,7 +312,7 @@ def the_hunt(
 
             # Test warmstart
             warmstarts = test_warmstart(pred_net, test_sets, test_emds,
-                                        cost_mat, eps, dim)
+                                        cost, eps, dim)
 
             # Plot the results
             plot_train_losses(train_losses,

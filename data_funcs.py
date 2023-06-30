@@ -11,6 +11,7 @@ import torchvision
 import numpy as np
 import os
 import urllib
+from tqdm import tqdm
 from skimage.draw import random_shapes
 
 
