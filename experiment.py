@@ -48,10 +48,10 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f'Device: {device}')
 
 # Initialization of cost matrix
-cost_mat = l2_cost(length, length, normed=True).double().to(device)
+cost = l2_cost(length, length, normed=True).double().to(device)
 
 # Regularization parameter
-eps = cost_mat.max() * 4e-4
+eps = cost.max() * 4e-4
 print(f'Entropic regularization param: {eps}')
 
 # Loading, preprocessing, and sampling for the test sets dictionary
@@ -91,7 +91,7 @@ for key in test_sets.keys():
         X = test_sets[key]
 
         V0 = torch.ones_like(X[:, :dim])
-        V = sink_vec(X[:, :dim], X[:, dim:], cost_mat, eps, V0, 2000)[1]
+        V = sink_vec(X[:, :dim], X[:, dim:], cost, eps, V0, 2000)[1]
         V = torch.log(V)
         T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
         test_T[key] = T
@@ -100,7 +100,7 @@ for key in test_sets.keys():
         for x in tqdm(X):
             mu = x[:dim] / x[:dim].sum()
             nu = x[dim:] / x[dim:].sum()
-            emd = ot.emd2(mu, nu, cost_mat)
+            emd = ot.emd2(mu, nu, cost)
             emds.append(emd)
         emds = torch.tensor(emds)
         test_emds[key] = emds
@@ -162,7 +162,7 @@ with open(output_file, 'w', encoding='utf-8') as file:
 the_hunt(
     puma,
     loss_func,
-    cost_mat,    
+    cost,    
     eps,
     dust_const,
     mutation_sigma,
