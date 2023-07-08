@@ -9,7 +9,7 @@ import torch
 from tqdm import tqdm
 from nets import PredNet
 
-def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
+def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : torch.Tensor,
                    C : torch.Tensor, dim : int) -> torch.Tensor:
     
     """
@@ -22,8 +22,8 @@ def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
         Predicted 'V' scaling factors to be used as V0
     X : (n_samples, 2*dim) torch.Tensor
         Pairs of probability distributions.
-    eps : float
-        Regularization parameter.
+    eps : (n_samples,) torch.Tensor
+        Regularization parameters.
     C : (dim, dim) torch.Tensor
         Cost matrix.
     dim : int
@@ -36,8 +36,9 @@ def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
     """
 
     dists = []
-    K = torch.exp(-C/eps)
-    for p, x in zip(P, X):
+    
+    for p, x, e in zip(P, X, eps):
+        K = torch.exp(-C/e)
         mu = x[:dim] / x[:dim].sum()
         nu = x[dim:] / x[dim:].sum()
         v = torch.exp(p)
@@ -50,7 +51,7 @@ def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
     return dists
 
 def test_warmstart(pred_net : PredNet, test_sets : dict, test_emds,
-                   C : torch.Tensor, eps : float,
+                   C : torch.Tensor, eps: torch.Tensor,
                    dim : int) -> tuple[list, list]:
   
     """
@@ -88,8 +89,9 @@ def test_warmstart(pred_net : PredNet, test_sets : dict, test_emds,
         emds = test_emds[key]
 
         # Initiliazing Sinkhorn algorithm
-        K = torch.exp(C/-eps)
-        V_pred = torch.exp(pred_net(X))
+        K = torch.exp(C/-eps[0])
+        X_eps = torch.cat((X, eps), dim=1)
+        V_pred = torch.exp(pred_net(X_eps))
         V_ones = torch.ones_like(V_pred)
         MU = X[:, :dim]
         NU = X[:, dim:]

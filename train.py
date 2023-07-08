@@ -262,6 +262,7 @@ def the_hunt(
                 
                 nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
                     V).any(dim=1)).to(device)
+                non_nan_total = nan_mask.sum().item()
 
             if extend_data:
                 X_pred, T_pred = extend(X, U, V, dim, nan_mask, device)
@@ -296,6 +297,9 @@ def the_hunt(
             # print current learning rates
             print(f'gen lr: {gen_optimizer.param_groups[0]["lr"]}')
             print(f'pred lr: {pred_optimizer.param_groups[0]["lr"]}')
+
+            # print non nan percentage
+            print(f'non nan percentage: {non_nan_total / n_data}')
 
         # Checkpointing
         if ((i+1) % checkpoint == 0):
