@@ -39,6 +39,8 @@ n_loops = 50000
 n_batch = 500
 lr = 0.3
 lr_fact = 0.9999
+bootstrapped = True
+n_boot = 50
 test_iter = 1000
 n_test = 100
 checkpoint = 50000
@@ -139,6 +141,8 @@ hyperparams = {
     'no. unique training data points': n_loops*n_batch,
     'no. loops' : n_loops,
     'batch size': n_batch,
+    'bootstrapped?': bootstrapped,
+    'no. bootstraps': n_boot,
     'test_iter': test_iter,
     'no. test samples': n_test,
     'checkpoint': checkpoint,
@@ -173,6 +177,8 @@ the_hunt(
     n_batch,
     lr,
     lr_fact,
+    bootstrapped,
+    n_boot,
     test_iter,
     stamp_folder_path,
     checkpoint,

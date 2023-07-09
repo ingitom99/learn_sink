@@ -19,7 +19,7 @@ from net import PredNet
 def the_hunt(
         pred_net : PredNet,
         loss_func : callable,
-        cost_mat : torch.Tensor,    
+        cost : torch.Tensor,    
         eps : float,
         dust_const : float,
         temp : float,
@@ -32,6 +32,8 @@ def the_hunt(
         n_batch : int,
         lr : float,
         lr_fact : float,
+        bootstrapped : bool,
+        n_boot : int,
         test_iter : int,
         results_folder : str,
         checkpoint : int,
@@ -42,13 +44,11 @@ def the_hunt(
 
     Parameters
     ----------
-    gen_net : GenNet
-        The generative neural network.
     pred_net : PredNet
         The predictive neural network.
     loss_func : callable
         The loss function.
-    cost_mat : torch.Tensor
+    cost : torch.Tensor
         The cost matrix.
     eps : float
         The entropic regularization parameter.
@@ -74,6 +74,11 @@ def the_hunt(
         The initial learning rate.
     lr_fact : float
         The learning rate decay factor.
+    bootstrapped : bool
+        Whether or not to use the bootstrapping method for target creation.
+    n_boot : int
+        The number iterations used to create targets in the bootstrapping
+        method.
     test_iter : int
         The number of iterations between testing.
     results_folder : str
@@ -141,7 +146,7 @@ def the_hunt(
                 P = pred_net(X_test)
                 loss = loss_func(P, T).mean()
                 
-                pred_dist = get_pred_dists(P, X_test, eps, cost_mat, dim)
+                pred_dist = get_pred_dists(P, X_test, eps, cost, dim)
 
                 rel_errs_emd = torch.abs(pred_dist - emd) / emd
 
@@ -168,16 +173,23 @@ def the_hunt(
         X = torch.cat((X_MU, X_NU), dim=1)
 
         with torch.no_grad(): 
-            V0 = torch.ones_like(X[:, :dim])
-            U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat,
-                            eps, V0, 1000)
-            U = torch.log(U)
-            V = torch.log(V)
-            
-            nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
-                V).any(dim=1)).to(device)
-            V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)     
+            if bootstrapped:
+                V0 = torch.exp(pred_net(X))
+                U, V = sink_vec(X[:, :dim], X[:, dim:],
+                                cost, eps, V0, n_boot)
+                U = torch.log(U)
+                V = torch.log(V)
 
+            else:
+                V0 = torch.ones_like(X[:, :dim])
+                U, V = sink_vec(X[:, :dim], X[:, dim:], cost,
+                                eps, V0, 1000)
+                U = torch.log(U)
+                V = torch.log(V) 
+
+            nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
+                        V).any(dim=1)).to(device)
+            
         X = X[nan_mask]
         T = V[nan_mask]
         P = pred_net(X)
@@ -241,7 +253,7 @@ def the_hunt(
 
             # Test warmstart
             warmstarts = test_warmstart(pred_net, test_sets, test_emds,
-                                        cost_mat, eps, dim)
+                                        cost, eps, dim)
 
             # Plot the results
             plot_train_losses(train_losses,
