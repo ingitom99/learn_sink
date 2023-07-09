@@ -63,7 +63,7 @@ cost = l2_cost(length, length, normed=True).double().to(device)
 
 # Regularization parameter
 eps = cost.max() * 4e-4
-print(f'Entropic egularization param: {eps}')
+print(f'Entropic regularization param: {eps}')
 
 # Loading, preprocessing, and sampling for the test sets dictionary
 mnist = torch.load('./data/mnist_tensor.pt')
