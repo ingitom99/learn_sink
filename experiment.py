@@ -30,7 +30,7 @@ os.mkdir(stamp_folder_path)
 # Problem hyperparameters
 length = 28
 dim = length**2
-dust_const = 5e-6
+dust_const = 1e-6
 width_pred = 6 * dim
 temp = 1.0
 
@@ -40,7 +40,7 @@ n_batch = 500
 lr = 0.3
 lr_fact = 0.9999
 test_iter = 1000
-n_test = 500
+n_test = 100
 checkpoint = 50000
 
 # Device
@@ -51,7 +51,7 @@ print(f'Device: {device}')
 cost = l2_cost(length, length, normed=True).double().to(device)
 
 # Regularization parameter
-eps = cost.max() * 4e-4
+eps = cost.max() * 3e-4
 print(f'Entropic regularization param: {eps}')
 
 # Loading, preprocessing, and sampling for the test sets dictionary
