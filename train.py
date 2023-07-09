@@ -8,6 +8,7 @@ The evolutionary algorithm(s) for training the neural network(s).
 # Imports
 import torch
 import matplotlib.pyplot as plt
+from torch.distributions.multivariate_normal import MultivariateNormal
 from tqdm import tqdm
 from test_funcs import test_warmstart, get_pred_dists
 from sinkhorn import sink_vec
@@ -21,7 +22,7 @@ def the_hunt(
         cost_mat : torch.Tensor,    
         eps : float,
         dust_const : float,
-        mutation_sigma : float,
+        temp : float,
         dim : int,
         device : torch.device,
         test_sets : dict,
@@ -53,8 +54,8 @@ def the_hunt(
         The entropic regularization parameter.
     dust_const : float
         The dusting constant.
-    mutation_sigma : float
-        The mutation Gaussian random noise standard deviation.
+    temp : float
+        The temperature hyperparameter for batch weights.
     dim : int
         The dimension of the data.
     device : torch.device
@@ -109,9 +110,17 @@ def the_hunt(
     pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer,
                                                             gamma=lr_fact)
     
-    # Initializing the worst point
-    x_worst = rand_noise(1, dim, dust_const,
-                         True).reshape(-1).double().to(device)
+    # Initializing mean and covariance matrix
+    sample_a = torch.rand((1, dim))
+    sample_a /= torch.unsqueeze(sample_a.sum(dim=1), 1)
+    sample_a = sample_a + dust_const
+    sample_a /= torch.unsqueeze(sample_a.sum(dim=1), 1)
+    sample_b = torch.rand((1, dim))
+    sample_b /= torch.unsqueeze(sample_b.sum(dim=1), 1)
+    sample_b = sample_b + dust_const
+    sample_b /= torch.unsqueeze(sample_b.sum(dim=1), 1)
+    mean = torch.cat((sample_a, sample_b), dim=1).reshape(-1)
+    cov = torch.eye(2*dim)
 
     for i in tqdm(range(n_loops)):
 
@@ -147,9 +156,8 @@ def the_hunt(
         pred_net.train()
 
         # Creating data
-
-        X = x_worst.repeat(n_batch, 1)
-        X = X + mutation_sigma * torch.randn(n_batch, 2*dim).double().to(device)
+        prior_dist = MultivariateNormal(loc=mean, covariance_matrix=cov)
+        X = prior_dist.sample((n_batch,)).double().to(device)
         X = torch.nn.functional.relu(X)
         X_MU = X[:, :dim] / X[:, :dim].sum(dim=1, keepdim=True)
         X_MU = X_MU + dust_const
@@ -171,16 +179,24 @@ def the_hunt(
             V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)     
 
         X = X[nan_mask]
-        T= V[nan_mask]
+        T = V[nan_mask]
         P = pred_net(X)
                 
         pred_losses = loss_func(P, T)
 
-        # Find worst point
-        arg_worst = pred_losses.argmax()
+        exps = torch.exp(- temp * pred_losses)
+        weights = exps / exps.sum()
 
-        # Update x_worst
-        x_worst = X[arg_worst]
+        weighted = weights.view(-1, 1) * X
+        mean = weighted.sum(dim=0) / nan_mask.sum()
+        mean_sig = torch.mean(X, dim=0)
+        centered_samples = X - mean_sig
+        cov = torch.matmul(centered_samples.t(),
+                             centered_samples) / (nan_mask.sum() - 1)
+
+        # Add regularization term to avoid singular covariance matrix
+        epsilon = 1e-6 
+        cov += epsilon * torch.eye(2*dim).double().to(device)
 
         # Calculate mean loss
         pred_loss = pred_losses.mean()
@@ -209,6 +225,9 @@ def the_hunt(
             # print current learning rate
             print(f'pred lr: {pred_optimizer.param_groups[0]["lr"]}')
 
+            # print non nan percentage
+            print(f'non nan percentage: {nan_mask.sum().item() / n_batch}')
+
         # Checkpointing
         if ((i+1) % checkpoint == 0):
         
@@ -232,8 +251,8 @@ def the_hunt(
                                    f'{results_folder}/test_rel_errs.png')
             plot_warmstarts(warmstarts, results_folder)
         
+        # Closing all plots
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')
-
 
     return train_losses, test_losses, test_rel_errs_emd, warmstarts
