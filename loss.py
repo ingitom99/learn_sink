@@ -21,7 +21,7 @@ def hilb_proj_loss(U: torch.Tensor, V: torch.Tensor) -> float:
     
     Returns
     -------
-    spectrum : float
+    spectrum : (n_samples,) torch.Tensor
         Loss values for each pair of data points.
     """
 
