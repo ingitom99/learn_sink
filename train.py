@@ -13,7 +13,6 @@ from tqdm import tqdm
 from test_funcs import test_warmstart, get_pred_dists
 from sinkhorn import sink_vec
 from plot import plot_warmstarts, plot_train_losses, plot_test_losses, plot_test_rel_errs_emd, plot_XPT
-from data_funcs import rand_noise
 from net import PredNet
 
 def the_hunt(
