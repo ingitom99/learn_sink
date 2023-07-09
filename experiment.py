@@ -32,16 +32,16 @@ length = 28
 dim = length**2
 dust_const = 5e-6
 width_pred = 6 * dim
-mutation_sigma = 0.1
+temp = 1.0
 
 # Training Hyperparams
-n_loops = 10000
+n_loops = 50000
 n_batch = 500
-lr = 0.01
-lr_fact = 0.999
+lr = 0.3
+lr_fact = 0.9999
 test_iter = 1000
 n_test = 500
-checkpoint = 10000
+checkpoint = 50000
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -56,28 +56,25 @@ print(f'Entropic regularization param: {eps}')
 
 # Loading, preprocessing, and sampling for the test sets dictionary
 mnist = torch.load('./data/mnist.pt')
-omniglot = torch.load('./data/omniglot.pt')
 cifar = torch.load('./data/cifar.pt')
 lfw = torch.load('./data/lfw.pt')
 bear = torch.load('./data/bear.pt')
 quickdraw = torch.load('./data/quickdraw.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
-omniglot = preprocessor(omniglot, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
 lfw = preprocessor(lfw, length, dust_const)
 bear = preprocessor(bear, length, dust_const)
 quickdraw = preprocessor(quickdraw, length, dust_const)
 
 mnist = test_set_sampler(mnist, n_test).double().to(device)
-omniglot = test_set_sampler(omniglot, n_test).double().to(device)
 cifar = test_set_sampler(cifar, n_test).double().to(device)
 lfw = test_set_sampler(lfw, n_test).double().to(device)
 bear = test_set_sampler(bear, n_test).double().to(device)
 quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
 
-test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar,
-             'lfw' : lfw, 'bear': bear, 'quickdraw': quickdraw}
+test_sets = {'mnist': mnist, 'cifar': cifar, 'lfw' : lfw, 'bear': bear,
+             'quickdraw': quickdraw}
 
 # Creating a dictionary of test emds, and test targets for each test set
 test_emds = {}
@@ -132,6 +129,7 @@ hyperparams = {
     'data dimension': dim,
     'regularization parameter': eps,
     'dust constant': dust_const,
+    'temperature': temp,
     'no. layers pred': n_layers_pred,
     'hidden layer width pred': width_pred,
     'total trainable parameters': total_params_puma,
@@ -165,7 +163,7 @@ the_hunt(
     cost,    
     eps,
     dust_const,
-    mutation_sigma,
+    temp,
     dim,
     device,
     test_sets,
