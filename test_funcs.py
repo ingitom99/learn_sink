@@ -50,7 +50,7 @@ def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
     return dists
 
 def test_warmstart(pred_net : PredNet, test_sets : dict, test_emds,
-                   C : torch.Tensor, eps: torch.Tensor,
+                   C : torch.Tensor, eps: float,
                    dim : int) -> tuple[list, list]:
   
     """
@@ -88,9 +88,8 @@ def test_warmstart(pred_net : PredNet, test_sets : dict, test_emds,
         emds = test_emds[key]
 
         # Initiliazing Sinkhorn algorithm
-        K = torch.exp(C/-eps[0])
-        X_eps = torch.cat((X, eps), dim=1)
-        V_pred = torch.exp(pred_net(X_eps))
+        K = torch.exp(C/-eps)
+        V_pred = torch.exp(pred_net(X))
         V_ones = torch.ones_like(V_pred)
         MU = X[:, :dim]
         NU = X[:, dim:]
