@@ -1,4 +1,3 @@
-nets.py
 """
 nets.py
 -------
