@@ -32,27 +32,27 @@ length_prior = 7
 length = 28
 dim_prior = length_prior**2
 dim = length**2
-dust_const = 5e-6
-skip_const = 0.5
+dust_const = 1e-6
+skip_const = 0.6
 width_gen = 6 * dim
 width_pred = 6 * dim
 
 # Training Hyperparams
-n_loops = 10000
-n_mini_loops_gen = 3
-n_mini_loops_pred = 3
-n_batch = 200
-lr_gen = 0.05
-lr_pred = 0.05
-lr_fact_gen = 1.0
-lr_fact_pred = 1.0
+n_loops = 100000
+n_mini_loops_gen = 1
+n_mini_loops_pred = 1
+n_batch = 500
+lr_gen = 0.25
+lr_pred = 0.25
+lr_fact_gen = 0.99995
+lr_fact_pred = 0.99995
 learn_gen = True
 bootstrapped = True
-n_boot = 100
+n_boot = 10
 extend_data = False
 test_iter = 1000
-n_test = 500
-checkpoint = 10000
+n_test = 100
+checkpoint = n_loops
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -67,28 +67,25 @@ print(f'Entropic regularization param: {eps}')
 
 # Loading, preprocessing, and sampling for the test sets dictionary
 mnist = torch.load('./data/mnist_tensor.pt')
-omniglot = torch.load('./data/omniglot_tensor.pt')
 cifar = torch.load('./data/cifar_tensor.pt')
 lfw = torch.load('./data/lfw_tensor.pt')
 bear = torch.load('./data/bear_tensor.pt')
 quickdraw = torch.load('./data/quickdraw_tensor.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
-omniglot = preprocessor(omniglot, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
 lfw = preprocessor(lfw, length, dust_const)
 bear = preprocessor(bear, length, dust_const)
 quickdraw = preprocessor(quickdraw, length, dust_const)
 
 mnist = test_set_sampler(mnist, n_test).double().to(device)
-omniglot = test_set_sampler(omniglot, n_test).double().to(device)
 cifar = test_set_sampler(cifar, n_test).double().to(device)
 lfw = test_set_sampler(lfw, n_test).double().to(device)
 bear = test_set_sampler(bear, n_test).double().to(device)
 quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
 
-test_sets = {'mnist': mnist, 'omniglot': omniglot, 'cifar': cifar, 'lfw': lfw,
-            'bear': bear, 'quickdraw': quickdraw}
+test_sets = {'mnist': mnist,'cifar': cifar, 'lfw': lfw, 'bear': bear,
+             'quickdraw': quickdraw}
 
 # Creating a dictionary of test emds, and test targets for each test set
 test_emds = {}
