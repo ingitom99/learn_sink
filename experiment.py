@@ -38,18 +38,17 @@ width_gen = 6 * dim
 width_pred = 6 * dim
 
 # Training Hyperparams
-n_loops = 10000
-n_mini_loops_gen = 3
-n_mini_loops_pred = 3
-n_batch = 200
-lr_gen = 0.05
-lr_pred = 0.05
-lr_fact_gen = 1.0
-lr_fact_pred = 1.0
-learn_gen = True
+n_loops = 50000
+n_mini_loops_gen = 1
+n_mini_loops_pred = 1
+n_batch = 500
+n_newpoints = 100
+lr_gen = 0.5
+lr_pred = 0.5
+lr_fact_gen = 0.99995
+lr_fact_pred = 0.99995
 bootstrapped = True
 n_boot = 100
-extend_data = False
 test_iter = 1000
 n_test = 500
 checkpoint = 10000
@@ -170,12 +169,11 @@ hyperparams = {
     'no. mini loops gen' : n_mini_loops_gen,
     'no. mini loops pred' : n_mini_loops_pred,
     'batch size': n_batch,
+    'new points per loop' : n_newpoints,
     'test_iter': test_iter,
     'no. test samples': n_test,
-    'learn gen?': learn_gen,
     'bootstrapped?': bootstrapped,
     'no. bootstraps': n_boot,
-    'extend data?': extend_data,
     'checkpoint': checkpoint,
 }
 
@@ -198,7 +196,6 @@ train_losses, test_losses, test_rel_errs_emd, test_warmstarts = the_hunt(
         loss_func,
         cost,    
         eps,
-        dust_const,
         dim_prior,
         dim,
         device,
@@ -209,14 +206,13 @@ train_losses, test_losses, test_rel_errs_emd, test_warmstarts = the_hunt(
         n_mini_loops_gen,
         n_mini_loops_pred,
         n_batch,
+        n_newpoints,
         lr_pred,
         lr_gen,
         lr_fact_gen,
         lr_fact_pred,
-        learn_gen,
         bootstrapped,
         n_boot,
-        extend_data,
         test_iter,
         stamp_folder_path,
         checkpoint,
