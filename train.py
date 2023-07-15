@@ -212,34 +212,30 @@ def the_hunt(
         # Training predictive neural net
         for _ in range(n_mini_loops_pred):
 
-            if i == 0:
+            if (i == 0):
                 prior_sample = torch.randn((n_batch,
                                             2 * dim_prior)).double().to(device)
-                X_pred = gen_net(prior_sample)
+                X = gen_net(prior_sample)
             
             else:
-                prior_sample = torch.randn((n_newpoints,
-                                            2 * dim_prior)).double().to(device)
-                X_new = gen_net(prior_sample)
-
-                keepers = torch.randperm(
-                                X_pred.shape[0])[:(n_batch - n_newpoints)]
-                X_pred = torch.cat((X_pred[keepers], X_new), dim=0)
-                shuffler = torch.randperm(X_pred.shape[0])
-                X_pred = X_pred[shuffler]
+                with torch.no_grad():
+                    prior_sample = torch.randn((n_newpoints,
+                                                2 * dim_prior)).double().to(device)
+                    X_new = gen_net(prior_sample)
+                X = torch.cat((X_old, X_new), dim=0)
 
             with torch.no_grad():
 
                 if bootstrapped:
-                    V0 = torch.exp(pred_net(X_pred))
-                    U, V = sink_vec(X_pred[:, :dim], X_pred[:, dim:],
+                    V0 = torch.exp(pred_net(X))
+                    U, V = sink_vec(X[:, :dim], X[:, dim:],
                                     cost, eps, V0, n_boot)
                     U = torch.log(U)
                     V = torch.log(V)
 
                 else:
-                    V0 = torch.ones_like(X_pred[:, :dim])
-                    U, V = sink_vec(X_pred[:, :dim], X_pred[:, dim:], cost,
+                    V0 = torch.ones_like(X[:, :dim])
+                    U, V = sink_vec(X[:, :dim], X[:, dim:], cost,
                                     eps, V0, 1000)
                     U = torch.log(U)
                     V = torch.log(V)
@@ -247,12 +243,18 @@ def the_hunt(
                 nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
                     V).any(dim=1)).to(device)
                 non_nan_total = nan_mask.sum().item()
+                keepers = torch.randperm(
+                                    X.shape[0])[:(n_batch - n_newpoints)]
+                X_old = X[keepers]
 
-            X_pred = X_pred[nan_mask]
-            P = pred_net(X_pred)
+            X_pred = X[nan_mask]
             V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
-            T = V[nan_mask]
-                    
+            T_pred = V[nan_mask]
+
+            X = X_pred
+            T = T_pred
+            P = pred_net(X_pred)
+             
             pred_loss = loss_func(P, T)
             train_losses['pred'].append(pred_loss.item())
 
