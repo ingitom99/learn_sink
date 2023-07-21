@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from test_funcs import test_warmstart, get_pred_dists
 from sinkhorn import sink_vec
-from plot import plot_warmstarts, plot_train_losses, plot_test_losses, plot_test_rel_errs_emd, plot_test_rel_errs_sink, plot_XPT
+from plot import plot_warmstarts, plot_train_losses, plot_test_losses, plot_test_rel_errs_sink, plot_XPT
 from data_funcs import rand_noise
 from nets import GenNet, PredNet
 from extend_data import extend
@@ -27,12 +27,14 @@ def the_hunt(
         dim : int,
         device : torch.device,
         test_sets: dict,
-        test_emds : dict,
+        test_sinks : dict,
         test_T : dict,
         n_loops : int,
         n_mini_loops_gen : int,
         n_mini_loops_pred : int,
         n_batch : int,
+        n_accumulation_gen : int,
+        n_accumulation_pred : int,
         lr_pred : float,
         lr_gen : float,
         lr_fact_gen : float,
@@ -71,8 +73,8 @@ def the_hunt(
         The device on which to run the algorithm.
     test_sets : dict
         The test sets.
-    test_emds : dict
-        The ot.emd2() values for the test sets.
+    test_sinks : dict
+        The ot.sinkhorn2() values for the test sets.
     test_T : dict
         The test set target log-centered Sinkhorn scaling factors.
     n_loops : int
@@ -83,6 +85,12 @@ def the_hunt(
         The number of mini loops for the predictive neural network.
     n_batch : int
         The batch size.
+    n_accumulation_gen : int
+        The number of gradients to accumulate before updating the generative
+        neural network.
+    n_accumulation_pred : int
+        The number of gradients to accumulate before updating the predictive
+        neural network.
     lr_pred : float
         The learning rate for the predictive neural network.
     lr_gen : float
@@ -114,8 +122,8 @@ def the_hunt(
         The training losses.
     test_losses : dict
         The test losses.
-    test_rel_errs_emd : dict
-        The test relative errors against the ot.emd2() values.
+    test_rel_errs_sink : dict
+        The test relative errors against the ot.sinkhorn2() values.
     warmstarts : dict
         The data tracking use of the predictive network as an initializtion
         for the Sinkhorn algorithm.
@@ -124,11 +132,11 @@ def the_hunt(
     # Initializing loss, relative error and warmstart collectors
     train_losses = {'gen': [], 'pred': []}
     test_losses = {}
-    test_rel_errs_emd = {}
+    test_rel_errs_sink = {}
     warmstarts = {}
     for key in test_sets.keys():
         test_losses[key] = []
-        test_rel_errs_emd[key] = []
+        test_rel_errs_sink[key] = []
 
     # Initializing optimizers
     pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
@@ -148,6 +156,9 @@ def the_hunt(
     else:
         n_data = n_batch
 
+    n_grads_gen = 0
+    n_grads_pred = 0
+
     for i in tqdm(range(n_loops)):
 
         # Testing predictive neural net
@@ -164,16 +175,16 @@ def the_hunt(
 
                 X_test = test_sets[key]
                 T = test_T[key]
-                emd = test_emds[key]
+                sink = test_sinks[key]
 
                 P = pred_net(X_test)
                 loss = loss_func(P, T)
                 
                 pred_dist = get_pred_dists(P, X_test, eps, cost, dim)
 
-                rel_errs_emd = torch.abs(pred_dist - emd) / emd
+                rel_errs_sink = torch.abs(pred_dist - sink) / sink
 
-                test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
+                test_rel_errs_sink[key].append(rel_errs_sink.mean().item())
                 test_losses[key].append(loss.item())
 
                 plot_XPT(X_test[0], P[0], T[0], dim)
@@ -187,6 +198,7 @@ def the_hunt(
 
         # Training generative neural net
         if learn_gen:
+            
             for _ in range(n_mini_loops_gen):
 
                 prior_sample = torch.randn((n_data,
@@ -225,13 +237,15 @@ def the_hunt(
                 T = T_gen
                 P = pred_net(X)
 
-                gen_loss = -loss_func(P, T)
+                gen_loss = -loss_func(P, T) / n_accumulation_gen
                 train_losses['gen'].append(gen_loss.item())
-
-                # Update
-                gen_optimizer.zero_grad()
                 gen_loss.backward(retain_graph=True)
-                gen_optimizer.step()
+                n_grads_gen += 1
+                # Update
+                if (n_grads_gen == n_accumulation_gen):
+                    gen_optimizer.step()
+                    gen_optimizer.zero_grad()
+                    n_grads_gen = 0
 
         # Training predictive neural net
         for _ in range(n_mini_loops_pred):
@@ -276,13 +290,15 @@ def the_hunt(
             T = T_pred
             P = pred_net(X)
                     
-            pred_loss = loss_func(P, T)
+            pred_loss = loss_func(P, T) / n_accumulation_pred
             train_losses['pred'].append(pred_loss.item())
+            pred_loss.backward(retain_graph=True)
+            n_grads_pred += 1
 
             # Update
-            pred_optimizer.zero_grad()
-            pred_loss.backward(retain_graph=True)
-            pred_optimizer.step()
+            if (n_grads_pred == n_accumulation_pred):
+                pred_optimizer.step()
+                pred_optimizer.zero_grad()
 
         if ((i+1) % test_iter == 0) or (i == 0):
 
@@ -292,7 +308,7 @@ def the_hunt(
             # Plotting losses and rel errs
             plot_train_losses(train_losses)
             plot_test_losses(test_losses)
-            plot_test_rel_errs_emd(test_rel_errs_emd)
+            plot_test_rel_errs_sink(test_rel_errs_sink)
 
             # print current learning rates
             print(f'gen lr: {gen_optimizer.param_groups[0]["lr"]}')
@@ -322,7 +338,7 @@ def the_hunt(
             plot_train_losses(train_losses,
                               f'{results_folder}/train_losses.png')
             plot_test_losses(test_losses, f'{results_folder}/test_losses.png')
-            plot_test_rel_errs_emd(test_rel_errs_emd,
+            plot_test_rel_errs_sink(test_rel_errs_sink,
                                    f'{results_folder}/test_rel_errs.png')
             plot_warmstarts(warmstarts, results_folder)
         
@@ -334,4 +350,4 @@ def the_hunt(
             gen_scheduler.step()
         pred_scheduler.step()
 
-    return train_losses, test_losses, test_rel_errs_emd, warmstarts
+    return train_losses, test_losses, test_rel_errs_sink, warmstarts
