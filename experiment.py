@@ -16,7 +16,7 @@ import ot
 from tqdm import tqdm
 from cost import l2_cost
 from sinkhorn import sink_vec
-#from train import the_hunt
+from train import the_hunt
 from nets import GenNet, PredNet
 from loss import hilb_proj_loss
 from data_funcs import preprocessor, test_set_sampler
