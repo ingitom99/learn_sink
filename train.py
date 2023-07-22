@@ -9,9 +9,9 @@ The algorithm(s) for training the neural network(s).
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from test_funcs import test_warmstart, get_pred_dists
+from test_funcs import test_warmstart_emd, test_warmstart_MCV, get_pred_dists
 from sinkhorn import sink_vec
-from plot import plot_warmstarts, plot_train_losses, plot_test_losses, plot_test_rel_errs_sink, plot_test_rel_errs_emd, plot_XPT
+from plot import plot_warmstarts_emd, plot_warmstarts_mcv, plot_train_losses, plot_test_losses, plot_test_rel_errs_sink, plot_test_rel_errs_emd, plot_XPT
 from data_funcs import rand_noise
 from nets import GenNet, PredNet
 from extend_data import extend
@@ -332,8 +332,10 @@ def the_hunt(
             torch.save(pred_net.state_dict(), f'{results_folder}/puma.pt')
 
             # Test warmstart
-            warmstarts = test_warmstart(pred_net, test_sets, test_sinks,
+            warmstarts_emd = test_warmstart_emd(pred_net, test_sets, test_emds,
                                         cost, eps, dim)
+            
+            warmstarts_mcv = test_warmstart_MCV(pred_net, test_sets, cost, eps, dim)
 
             # Plot the results
             plot_train_losses(train_losses,
@@ -343,7 +345,8 @@ def the_hunt(
                                    f'{results_folder}/test_rel_errs_sink.png')
             plot_test_rel_errs_emd(test_rel_errs_emd,
                                    f'{results_folder}/test_rel_errs_emd.png')
-            plot_warmstarts(warmstarts, results_folder)
+            plot_warmstarts_emd(warmstarts_emd, results_folder)
+            plot_warmstarts_mcv(warmstarts_mcv, results_folder)
 
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')

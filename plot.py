@@ -208,15 +208,15 @@ def plot_test_rel_errs_sink(rel_errs_sink : dict[str, list],
     
         return None
 
-def plot_warmstarts(test_warmstart : dict[str, tuple],
+def plot_warmstarts_emd(test_warmstart_emd : dict[str, tuple],
                     folder: str = None) -> None:
     
     """
-    Plot the warmstart graphs for each test set on different plots.
+    Plot the warmstart (emd) graphs for each test set on different plots.
 
     Parameters
     ----------
-    test_warmstart : dict[str, tuple]
+    test_warmstart_emd : dict[str, tuple]
         Dictionary of warmstart data (predicted V0 and ones V0).
     folder : str, optional
         Folder to save the plots to as png files. If None (default) the plots
@@ -227,12 +227,12 @@ def plot_warmstarts(test_warmstart : dict[str, tuple],
     None.
     """
       
-    for key in test_warmstart.keys():
+    for key in test_warmstart_emd.keys():
         plt.figure()
-        pred, ones = test_warmstart[key]
+        pred, ones = test_warmstart_emd[key]
         plt.plot(pred, label='predicted V0')
         plt.plot(ones, label='ones V0')
-        plt.title(f'Warmstart (sinkhorn vs ot.emd2): {key}')
+        plt.title(f'Warmstart (emd): {key}')
         plt.xlabel('# iterations')
         plt.ylabel('rel err')
         plt.yticks(torch.arange(0, 1.0001, 0.05))
@@ -240,7 +240,46 @@ def plot_warmstarts(test_warmstart : dict[str, tuple],
         plt.legend()
     
         if folder:
-            path = folder + f'/warmstart_{key}.png'
+            path = folder + f'/warmstart_emd_{key}.png'
+            plt.savefig(f'{path}')
+        else:
+            plt.show()
+
+    return None
+
+def plot_warmstarts_mcv(test_warmstart_mcv : dict[str, tuple],
+                    folder: str = None) -> None:
+    
+    """
+    Plot the warmstart (mcv) graphs for each test set on different plots.
+
+    Parameters
+    ----------
+    test_warmstart_mcv : dict[str, tuple]
+        Dictionary of warmstart data (predicted V0 and ones V0).
+    folder : str, optional
+        Folder to save the plots to as png files. If None (default) the plots
+        are displayed instead.
+
+    Returns
+    -------
+    None.
+    """
+      
+    for key in test_warmstart_mcv.keys():
+        plt.figure()
+        pred, ones = test_warmstart_mcv[key]
+        plt.plot(pred, label='predicted V0')
+        plt.plot(ones, label='ones V0')
+        plt.title(f'Warmstart (mcv): {key}')
+        plt.xlabel('# iterations')
+        plt.ylabel('rel err')
+        plt.yticks(torch.arange(0, 1.0001, 0.05))
+        plt.grid()
+        plt.legend()
+    
+        if folder:
+            path = folder + f'/warmstart_mcv_{key}.png'
             plt.savefig(f'{path}')
         else:
             plt.show()
