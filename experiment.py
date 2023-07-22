@@ -16,7 +16,7 @@ import ot
 from tqdm import tqdm
 from cost import l2_cost
 from sinkhorn import sink_vec
-from train import the_hunt
+#from train import the_hunt
 from nets import GenNet, PredNet
 from loss import hilb_proj_loss
 from data_funcs import preprocessor, test_set_sampler
@@ -24,7 +24,7 @@ from data_funcs import preprocessor, test_set_sampler
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
 formatted_time = current_time.strftime('%m-%d_%H_%M_%S')
-stamp_folder_path = './stamp_main_'+formatted_time
+stamp_folder_path = './stamps/stamp_main_'+formatted_time
 os.mkdir(stamp_folder_path)
 
 # Problem hyperparameters
@@ -33,22 +33,24 @@ length = 28
 dim_prior = length_prior**2
 dim = length**2
 dust_const = 1e-6
-skip_const = 0.6
+skip_const = 0.75
 width_gen = 6 * dim
 width_pred = 6 * dim
 
 # Training Hyperparams
-n_loops = 100000
+n_loops = 50000
 n_mini_loops_gen = 1
 n_mini_loops_pred = 1
-n_batch = 500
+n_batch = 200
+n_accumulation_gen = 5
+n_accumulation_pred = 5
 lr_gen = 0.25
 lr_pred = 0.25
-lr_fact_gen = 0.99995
-lr_fact_pred = 0.99995
+lr_fact_gen = 1.0
+lr_fact_pred = 0.99997
 learn_gen = True
 bootstrapped = True
-n_boot = 10
+n_boot = 40
 extend_data = False
 test_iter = 1000
 n_test = 100
@@ -62,15 +64,15 @@ print(f'Device: {device}')
 cost = l2_cost(length, length, normed=True).double().to(device)
 
 # Regularization parameter
-eps = cost.max() * 4e-4
+eps = cost.max() * 5e-4
 print(f'Entropic regularization param: {eps}')
 
 # Loading, preprocessing, and sampling for the test sets dictionary
-mnist = torch.load('./data/mnist_tensor.pt')
-cifar = torch.load('./data/cifar_tensor.pt')
-lfw = torch.load('./data/lfw_tensor.pt')
-bear = torch.load('./data/bear_tensor.pt')
-quickdraw = torch.load('./data/quickdraw_tensor.pt')
+mnist = torch.load('./data/mnist.pt')
+cifar = torch.load('./data/cifar.pt')
+lfw = torch.load('./data/lfw.pt')
+bear = torch.load('./data/bear.pt')
+quickdraw = torch.load('./data/quickdraw.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
@@ -103,7 +105,7 @@ for key in test_sets.keys():
         V = torch.log(V)
         T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
         test_T[key] = T
-    
+
         sinks = []
         for x in tqdm(X):
             mu = x[:dim] / x[:dim].sum()
@@ -166,7 +168,11 @@ hyperparams = {
     'no. loops' : n_loops,
     'no. mini loops gen' : n_mini_loops_gen,
     'no. mini loops pred' : n_mini_loops_pred,
-    'batch size': n_batch,
+    'batch size gradient update' : n_batch,
+    'batch size per step gen' : n_batch * n_accumulation_gen,
+    'batch size per step pred' : n_batch * n_accumulation_pred,
+    'no. gradients per step gen' : n_accumulation_gen,
+    'no. gradients per step pred' : n_accumulation_pred,
     'test_iter': test_iter,
     'no. test samples': n_test,
     'learn gen?': learn_gen,
@@ -193,7 +199,7 @@ train_losses, test_losses, test_rel_errs_sink, test_warmstarts = the_hunt(
         deer,
         puma,
         loss_func,
-        cost,    
+        cost,
         eps,
         dust_const,
         dim_prior,
@@ -206,6 +212,8 @@ train_losses, test_losses, test_rel_errs_sink, test_warmstarts = the_hunt(
         n_mini_loops_gen,
         n_mini_loops_pred,
         n_batch,
+        n_accumulation_gen,
+        n_accumulation_pred,
         lr_pred,
         lr_gen,
         lr_fact_gen,
