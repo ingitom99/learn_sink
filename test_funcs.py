@@ -128,3 +128,71 @@ def test_warmstart(pred_net : PredNet, test_sets : dict, test_emds,
         test_warmstarts[key] = (rel_err_means_pred, rel_err_means_ones)
 
     return test_warmstarts
+
+def MCV(mu : torch.Tensor, nu : torch.Tensor, G : torch.Tensor) -> float:
+    """
+    Compute the Marginal Constraint Violation (MCV) for a given optimal
+    transport plan (G) and its corresponding distributions (mu and nu).
+
+    Parameters
+    ----------
+    mu : (dim,) torch.Tensor
+        First probability distribution.
+    nu : (dim,) torch.Tensor
+        Second probability distribution.
+    G : (dim, dim) torch.Tensor
+        Optimal transport plan.
+
+    Returns
+    -------
+    MCV : float
+        Marginal Constraint Violation.
+    """
+    
+    ones = torch.ones_like(mu)
+    term_one = ones.T @ G  - nu.T
+    term_two = G @ ones - mu
+    MCV = (torch.linalg.norm(term_one, ord=1) + torch.linalg.norm(term_two,
+                                                                  ord=1))/2
+    return MCV
+
+def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, test_emds,
+                   C : torch.Tensor, eps: float,
+                   dim : int) -> tuple[list, list]:
+    
+
+    test_warmstarts_MCV = {}
+
+    for key in test_sets.keys():
+        X = test_sets[key]
+        # Initiliazing Sinkhorn algorithm
+        K = torch.exp(C/-eps)
+        MCVs_pred_all = torch.zeros(len(X), 1000)
+        MCVs_ones_all = torch.zeros(len(X), 1000)
+        for i, x in enumerate(X):
+            mu = x[:dim]
+            nu = x[dim:]
+            MCVs_pred = []
+            v_pred = torch.exp(pred_net(x))
+            v_ones = torch.ones_like(v_pred)
+            for _ in range(1000):
+                u_pred = mu / (K @ v_pred)
+                v_pred = nu / (K.T @ u_pred)
+                G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
+                MCV_pred = MCV(mu, nu, G_pred)
+                MCVs_pred.append(MCV_pred)
+
+                u_ones = mu / (K @ v_ones)
+                v_ones = nu / (K.T @ u_ones)
+                G_ones = torch.diag(u_ones)@K@torch.diag(v_ones)
+                MCV_ones = MCV(mu, nu, G_ones)
+                MCVs_ones.append(MCV_ones)
+            MCVs_pred = torch.tensor(MCVs_pred)
+            MCVs_ones = torch.tensor(MCVs_ones)
+            MCVs_pred_all[i] = MCVs_pred
+            MCVs_ones_all[i] = MCVs_ones
+        
+        test_warmstarts_MCV[key] = (MCVs_pred_all.mean(dim=0),
+                                    MCVs_ones_all.mean(dim=0))
+        
+    return test_warmstarts_MCV
