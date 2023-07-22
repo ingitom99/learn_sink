@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from test_funcs import test_warmstart, get_pred_dists
 from sinkhorn import sink_vec
-from plot import plot_warmstarts, plot_train_losses, plot_test_losses, plot_test_rel_errs_sink, plot_XPT
+from plot import plot_warmstarts, plot_train_losses, plot_test_losses, plot_test_rel_errs_sink, plot_test_rel_errs_emd, plot_XPT
 from data_funcs import rand_noise
 from nets import GenNet, PredNet
 from extend_data import extend
@@ -28,6 +28,7 @@ def the_hunt(
         device : torch.device,
         test_sets: dict,
         test_sinks : dict,
+        test_emds : dict,
         test_T : dict,
         n_loops : int,
         n_mini_loops_gen : int,
@@ -75,6 +76,8 @@ def the_hunt(
         The test sets.
     test_sinks : dict
         The ot.sinkhorn2() values for the test sets.
+    test_emds : dict
+        The ot.emd2() values for the test sets.
     test_T : dict
         The test set target log-centered Sinkhorn scaling factors.
     n_loops : int
@@ -133,10 +136,12 @@ def the_hunt(
     train_losses = {'gen': [], 'pred': []}
     test_losses = {}
     test_rel_errs_sink = {}
+    test_rel_errs_emd = {}
     warmstarts = {}
     for key in test_sets.keys():
         test_losses[key] = []
         test_rel_errs_sink[key] = []
+        test_rel_errs_emd[key] = []
 
     # Initializing optimizers
     pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
@@ -173,6 +178,7 @@ def the_hunt(
                 X_test = test_sets[key]
                 T = test_T[key]
                 sink = test_sinks[key]
+                emd = test_emds[key]
 
                 P = pred_net(X_test)
                 loss = loss_func(P, T)
@@ -180,8 +186,10 @@ def the_hunt(
                 pred_dist = get_pred_dists(P, X_test, eps, cost, dim)
 
                 rel_errs_sink = torch.abs(pred_dist - sink) / sink
+                rel_errs_emd = torch.abs(pred_dist - emd) / emd
 
                 test_rel_errs_sink[key].append(rel_errs_sink.mean().item())
+                test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
                 test_losses[key].append(loss.item())
 
                 plot_XPT(X_test[0], P[0], T[0], dim)
@@ -200,7 +208,7 @@ def the_hunt(
                 for _ in range(n_accumulation_gen):
 
                     prior_sample = torch.randn((n_data,
-                                                2 * dim_prior)).double().to(device)
+                                            2 * dim_prior)).double().to(device)
                     X = gen_net(prior_sample)
 
                     P = pred_net(X)
@@ -250,7 +258,7 @@ def the_hunt(
 
                 if learn_gen:
                     prior_sample = torch.randn((n_data,
-                                                2 * dim_prior)).double().to(device)
+                                            2 * dim_prior)).double().to(device)
                     X = gen_net(prior_sample)
 
                 else:
@@ -332,7 +340,9 @@ def the_hunt(
                               f'{results_folder}/train_losses.png')
             plot_test_losses(test_losses, f'{results_folder}/test_losses.png')
             plot_test_rel_errs_sink(test_rel_errs_sink,
-                                   f'{results_folder}/test_rel_errs.png')
+                                   f'{results_folder}/test_rel_errs_sink.png')
+            plot_test_rel_errs_emd(test_rel_errs_emd,
+                                   f'{results_folder}/test_rel_errs_emd.png')
             plot_warmstarts(warmstarts, results_folder)
 
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
@@ -343,4 +353,10 @@ def the_hunt(
             gen_scheduler.step()
         pred_scheduler.step()
 
-    return train_losses, test_losses, test_rel_errs_sink, warmstarts
+    return (
+        train_losses,
+        test_losses,
+        test_rel_errs_sink,
+        test_rel_errs_emd,
+        warmstarts
+    )

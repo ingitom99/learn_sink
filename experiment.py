@@ -91,6 +91,7 @@ test_sets = {'mnist': mnist,'cifar': cifar, 'lfw': lfw, 'bear': bear,
 
 # Creating a dictionary of test emds, and test targets for each test set
 test_sinks = {}
+test_emds = {}
 test_T = {}
 
 print('Computing test emds, sinks, and targets...')
@@ -114,6 +115,15 @@ for key in test_sets.keys():
             sinks.append(sink)
         sinks = torch.tensor(sinks)
         test_sinks[key] = sinks
+
+        emds = []
+        for x in tqdm(X):
+            mu = x[:dim] / x[:dim].sum()
+            nu = x[dim:] / x[dim:].sum()
+            emd = ot.emd2(mu, nu, cost)
+            emd.append(emd)
+        emd = torch.tensor(emd)
+        test_sinks[key] = emd
 
 # Initialization of loss function
 loss_func = hilb_proj_loss
@@ -207,6 +217,7 @@ train_losses, test_losses, test_rel_errs_sink, test_warmstarts = the_hunt(
         device,
         test_sets,
         test_sinks,
+        test_emds,
         test_T,
         n_loops,
         n_mini_loops_gen,
