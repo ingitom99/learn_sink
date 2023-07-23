@@ -9,9 +9,9 @@ The algorithm(s) for training the neural network(s).
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from test_funcs import test_warmstart_emd, test_warmstart_MCV, get_pred_dists
+from test_funcs import *
 from sinkhorn import sink_vec
-from plot import plot_warmstarts_emd, plot_warmstarts_mcv, plot_train_losses, plot_test_losses, plot_test_rel_errs_sink, plot_test_rel_errs_emd, plot_XPT
+from plot import *
 from data_funcs import rand_noise
 from nets import GenNet, PredNet
 from extend_data import extend
@@ -137,7 +137,7 @@ def the_hunt(
     test_losses = {}
     test_rel_errs_sink = {}
     test_rel_errs_emd = {}
-    warmstarts = {}
+    test_mcvs = {}
     for key in test_sets.keys():
         test_losses[key] = []
         test_rel_errs_sink[key] = []
@@ -191,6 +191,8 @@ def the_hunt(
                 test_rel_errs_sink[key].append(rel_errs_sink.mean().item())
                 test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
                 test_losses[key].append(loss.item())
+                test_mcv = get_mean_mcv(P, X_test, eps, cost, dim)
+                test_mcvs[key].append(test_mcv)
 
                 plot_XPT(X_test[0], P[0], T[0], dim)
 
@@ -310,6 +312,7 @@ def the_hunt(
             plot_train_losses(train_losses)
             plot_test_losses(test_losses)
             plot_test_rel_errs_sink(test_rel_errs_sink)
+            plot_test_mcvs(test_mcvs)
 
             # print current learning rates
             print(f'gen lr: {gen_optimizer.param_groups[0]["lr"]}')
@@ -345,6 +348,7 @@ def the_hunt(
                                    f'{results_folder}/test_rel_errs_sink.png')
             plot_test_rel_errs_emd(test_rel_errs_emd,
                                    f'{results_folder}/test_rel_errs_emd.png')
+            plot_test_mcvs(test_mcvs, f'{results_folder}/test_mcvs.png')
             plot_warmstarts_emd(warmstarts_emd, results_folder)
             plot_warmstarts_mcv(warmstarts_mcv, results_folder)
 
@@ -361,5 +365,7 @@ def the_hunt(
         test_losses,
         test_rel_errs_sink,
         test_rel_errs_emd,
-        warmstarts
+        test_mcvs,
+        warmstarts_emd,
+        warmstarts_mcv
     )

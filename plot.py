@@ -285,3 +285,37 @@ def plot_warmstarts_mcv(test_warmstart_mcv : dict[str, tuple],
             plt.show()
 
     return None
+
+def plot_test_mcvs(test_mcvs : dict[str, list], path: str = None) -> None:
+
+    """
+    Plot the test mcvs for each test set on the same plot.
+
+    Parameters
+    ----------
+    test_mcvs : dict[str, list]
+        Dictionary of test mcvs.
+    path : str, optional
+        Path to save the plot to as a png file. If None (default) the plot is
+        displayed instead.
+
+    Returns
+    -------
+    None.
+    """
+
+    plt.figure()
+    for key in test_mcvs.keys():
+        plt.plot(test_mcvs[key], label=key)
+    plt.title('Test MCVs')
+    plt.xlabel('# test phases')
+    plt.ylabel('mcv')
+    plt.grid()
+    plt.legend()
+
+    if path:
+        plt.savefig(f'{path}')
+    else:
+        plt.show()
+
+    return None

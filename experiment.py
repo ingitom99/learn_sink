@@ -205,7 +205,13 @@ with open(output_file, 'w', encoding='utf-8') as file:
         file.write(f'{key}: {value}\n')
 
 # Run the hunt
-train_losses, test_losses, test_rel_errs_sink, test_warmstarts = the_hunt(
+(train_losses,
+test_losses,
+test_rel_errs_sink,
+test_rel_errs_emd,
+test_mcvs,
+warmstarts_emd,
+warmstarts_mcv) = the_hunt(
         deer,
         puma,
         loss_func,

@@ -8,6 +8,7 @@ Auxiliary functions for testing the performance of the predictive network.
 import torch
 from tqdm import tqdm
 from nets import PredNet
+from sinkhorn import MCV
 
 def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
                    C : torch.Tensor, dim : int) -> torch.Tensor:
@@ -84,6 +85,7 @@ def test_warmstart_emd(pred_net : PredNet, test_sets : dict, test_emds,
     test_warmstarts_emd = {}
     with torch.no_grad():
         for key in test_sets.keys():
+            print(f'Testing warmstart emd {key}')
             X = test_sets[key]
             emds = test_emds[key]
 
@@ -129,36 +131,8 @@ def test_warmstart_emd(pred_net : PredNet, test_sets : dict, test_emds,
 
     return test_warmstarts_emd
 
-def MCV(mu : torch.Tensor, nu : torch.Tensor, G : torch.Tensor) -> float:
-    """
-    Compute the Marginal Constraint Violation (MCV) for a given optimal
-    transport plan (G) and its corresponding distributions (mu and nu).
-
-    Parameters
-    ----------
-    mu : (dim,) torch.Tensor
-        First probability distribution.
-    nu : (dim,) torch.Tensor
-        Second probability distribution.
-    G : (dim, dim) torch.Tensor
-        Optimal transport plan.
-
-    Returns
-    -------
-    MCV : float
-        Marginal Constraint Violation.
-    """
-    
-    ones = torch.ones_like(mu)
-    term_one = ones.T @ G  - nu.T
-    term_two = G @ ones - mu
-    MCV = (torch.linalg.norm(term_one, ord=1) + torch.linalg.norm(term_two,
-                                                                  ord=1))/2
-    return MCV
-
 def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
                        eps: float, dim : int):
-    
 
     test_warmstarts_MCV = {}
     with torch.no_grad():
@@ -177,12 +151,11 @@ def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
                 MCVs_ones = []
                 v_pred = V_pred[i]
                 v_ones = torch.ones_like(v_pred)
-                for j in range(1000):
+                for _ in range(1000):
                     u_pred = mu / (K @ v_pred)
                     v_pred = nu / (K.T @ u_pred)
                     G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
                     MCV_pred = MCV(mu, nu, G_pred)
-                    print(f'{j}: {MCV_pred.item()}')
                     MCVs_pred.append(MCV_pred)
 
                     u_ones = mu / (K @ v_ones)
@@ -199,3 +172,20 @@ def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
                                         MCVs_ones_all.mean(dim=0))
         
     return test_warmstarts_MCV
+
+def get_mean_mcv(pred_net : PredNet, X: torch.Tensor, C : torch.Tensor,
+                 eps: float, dim : int):
+    mcvs = []
+    K = torch.exp(C/-eps)
+    V_pred = torch.exp(pred_net(X))
+    for (i, x) in tqdm(enumerate(X)):
+        mu = x[:dim]
+        nu = x[dim:]
+        v_pred = V_pred[i]
+        u_pred = mu / (K @ v_pred)
+        v_pred = nu / (K.T @ u_pred)
+        G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
+        mcv = MCV(mu, nu, G_pred)
+    mcvs.append(mcv)
+    mcvs = torch.tensor(mcvs)
+    return mcvs.mean().item()

@@ -111,3 +111,6 @@ class PredNet(nn.Module):
         for layer in self.layers:
             x = layer(x)
         return x
+    
+
+# write a function to do pca algorithm

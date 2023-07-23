@@ -134,3 +134,30 @@ def sink_var_eps_vec(MU: torch.Tensor, NU: torch.Tensor, C: torch.Tensor,
     V = v
 
     return U, V
+
+def MCV(mu : torch.Tensor, nu : torch.Tensor, G : torch.Tensor) -> float:
+    """
+    Compute the Marginal Constraint Violation (MCV) for a given optimal
+    transport plan (G) and its corresponding distributions (mu and nu).
+
+    Parameters
+    ----------
+    mu : (dim,) torch.Tensor
+        First probability distribution.
+    nu : (dim,) torch.Tensor
+        Second probability distribution.
+    G : (dim, dim) torch.Tensor
+        Optimal transport plan.
+
+    Returns
+    -------
+    MCV : float
+        Marginal Constraint Violation.
+    """
+    
+    ones = torch.ones_like(mu)
+    term_one = ones.T @ G  - nu.T
+    term_two = G @ ones - mu
+    MCV = (torch.linalg.norm(term_one, ord=1) + torch.linalg.norm(term_two,
+                                                                  ord=1))/2
+    return MCV
