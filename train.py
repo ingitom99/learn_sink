@@ -142,6 +142,7 @@ def the_hunt(
         test_losses[key] = []
         test_rel_errs_sink[key] = []
         test_rel_errs_emd[key] = []
+        test_mcvs[key] = []
 
     # Initializing optimizers
     pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
@@ -191,7 +192,7 @@ def the_hunt(
                 test_rel_errs_sink[key].append(rel_errs_sink.mean().item())
                 test_rel_errs_emd[key].append(rel_errs_emd.mean().item())
                 test_losses[key].append(loss.item())
-                test_mcv = get_mean_mcv(P, X_test, eps, cost, dim)
+                test_mcv = get_mean_mcv(pred_net, X_test, cost, eps, dim)
                 test_mcvs[key].append(test_mcv)
 
                 plot_XPT(X_test[0], P[0], T[0], dim)
@@ -312,6 +313,7 @@ def the_hunt(
             plot_train_losses(train_losses)
             plot_test_losses(test_losses)
             plot_test_rel_errs_sink(test_rel_errs_sink)
+            plot_test_rel_errs_emd(test_rel_errs_emd)
             plot_test_mcvs(test_mcvs)
 
             # print current learning rates

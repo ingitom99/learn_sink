@@ -229,9 +229,10 @@ def plot_warmstarts_emd(test_warmstart_emd : dict[str, tuple],
       
     for key in test_warmstart_emd.keys():
         plt.figure()
-        pred, ones = test_warmstart_emd[key]
+        pred, ones, dualsort = test_warmstart_emd[key]
         plt.plot(pred, label='predicted V0')
         plt.plot(ones, label='ones V0')
+        plt.plot(dualsort, label='dualsort V0')
         plt.title(f'Warmstart (emd): {key}')
         plt.xlabel('# iterations')
         plt.ylabel('rel err')
