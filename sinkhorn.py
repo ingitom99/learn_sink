@@ -159,5 +159,5 @@ def MCV(mu : torch.Tensor, nu : torch.Tensor, G : torch.Tensor) -> float:
     term_one = ones.T @ G  - nu.T
     term_two = G @ ones - mu
     MCV = (torch.linalg.norm(term_one, ord=1) + torch.linalg.norm(term_two,
-                                                                  ord=1))/2
+                                                                  ord=1))
     return MCV

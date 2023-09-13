@@ -9,7 +9,6 @@ import torch
 from tqdm import tqdm
 from nets import PredNet
 from sinkhorn import MCV
-from dualsort import dualSort
 
 def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
                    C : torch.Tensor, dim : int) -> torch.Tensor:
@@ -229,21 +228,14 @@ def test_warmstart_emd(pred_net : PredNet, test_sets : dict, test_emds,
             print(f'Testing warmstart emd {key}')
             X = test_sets[key]
             emds = test_emds[key]
-
             # Initiliazing Sinkhorn algorithm
             K = torch.exp(C/-eps)
             V_pred = torch.exp(pred_net(X))
             V_ones = torch.ones_like(V_pred)
-            V_dualsort = torch.zeros_like(V_pred)
-            for (i, x) in enumerate(X):
-                mu = x[:dim]
-                nu = x[dim:]
-                V_dualsort[i] = dualSort(mu, nu, C)
             MU = X[:, :dim]
             NU = X[:, dim:]
             rel_err_means_pred = []
             rel_err_means_ones = []
-            rel_err_means_dualsort = []
 
             # Looping over 1000 iterations of Sinkhorn algorithm
             for _ in tqdm(range(1000)):
@@ -274,20 +266,6 @@ def test_warmstart_emd(pred_net : PredNet, test_sets : dict, test_emds,
                 rel_errs_ones = torch.abs(emds - dists_ones) / emds
                 rel_err_means_ones.append(rel_errs_ones.mean().item())
 
-                # Calculating the Sinkhorn distances for DUALSORT V0
-                dists_dualsort = []
-                U_dualsort = MU / (K @ V_dualsort.T).T
-                V_dualsort = NU / (K.T @ U_dualsort.T).T
-                for u, v in zip(U_dualsort, V_dualsort):
-                    G = torch.diag(u)@K@torch.diag(v)
-                    dist = torch.trace(C.T@G)
-                    dists_dualsort.append(dist)
-                dists_dualsort = torch.tensor(dists_dualsort)
-                rel_errs_dualsort = torch.abs(emds - dists_dualsort) / emds
-                rel_err_means_dualsort.append(rel_errs_dualsort.mean().item())
-
+            test_warmstarts_emd[key] = (rel_err_means_pred, rel_err_means_ones)
             
-            test_warmstarts_emd[key] = (rel_err_means_pred, rel_err_means_ones
-                                        , rel_err_means_dualsort)
-
     return test_warmstarts_emd
