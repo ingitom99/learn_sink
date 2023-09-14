@@ -10,27 +10,70 @@ import torch
 from tqdm import tqdm
 from nets import PredNet
 from sinkhorn import MCV
-
-import jax
+from geometry import get_cloud
 import jax.numpy as jnp
-import numpy as np
-
-import matplotlib.pyplot as plt
 
 from ott.geometry.geometry import Geometry
 from ott.problems.linear import linear_problem
-from ott.solvers.linear import sinkhorn
 from ott.initializers.linear import initializers
-from ott.geometry import costs, grid, pointcloud
+from ott.geometry import pointcloud
 
+def get_geom(n : int, eps : float) -> Geometry:
 
+    """
+    Get a geometry object for the optimal transport problem on a 2D grid.
+
+    Parameters
+    ----------
+    n : int
+        Number of points per dimension.
+    eps : float
+        Regularisation parameter.
+
+    Returns
+    -------
+    geom : Geometry
+        Geometry object for the optimal transport problem on a 2D grid.
+    """
+
+    # Generate a 2D grid of n points per dimension
+    cloud = get_cloud(n)
+    
+    geom = pointcloud.PointCloud(cloud, cloud, epsilon=eps)
+
+    return geom
+
+def get_gauss_init(geom : Geometry, mu : jnp.ndarray, nu : jnp.ndarray) -> jnp.ndarray:
+    """
+    Get a Gaussian initialisation for the dual vector v.
+
+    Parameters
+    ----------
+    geom : Geometry
+        Geometry of the problem.
+    mu : jnp.ndarray
+        Source distribution.
+    nu : jnp.ndarray
+        Target distribution.
+    eps : float
+        Regularisation parameter.
+
+    Returns
+    -------
+    v : jnp.ndarray
+        Gaussian initialisation for the dual vector v.
+    """
+
+    init = initializers.GaussianInitializer()
+    prob = linear_problem.LinearProblem(geom, mu, nu)
+    u = init.init_dual_a(prob, False)
+    return u
 
 def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
                        eps: float, dim : int):
     
     length = int(dim**.5)
-    
-    geom = grid.Grid(grid_size=(length, length), epsilon=eps)
+    geom = get_geom(length, eps)
     initer = initializers.GaussianInitializer()
 
     test_warmstarts_MCV = {}
@@ -55,7 +98,7 @@ def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
                 v_pred = V_pred[i]
                 v_ones = torch.ones_like(v_pred)
                 prob = linear_problem.LinearProblem(geom, mu_jax, nu_jax)
-                v_gauss = initer.init_dual_a(prob, False)
+                u_gauss = initer.init_dual_a(prob, False)
                 for _ in range(1000):
 
                     u_pred = mu / (K @ v_pred)
@@ -69,19 +112,22 @@ def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
                     G_ones = torch.diag(u_ones)@K@torch.diag(v_ones)
                     MCV_ones = MCV(mu, nu, G_ones)
                     MCVs_ones.append(MCV_ones)
-
-                    u_gauss = mu / (K @ v_gauss)
+                    
                     v_gauss = nu / (K.T @ u_gauss)
+                    u_gauss = mu / (K @ v_gauss)
                     G_gauss = torch.diag(u_gauss)@K@torch.diag(v_gauss)
                     MCV_gauss = MCV(mu, nu, G_gauss)
                     MCVs_gauss.append(MCV_gauss)
 
                 MCVs_pred = torch.tensor(MCVs_pred)
                 MCVs_ones = torch.tensor(MCVs_ones)
+                MCVs_gauss = torch.tensor(MCVs_gauss)
                 MCVs_pred_all[i] = MCVs_pred
                 MCVs_ones_all[i] = MCVs_ones
+                MCVs_gauss_all[i] = MCVs_gauss
             
             test_warmstarts_MCV[key] = (MCVs_pred_all.mean(dim=0),
-                                        MCVs_ones_all.mean(dim=0))
+                                        MCVs_ones_all.mean(dim=0),
+                                        MCVs_gauss_all.mean(dim=0))
         
     return test_warmstarts_MCV
