@@ -340,7 +340,8 @@ def the_hunt(
             warmstarts_emd = test_warmstart_emd(pred_net, test_sets, test_emds,
                                         cost, eps, dim)
             
-            warmstarts_mcv = test_warmstart_MCV(pred_net, test_sets, cost, eps, dim)
+            warmstarts_mcv = test_warmstart_MCV(pred_net, test_sets, cost, eps,
+                                                dim)
 
             # Plot the results
             plot_train_losses(train_losses,

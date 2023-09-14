@@ -9,6 +9,7 @@ import torch
 from tqdm import tqdm
 from nets import PredNet
 from sinkhorn import MCV
+from geometry import get_cloud
 
 from ott.geometry.geometry import Geometry
 from ott.problems.linear import linear_problem
