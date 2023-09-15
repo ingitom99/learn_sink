@@ -106,24 +106,19 @@ for key in test_sets.keys():
         V = torch.log(V)
         T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
         test_T[key] = T
-
         sinks = []
-        for x in tqdm(X):
-            mu = x[:dim] / x[:dim].sum()
-            nu = x[dim:] / x[dim:].sum()
-            sink = ot.sinkhorn2(mu, nu, cost, eps)
-            sinks.append(sink)
-        sinks = torch.tensor(sinks)
-        test_sinks[key] = sinks
-
         emds = []
         for x in tqdm(X):
             mu = x[:dim] / x[:dim].sum()
             nu = x[dim:] / x[dim:].sum()
+            sink = ot.sinkhorn2(mu, nu, cost, eps)
             emd = ot.emd2(mu, nu, cost)
-            emd.append(emd)
-        emd = torch.tensor(emd)
-        test_sinks[key] = emd
+            sinks.append(sink)
+            emds.append(emd)
+        sinks = torch.tensor(sinks)
+        emds = torch.tensor(emds)
+        test_sinks[key] = sinks
+        test_emds[key] = emds
 
 # Initialization of loss function
 loss_func = hilb_proj_loss
