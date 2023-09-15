@@ -11,8 +11,8 @@ from nets import PredNet
 from sinkhorn import MCV
 from geometry import get_cloud
 
+import numpy as np
 import jax.numpy as jnp
-
 from ott.geometry.geometry import Geometry
 from ott.problems.linear import linear_problem
 from ott.initializers.linear import initializers
@@ -57,87 +57,6 @@ def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
         dists.append(dist)
     dists = torch.tensor(dists)
     return dists
-    
-def test_warmstart_emd(pred_net : PredNet, test_sets : dict, test_emds,
-                   C : torch.Tensor, eps: float,
-                   dim : int) -> tuple[list, list]:
-  
-    """
-    Track the performance of the predictive network as a 'warmstart' for the 
-    Sinkhorn algorithm.
-
-    Parameters
-    ----------
-    pred_net : PredNet
-        Predictive network.
-    X : (n_samples, 2*dim) torch.Tensor
-        Pairs of probability distributions.
-    C : (dim, dim) torch.Tensor
-        Cost matrix.
-    eps : float
-        Regularization parameter.
-    dim : int
-        Dimension of the probability distributions.
-    plot : str
-        Title of the plot, if None no plot.
-    path : str
-    
-    Returns
-    -------
-    rel_err_means_pred : list
-        Mean relative error on the Wasserstein distance for predicted V0.
-    rel_err_means_ones : list
-        Mean relative error on the Wasserstein distance for vector of ones V0.
-    """
-
-    test_warmstarts_emd = {}
-    with torch.no_grad():
-        for key in test_sets.keys():
-            print(f'Testing warmstart emd {key}')
-            X = test_sets[key]
-            emds = test_emds[key]
-
-            # Initiliazing Sinkhorn algorithm
-            K = torch.exp(C/-eps)
-            V_pred = torch.exp(pred_net(X))
-            V_ones = torch.ones_like(V_pred)
-            MU = X[:, :dim]
-            NU = X[:, dim:]
-            rel_err_means_pred = []
-            rel_err_means_ones = []
-
-            # Looping over 1000 iterations of Sinkhorn algorithm
-            for _ in tqdm(range(1000)):
-
-                # Performing a step of Sinkhorn algorithm for predicted V0
-                U_pred = MU / (K @ V_pred.T).T
-                V_pred = NU / (K.T @ U_pred.T).T
-            
-                # Calculating the Sinkhorn distances for predicted V0
-                dists_pred = []
-                for u, v in zip(U_pred, V_pred):
-                    G = torch.diag(u)@K@torch.diag(v)
-                    dist_pred = torch.trace(C.T@G)
-                    dists_pred.append(dist_pred)
-                dists_pred = torch.tensor(dists_pred)
-                rel_errs_pred = torch.abs(emds - dists_pred) / emds
-                rel_err_means_pred.append(rel_errs_pred.mean().item())
-
-                # Calculating the Sinkhorn distances for ones V0
-                dists_ones = []
-                U_ones = MU / (K @ V_ones.T).T
-                V_ones = NU / (K.T @ U_ones.T).T
-                for u, v in zip(U_ones, V_ones):
-                    G = torch.diag(u)@K@torch.diag(v)
-                    dist = torch.trace(C.T@G)
-                    dists_ones.append(dist)
-                dists_ones = torch.tensor(dists_ones)
-                rel_errs_ones = torch.abs(emds - dists_ones) / emds
-                rel_err_means_ones.append(rel_errs_ones.mean().item())
-            
-            test_warmstarts_emd[key] = (rel_err_means_pred, rel_err_means_ones)
-
-    return test_warmstarts_emd
 
 def get_mean_mcv(pred_net : PredNet, X: torch.Tensor, C : torch.Tensor,
                  eps: float, dim : int):
@@ -208,7 +127,7 @@ def get_gauss_init(geom : Geometry, mu : jnp.ndarray, nu : jnp.ndarray) -> jnp.n
     return u
 
 def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
-                       eps: float, dim : int):
+                    eps: float, dim : int, device : str) -> tuple[list, list]:
     
     length = int(dim**.5)
     geom = get_geom(length, eps)
@@ -225,18 +144,20 @@ def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
             MCVs_ones_all = torch.zeros(len(X), 1000)
             MCVs_gauss_all = torch.zeros(len(X), 1000)
             V_pred = torch.exp(pred_net(X))
-            for (i, x) in tqdm(enumerate(X)):
+            for i in tqdm(range(len(X))):
+                x = X[i]
                 mu = x[:dim]
                 nu = x[dim:]
-                mu_jax = jnp.array(mu)
-                nu_jax = jnp.array(nu)
+                mu_jax = jnp.array(mu.cpu().detach().numpy())
+                nu_jax = jnp.array(nu.cpu().detach().numpy())
                 MCVs_pred = []
                 MCVs_ones = []
                 MCVs_gauss = []
                 v_pred = V_pred[i]
                 v_ones = torch.ones_like(v_pred)
                 prob = linear_problem.LinearProblem(geom, mu_jax, nu_jax)
-                u_gauss = initer.init_dual_a(prob, False)
+                u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
+                                                    False))).double().to(device)
                 for _ in range(1000):
 
                     u_pred = mu / (K @ v_pred)
@@ -270,73 +191,156 @@ def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
         
     return test_warmstarts_MCV
 
-def test_warmstart_sink(pred_net : PredNet, test_sets : dict, test_sinks,
-                   C : torch.Tensor, eps: float,
-                   dim : int) -> tuple[list, list]:
-  
-    """
-    """
+def test_warmstart_sink(pred_net : PredNet, test_sets : dict, test_sinks : dict,
+                        C : torch.Tensor, eps: float, dim : int,
+                        device : str) -> tuple[list, list]:
+
     length = int(dim**.5)
     geom = get_geom(length, eps)
     initer = initializers.GaussianInitializer()
-
     test_warmstarts_sink = {}
+
     with torch.no_grad():
         for key in test_sets.keys():
+
             print(f'Testing warmstart sink {key}')
             X = test_sets[key]
-            sinks = test_sinks[key]
-
-            # Initiliazing Sinkhorn algorithm
             K = torch.exp(C/-eps)
+            rel_errs_pred_all = torch.zeros(len(X), 1000)
+            rel_errs_ones_all = torch.zeros(len(X), 1000)
+            rel_errs_gauss_all = torch.zeros(len(X), 1000)
             V_pred = torch.exp(pred_net(X))
-            V_ones = torch.ones_like(V_pred)
-            U_gauss = torch.zeros_like(V_pred)
-            MU = X[:, :dim]
-            NU = X[:, dim:]
 
-            for (i, x) in enumerate(X):
+            for i in tqdm(range(len(X))):
+
+                x = X[i]
+                sink = test_sinks[key][i]
                 mu = x[:dim]
                 nu = x[dim:]
                 mu_jax = jnp.array(mu)
                 nu_jax = jnp.array(nu)
+
+                rel_errs_pred = []
+                rel_errs_ones = []
+                rel_errs_gauss = []
+
+                v_pred = V_pred[i]
+                v_ones = torch.ones_like(v_pred)
                 prob = linear_problem.LinearProblem(geom, mu_jax, nu_jax)
-                u_gauss = initer.init_dual_a(prob, False)
-                U_gauss[i] = torch.tensor(u_gauss)
+                u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
+                                                False))).double().to(device)
 
-            rel_err_means_pred = []
-            rel_err_means_ones = []
-            rel_err_means_gauss = []
+                for _ in range(1000):
 
-            # Looping over 1000 iterations of Sinkhorn algorithm
-            for _ in tqdm(range(1000)):
+                    u_pred = mu / (K @ v_pred)
+                    v_pred = nu / (K.T @ u_pred)
+                    G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
+                    dist_pred = torch.trace(C.T@G_pred)
+                    rel_err_pred = torch.abs(sink - dist_pred) / sink
+                    rel_errs_pred.append(rel_err_pred)
 
+                    u_ones = mu / (K @ v_ones)
+                    v_ones = nu / (K.T @ u_ones)
+                    G_ones = torch.diag(u_ones)@K@torch.diag(v_ones)
+                    dist_ones = torch.trace(C.T@G_ones)
+                    rel_err_ones = torch.abs(sink - dist_ones) / sink
+                    rel_errs_ones.append(rel_err_ones)
+
+                    v_gauss = nu / (K.T @ u_gauss)
+                    u_gauss = mu / (K @ v_gauss)
+                    G_gauss = torch.diag(u_gauss)@K@torch.diag(v_gauss)
+                    dist_gauss = torch.trace(C.T@G_gauss)
+                    rel_err_gauss = torch.abs(sink - dist_gauss) / sink
+                    rel_errs_gauss.append(rel_err_gauss)
+
+                rel_errs_pred = torch.tensor(rel_errs_pred)
+                rel_errs_ones = torch.tensor(rel_errs_ones)
+                rel_errs_gauss = torch.tensor(rel_errs_gauss)
+
+                rel_errs_pred_all[i] = rel_errs_pred
+                rel_errs_ones_all[i] = rel_errs_ones
+                rel_errs_gauss_all[i] = rel_errs_gauss
             
-                # Calculating the Sinkhorn distances for predicted V0
-                dists_pred = []
-                U_pred = MU / (K @ V_pred.T).T
-                V_pred = NU / (K.T @ U_pred.T).T
-                for u, v in zip(U_pred, V_pred):
-                    G = torch.diag(u)@K@torch.diag(v)
-                    dist_pred = torch.trace(C.T@G)
-                    dists_pred.append(dist_pred)
-                dists_pred = torch.tensor(dists_pred)
-                rel_errs_pred = torch.abs(sinks - dists_pred) / sinks
-                rel_err_means_pred.append(rel_errs_pred.mean().item())
-
-                # Calculating the Sinkhorn distances for ones V0
-                dists_ones = []
-                U_ones = MU / (K @ V_ones.T).T
-                V_ones = NU / (K.T @ U_ones.T).T
-                for u, v in zip(U_ones, V_ones):
-                    G = torch.diag(u)@K@torch.diag(v)
-                    dist = torch.trace(C.T@G)
-                    dists_ones.append(dist)
-                dists_ones = torch.tensor(dists_ones)
-                rel_errs_ones = torch.abs(sinks - dists_ones) / sinks
-                rel_err_means_ones.append(rel_errs_ones.mean().item())
-
-            
-            test_warmstarts_sink[key] = (rel_err_means_pred, rel_err_means_ones)
-
+            test_warmstarts_sink[key] = (rel_errs_pred_all.mean(dim=0),
+                                        rel_errs_ones_all.mean(dim=0),
+                                        rel_errs_gauss_all.mean(dim=0))
+        
     return test_warmstarts_sink
+
+def test_warmstart_emd(pred_net : PredNet, test_sets : dict, test_emds : dict,
+                        C : torch.Tensor, eps: float, dim : int,
+                        device : str) -> tuple[list, list]:
+
+    length = int(dim**.5)
+    geom = get_geom(length, eps)
+    initer = initializers.GaussianInitializer()
+    test_warmstarts_emd = {}
+
+    with torch.no_grad():
+        for key in test_sets.keys():
+
+            print(f'Testing warmstart emd {key}')
+            X = test_sets[key]
+            K = torch.exp(C/-eps)
+            rel_errs_pred_all = torch.zeros(len(X), 1000)
+            rel_errs_ones_all = torch.zeros(len(X), 1000)
+            rel_errs_gauss_all = torch.zeros(len(X), 1000)
+            V_pred = torch.exp(pred_net(X))
+
+            for i in tqdm(range(len(X))):
+
+                x = X[i]
+                emd = test_emds[key][i]
+                mu = x[:dim]
+                nu = x[dim:]
+                mu_jax = jnp.array(mu)
+                nu_jax = jnp.array(nu)
+
+                rel_errs_pred = []
+                rel_errs_ones = []
+                rel_errs_gauss = []
+
+                v_pred = V_pred[i]
+                v_ones = torch.ones_like(v_pred)
+                prob = linear_problem.LinearProblem(geom, mu_jax, nu_jax)
+                u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
+                                                False))).double().to(device)
+
+                for _ in range(1000):
+
+                    u_pred = mu / (K @ v_pred)
+                    v_pred = nu / (K.T @ u_pred)
+                    G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
+                    dist_pred = torch.trace(C.T@G_pred)
+                    rel_err_pred = torch.abs(emd - dist_pred) / emd
+                    rel_errs_pred.append(rel_err_pred)
+
+                    u_ones = mu / (K @ v_ones)
+                    v_ones = nu / (K.T @ u_ones)
+                    G_ones = torch.diag(u_ones)@K@torch.diag(v_ones)
+                    dist_ones = torch.trace(C.T@G_ones)
+                    rel_err_ones = torch.abs(emd - dist_ones) / emd
+                    rel_errs_ones.append(rel_err_ones)
+
+                    v_gauss = nu / (K.T @ u_gauss)
+                    u_gauss = mu / (K @ v_gauss)
+                    G_gauss = torch.diag(u_gauss)@K@torch.diag(v_gauss)
+                    dist_gauss = torch.trace(C.T@G_gauss)
+                    rel_err_gauss = torch.abs(emd - dist_gauss) / emd
+                    rel_errs_gauss.append(rel_err_gauss)
+
+                rel_errs_pred = torch.tensor(rel_errs_pred)
+                rel_errs_ones = torch.tensor(rel_errs_ones)
+                rel_errs_gauss = torch.tensor(rel_errs_gauss)
+
+                rel_errs_pred_all[i] = rel_errs_pred
+                rel_errs_ones_all[i] = rel_errs_ones
+                rel_errs_gauss_all[i] = rel_errs_gauss
+            
+            test_warmstarts_emd[key] = (rel_errs_pred_all.mean(dim=0),
+                                        rel_errs_ones_all.mean(dim=0),
+                                        rel_errs_gauss_all.mean(dim=0))
+        
+    return test_warmstarts_emd
+    
+

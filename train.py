@@ -127,7 +127,7 @@ def the_hunt(
         The test losses.
     test_rel_errs_sink : dict
         The test relative errors against the ot.sinkhorn2() values.
-    warmstarts : dict
+    warmstarts_sink : dict
         The data tracking use of the predictive network as an initializtion
         for the Sinkhorn algorithm.
     """
@@ -337,8 +337,8 @@ def the_hunt(
             torch.save(pred_net.state_dict(), f'{results_folder}/puma.pt')
 
             # Test warmstart
-            warmstarts_emd = test_warmstart_emd(pred_net, test_sets, test_emds,
-                                        cost, eps, dim)
+            warmstarts_sink = test_warmstart_emd(pred_net, test_sets, test_sinks,
+                                        cost, eps, dim, device)
             
             warmstarts_mcv = test_warmstart_MCV(pred_net, test_sets, cost, eps,
                                                 dim)
@@ -352,8 +352,10 @@ def the_hunt(
             plot_test_rel_errs_emd(test_rel_errs_emd,
                                    f'{results_folder}/test_rel_errs_emd.png')
             plot_test_mcvs(test_mcvs, f'{results_folder}/test_mcvs.png')
-            plot_warmstarts_emd(warmstarts_emd, results_folder)
+
+            
             plot_warmstarts_mcv(warmstarts_mcv, results_folder)
+            plot_warmstarts_sink(warmstarts_sink, results_folder)
 
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')
@@ -369,6 +371,6 @@ def the_hunt(
         test_rel_errs_sink,
         test_rel_errs_emd,
         test_mcvs,
-        warmstarts_emd,
+        warmstarts_sink,
         warmstarts_mcv
     )

@@ -208,6 +208,48 @@ def plot_test_rel_errs_sink(rel_errs_sink : dict[str, list],
     
         return None
 
+
+
+def plot_warmstarts_mcv(test_warmstart_mcv : dict[str, tuple],
+                    folder: str = None) -> None:
+    
+    """
+    Plot the warmstart (mcv) graphs for each test set on different plots.
+
+    Parameters
+    ----------
+    test_warmstart_mcv : dict[str, tuple]
+        Dictionary of warmstart data (predicted V0, ones V0 and gauss V0).
+    folder : str, optional
+        Folder to save the plots to as png files. If None (default) the plots
+        are displayed instead.
+
+    Returns
+    -------
+    None.
+    """
+      
+    for key in test_warmstart_mcv.keys():
+        plt.figure()
+        pred, ones, gauss = test_warmstart_mcv[key]
+        plt.plot(pred, label='predicted V0')
+        plt.plot(ones, label='ones V0')
+        plt.plot(gauss, label='gauss V0')
+        plt.title(f'Warmstart (mcv): {key}')
+        plt.xlabel('# iterations')
+        plt.ylabel('MCV')
+        plt.yticks(torch.arange(0, 1.0001, 0.05))
+        plt.grid()
+        plt.legend()
+    
+        if folder:
+            path = folder + f'/warmstart_mcv_{key}.png'
+            plt.savefig(f'{path}')
+        else:
+            plt.show()
+
+    return None
+
 def plot_warmstarts_emd(test_warmstart_emd : dict[str, tuple],
                     folder: str = None) -> None:
     
@@ -247,16 +289,16 @@ def plot_warmstarts_emd(test_warmstart_emd : dict[str, tuple],
 
     return None
 
-def plot_warmstarts_mcv(test_warmstart_mcv : dict[str, tuple],
+def plot_warmstarts_sink(test_warmstart_sink : dict[str, tuple],
                     folder: str = None) -> None:
     
     """
-    Plot the warmstart (mcv) graphs for each test set on different plots.
+    Plot the warmstart (sink) graphs for each test set on different plots.
 
     Parameters
     ----------
-    test_warmstart_mcv : dict[str, tuple]
-        Dictionary of warmstart data (predicted V0, ones V0 and gauss V0).
+    test_warmstart_sink : dict[str, tuple]
+        Dictionary of warmstart data (predicted V0 and ones V0).
     folder : str, optional
         Folder to save the plots to as png files. If None (default) the plots
         are displayed instead.
@@ -266,13 +308,13 @@ def plot_warmstarts_mcv(test_warmstart_mcv : dict[str, tuple],
     None.
     """
       
-    for key in test_warmstart_mcv.keys():
+    for key in test_warmstart_sink.keys():
         plt.figure()
-        pred, ones, gauss = test_warmstart_mcv[key]
+        pred, ones, gauss = test_warmstart_sink[key]
         plt.plot(pred, label='predicted V0')
         plt.plot(ones, label='ones V0')
         plt.plot(gauss, label='gauss V0')
-        plt.title(f'Warmstart (mcv): {key}')
+        plt.title(f'Warmstart (sink): {key}')
         plt.xlabel('# iterations')
         plt.ylabel('rel err')
         plt.yticks(torch.arange(0, 1.0001, 0.05))
@@ -280,7 +322,7 @@ def plot_warmstarts_mcv(test_warmstart_mcv : dict[str, tuple],
         plt.legend()
     
         if folder:
-            path = folder + f'/warmstart_mcv_{key}.png'
+            path = folder + f'/warmstart_sink_{key}.png'
             plt.savefig(f'{path}')
         else:
             plt.show()
