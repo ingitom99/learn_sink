@@ -11,6 +11,8 @@ from nets import PredNet
 from sinkhorn import MCV
 from geometry import get_cloud
 
+import jax.numpy as jnp
+
 from ott.geometry.geometry import Geometry
 from ott.problems.linear import linear_problem
 from ott.initializers.linear import initializers
