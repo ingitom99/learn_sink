@@ -7,6 +7,7 @@ Function(s) for visualising data, losses, results, etc.
 
 import torch
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
              ) -> None:
@@ -360,5 +361,33 @@ def plot_test_mcvs(test_mcvs : dict[str, list], path: str = None) -> None:
         plt.savefig(f'{path}')
     else:
         plt.show()
+
+    return None
+
+def violin_plot(pred, ones, gauss, title):
+    keys = list(pred.keys())
+    data_pred = []
+    data_ones = []
+    data_gauss = []
+
+    for key in keys:
+        data_pred.append(pred[key])
+        data_ones.append(ones[key])
+        data_gauss.append(gauss[key])
+    labels = []
+    def add_label(violin, label):
+        color = violin["bodies"][0].get_facecolor().flatten()
+        labels.append((mpatches.Patch(color=color), label))
+    add_label(plt.violinplot(data_pred, showmedians=True,showextrema=False), 'pred')
+    add_label(plt.violinplot(data_ones, showmedians=True,showextrema=False), 'ones')
+    add_label(plt.violinplot(data_gauss, showmedians=True,showextrema=False), 'gauss')
+    plt.xticks(torch.arange(1, len(keys) + 1), labels=keys)
+    plt.xlim(0.25, len(labels) + 0.75)
+    plt.ylabel('Error')
+    plt.yticks(torch.arange(0, 1.0001, 0.05))
+    plt.legend(*zip(*labels), loc=1)
+    plt.grid()
+    plt.title(title)
+    plt.show()
 
     return None
