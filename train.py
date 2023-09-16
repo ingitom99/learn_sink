@@ -337,11 +337,24 @@ def the_hunt(
             torch.save(pred_net.state_dict(), f'{results_folder}/puma.pt')
 
             # Test warmstart
-            warmstarts_sink = test_warmstart_emd(pred_net, test_sets, test_sinks,
+            warmstarts_sink = test_warmstart_sink(pred_net, test_sets, test_sinks,
+                                        cost, eps, dim, device)
+            
+            warmstarts_sink_0 = test_warmstart_sink_t(0, pred_net, test_sets, test_sinks,
+                                        cost, eps, dim, device)
+            warmstarts_sink_5 = test_warmstart_sink_t(5, pred_net, test_sets, test_sinks,
+                                        cost, eps, dim, device)
+            warmstarts_sink_10 = test_warmstart_sink_t(10, pred_net, test_sets, test_sinks,
                                         cost, eps, dim, device)
             
             warmstarts_mcv = test_warmstart_MCV(pred_net, test_sets, cost, eps,
-                                                dim)
+                                                dim, device)
+            warmstarts_mcv_0 = test_warmstart_MCV_t(0, pred_net, test_sets, cost, eps,
+                                                dim, device)
+            warmstarts_mcv_5 = test_warmstart_MCV_t(5, pred_net, test_sets, cost, eps,
+                                                dim, device)
+            warmstarts_mcv_10 = test_warmstart_MCV_t(10, pred_net, test_sets, cost, eps,
+                                                dim, device)
 
             # Plot the results
             plot_train_losses(train_losses,
@@ -372,5 +385,11 @@ def the_hunt(
         test_rel_errs_emd,
         test_mcvs,
         warmstarts_sink,
-        warmstarts_mcv
+        warmstarts_mcv,
+        warmstarts_sink_0,
+        warmstarts_sink_5,
+        warmstarts_sink_10,
+        warmstarts_mcv_0,
+        warmstarts_mcv_5,
+        warmstarts_mcv_10,
     )
