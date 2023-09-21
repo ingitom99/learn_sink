@@ -7,9 +7,9 @@ Auxiliary functions for testing the performance of the predictive network.
 
 import torch
 from tqdm import tqdm
-from nets import PredNet
-from sinkhorn import MCV
-from geometry import get_cloud
+from src.nets import PredNet
+from src.sinkhorn import MCV
+from src.geometry import get_cloud
 
 import numpy as np
 import jax.numpy as jnp

@@ -9,12 +9,12 @@ The algorithm(s) for training the neural network(s).
 import torch
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from test_funcs import *
-from sinkhorn import sink_vec
-from plot import *
-from data_funcs import rand_noise
-from nets import GenNet, PredNet
-from extend_data import extend
+from src.test_funcs import *
+from src.sinkhorn import sink_vec
+from src.plot import *
+from src.data_funcs import rand_noise
+from src.nets import GenNet, PredNet
+from src.extend_data import extend
 
 def the_hunt(
         gen_net : GenNet,
@@ -36,6 +36,8 @@ def the_hunt(
         n_batch : int,
         n_accumulation_gen : int,
         n_accumulation_pred : int,
+        weight_decay_gen : float,
+        weight_decay_pred : float,
         lr_pred : float,
         lr_gen : float,
         lr_fact_gen : float,
@@ -145,9 +147,11 @@ def the_hunt(
         test_mcvs[key] = []
 
     # Initializing optimizers
-    pred_optimizer = torch.optim.SGD(pred_net.parameters(), lr=lr_pred)
+    pred_optimizer = torch.optim.SGD(pred_net.parameters(),
+                                    lr=lr_pred, weight_decay=weight_decay_pred)
     if learn_gen:
-        gen_optimizer = torch.optim.SGD(gen_net.parameters(), lr=lr_gen)
+        gen_optimizer = torch.optim.SGD(gen_net.parameters(),
+                                    lr=lr_gen, weight_decay=weight_decay_gen)
 
     # Initializing learning rate schedulers
     pred_scheduler = torch.optim.lr_scheduler.ExponentialLR(pred_optimizer,

@@ -5,7 +5,7 @@ make_data.py
 This script will download and save data for testing.
 """
 
-from data_funcs import get_mnist, get_omniglot, get_cifar, get_lfw, get_quickdraw, get_quickdraw_multi
+from src.data_funcs import get_mnist, get_omniglot, get_cifar, get_lfw, get_quickdraw, get_quickdraw_multi
 
 n_samples = 10000
 

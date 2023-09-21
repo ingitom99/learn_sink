@@ -1,59 +1,51 @@
-"""
-experiment.py
--------------
-
-Script for creating, training and testing a puma and a deer and saving the
-results.
-
-Let the hunt begin!
-"""
-
 # Imports
 import datetime
 import os
 import torch
 import ot
 from tqdm import tqdm
-from geometry import get_cost
-from sinkhorn import sink_vec
-from train import the_hunt
-from nets import GenNet, PredNet
-from loss import hilb_proj_loss
-from data_funcs import preprocessor, test_set_sampler
+from src.geometry import get_cost
+from src.sinkhorn import sink_vec
+from src.train import the_hunt
+from src.nets import GenNet, PredNet
+from src.loss import hilb_proj_loss
+from src.data_funcs import preprocessor, test_set_sampler
 
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
 formatted_time = current_time.strftime('%m-%d_%H_%M_%S')
-stamp_folder_path = './stamps/stamp_main_'+formatted_time
+stamp_folder_path = '/content/gdrive/MyDrive/learn_sink/stamps_main/stamp_main_'+formatted_time
 os.mkdir(stamp_folder_path)
 
 # Problem hyperparameters
-length_prior = 7
+length_prior = 14
 length = 28
 dim_prior = length_prior**2
 dim = length**2
 dust_const = 1e-6
-skip_const = 0.75
+skip_const = 0.5
 width_gen = 6 * dim
 width_pred = 6 * dim
 
 # Training Hyperparams
-n_loops = 50000
+n_loops = 20000
 n_mini_loops_gen = 1
 n_mini_loops_pred = 1
-n_batch = 200
-n_accumulation_gen = 5
-n_accumulation_pred = 5
-lr_gen = 0.25
-lr_pred = 0.25
+n_batch = 500
+n_accumulation_gen = 1
+n_accumulation_pred = 1
+weight_decay_gen = 0.0
+weight_decay_pred = 0.0
+lr_gen = 0.1
+lr_pred = 0.1
 lr_fact_gen = 1.0
-lr_fact_pred = 0.99997
+lr_fact_pred = 1.0
 learn_gen = True
 bootstrapped = True
-n_boot = 40
+n_boot = 100
 extend_data = False
-test_iter = 1000
-n_test = 100
+test_iter = 500
+n_test = 25
 checkpoint = n_loops
 
 # Device
@@ -64,30 +56,34 @@ print(f'Device: {device}')
 cost = get_cost(length).double().to(device)
 
 # Regularization parameter
-eps = cost.max() * 5e-4
+eps = 1e-2
 print(f'Entropic regularization param: {eps}')
 
 # Loading, preprocessing, and sampling for the test sets dictionary
-mnist = torch.load('./data/mnist.pt')
-cifar = torch.load('./data/cifar.pt')
-lfw = torch.load('./data/lfw.pt')
-bear = torch.load('./data/bear.pt')
-quickdraw = torch.load('./data/quickdraw.pt')
+with torch.no_grad():
+    mnist = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/mnist.pt')
+    cifar = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/cifar.pt')
+    lfw = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/lfw.pt')
+    bear = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/bear.pt')
+    quickdraw = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/quickdraw.pt')
+    omniglot = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/omniglot.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
 lfw = preprocessor(lfw, length, dust_const)
 bear = preprocessor(bear, length, dust_const)
 quickdraw = preprocessor(quickdraw, length, dust_const)
+omniglot = preprocessor(omniglot, length, dust_const)
 
 mnist = test_set_sampler(mnist, n_test).double().to(device)
 cifar = test_set_sampler(cifar, n_test).double().to(device)
 lfw = test_set_sampler(lfw, n_test).double().to(device)
 bear = test_set_sampler(bear, n_test).double().to(device)
 quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
+omniglot = test_set_sampler(omniglot, n_test).double().to(device)
 
-test_sets = {'mnist': mnist,'cifar': cifar, 'lfw': lfw, 'bear': bear,
-             'quickdraw': quickdraw}
+test_sets = {'mnist' : mnist,'cifar' : cifar, 'lfw' : lfw, 'bear' : bear,
+             'quickdraw' : quickdraw, 'omniglot' : omniglot}
 
 # Creating a dictionary of test emds, and test targets for each test set
 test_sinks = {}
@@ -164,6 +160,8 @@ hyperparams = {
     'total no. trainable parameters gen': n_params_gen,
     'total no. trainable parameters pred': n_params_pred,
     'device': device,
+    'gen net weight decay factor': weight_decay_gen,
+    'pred net weight decay factor': weight_decay_pred,
     'gen net learning rate': lr_gen,
     'pred net learning rate': lr_pred,
     'learning rate scale factor gen': lr_fact_gen,
@@ -205,8 +203,14 @@ test_losses,
 test_rel_errs_sink,
 test_rel_errs_emd,
 test_mcvs,
-warmstarts_emd,
-warmstarts_mcv) = the_hunt(
+warmstarts_sink,
+warmstarts_mcv,
+warmstarts_sink_0,
+warmstarts_sink_5,
+warmstarts_sink_10,
+warmstarts_mcv_0,
+warmstarts_mcv_5,
+warmstarts_mcv_10) = the_hunt(
         deer,
         puma,
         loss_func,
@@ -226,6 +230,8 @@ warmstarts_mcv) = the_hunt(
         n_batch,
         n_accumulation_gen,
         n_accumulation_pred,
+        weight_decay_gen,
+        weight_decay_pred,
         lr_pred,
         lr_gen,
         lr_fact_gen,
