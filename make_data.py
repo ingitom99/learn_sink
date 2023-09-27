@@ -5,34 +5,31 @@ make_data.py
 This script will download and save data for testing.
 """
 
-from src.data_funcs import get_mnist, get_omniglot, get_cifar, get_lfw, get_quickdraw, get_quickdraw_multi
+from src.data_funcs import get_mnist, get_cifar, get_lfw, get_quickdraw, get_quickdraw_multi
 
 n_samples = 10000
+data_path = './data'
 
 # mnist
-path_mnist = './data/mnist.pt'
+path_mnist = data_path + '/mnist.pt'
 get_mnist(n_samples, path_mnist)
 
-# omniglot
-path_omniglot = './data/omniglot.pt'
-get_omniglot(n_samples, path_omniglot)
-
 # lfw
-path_lfw = './data/lfw.pt'
+path_lfw = data_path + '/lfw.pt'
 get_lfw(n_samples, path_lfw)
 
 # cifar
-path_cifar = './data/cifar.pt'
+path_cifar = data_path + '/cifar.pt'
 get_cifar(n_samples, path_cifar)
 
 # bear
-root_np = './quickdraw'
+root_np = data_path + '/quickdraw'
 path_bear = './data/bear.pt'
 class_name = 'bear'
 get_quickdraw(n_samples, root_np, path_bear, class_name)
 
 # quickdraw
-root_np = './quickdraw'
-path_quickdraw = './data/quickdraw.pt'
-n_classes = 50
+root_np = data_path + '/quickdraw'
+path_quickdraw = data_path + '/quickdraw.pt'
+n_classes = 8
 get_quickdraw_multi(n_samples, n_classes, root_np, path_quickdraw) 

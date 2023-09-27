@@ -63,16 +63,21 @@ def preprocessor(dataset : torch.Tensor, length : int, dust_const : float
         Preprocessed dataset.
     """
 
-    resized_dataset = F.interpolate(dataset.unsqueeze(1), size=(length, length),
+    # reshaping
+    processed_dataset = F.interpolate(dataset.unsqueeze(1), size=(length, length),
                                 mode='bilinear', align_corners=False).squeeze(1)
 
-    flattened_dataset = resized_dataset.view(-1, length**2)
+    # flattening
+    processed_dataset = processed_dataset.view(-1, length**2)
 
-    normalized_dataset = flattened_dataset / flattened_dataset.sum(dim=1,
+    # normalizing
+    processed_dataset = processed_dataset / processed_dataset.sum(dim=1,
                                                                    keepdim=True)
 
-    processed_dataset = normalized_dataset + dust_const
+    # dusting
+    processed_dataset = processed_dataset + dust_const
 
+    # normalizing
     processed_dataset =  processed_dataset / processed_dataset.sum(dim=1,
                                                                    keepdim=True)
 
@@ -103,13 +108,13 @@ def rand_noise(n_samples : int, dim : int, dust_const : float,
     
     """
 
-    sample_a = torch.rand((n_samples, dim))**3
+    sample_a = torch.rand((n_samples, dim))
     sample_a /= torch.unsqueeze(sample_a.sum(dim=1), 1)
     sample_a = sample_a + dust_const
     sample_a /= torch.unsqueeze(sample_a.sum(dim=1), 1)
     
     if pairs:
-        sample_b = torch.rand((n_samples, dim))**3
+        sample_b = torch.rand((n_samples, dim))
         sample_b /= torch.unsqueeze(sample_b.sum(dim=1), 1)
         sample_b = sample_b + dust_const
         sample_b /= torch.unsqueeze(sample_b.sum(dim=1), 1)
