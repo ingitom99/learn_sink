@@ -14,6 +14,7 @@ from src.sinkhorn import sink_vec
 from src.plot import *
 from src.data_funcs import rand_noise
 from src.nets import GenNet, PredNet
+from src.checkpoint import checkpoint
 
 def the_hunt(
         gen_net : GenNet,
@@ -235,31 +236,32 @@ def the_hunt(
             warmstarts_mcv_0,
             warmstarts_mcv_5,
             warmstarts_mcv_10
-            ) = checkpoint()
-
-
-            
-            
+            ) = checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps,
+                            dim, device, results_folder, train_losses,
+                            test_losses, test_rel_errs_sink, test_mcvs)
 
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')
-
         # Updating learning rates
         if learn_gen:
             gen_scheduler.step()
         pred_scheduler.step()
 
-    return (
-        train_losses,
-        test_losses,
-        test_rel_errs_sink,
-        test_mcvs,
-        warmstarts_sink,
-        warmstarts_mcv,
-        warmstarts_sink_0,
-        warmstarts_sink_5,
-        warmstarts_sink_10,
-        warmstarts_mcv_0,
-        warmstarts_mcv_5,
-        warmstarts_mcv_10,
-    )
+    results = {
+        'pred_net': pred_net,
+        'gen_net': gen_net,
+        'train_losses': train_losses,
+        'test_losses': test_losses,
+        'test_rel_errs_sink': test_rel_errs_sink,
+        'test_mcvs': test_mcvs,
+        'warmstarts_sink': warmstarts_sink,
+        'warmstarts_mcv': warmstarts_mcv,
+        'warmstarts_sink_0': warmstarts_sink_0,
+        'warmstarts_sink_5': warmstarts_sink_5,
+        'warmstarts_sink_10': warmstarts_sink_10,
+        'warmstarts_mcv_0': warmstarts_mcv_0,
+        'warmstarts_mcv_5': warmstarts_mcv_5,
+        'warmstarts_mcv_10': warmstarts_mcv_10
+        }
+    
+    return results

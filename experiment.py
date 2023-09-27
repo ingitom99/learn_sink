@@ -27,7 +27,7 @@ skip_const = 0.5
 width_gen = 6 * dim
 width_pred = 6 * dim
 
-# Training Hyperparams
+# Training experiment_info
 n_loops = 20000
 n_mini_loops_gen = 1
 n_mini_loops_pred = 1
@@ -142,9 +142,9 @@ n_params_pred = sum(p.numel() for p in puma.parameters() if p.requires_grad)
 print(f'No. trainable parameters in gen net: {n_params_gen}')
 print(f'No. trainable parameters in pred net: {n_params_pred}')
 
-# Create txt file in stamp for hyperparams
+# Create txt file in stamp for experiment_info
 current_date = datetime.datetime.now().strftime('%d.%m.%Y')
-hyperparams = {
+experiment_info = {
     'date': current_date,
     'prior distribution length': length_prior,
     'data length': length,
@@ -185,32 +185,20 @@ hyperparams = {
     'checkpoint': checkpoint,
 }
 
-# Print hyperparams
-for key, value in hyperparams.items():
+# Print experiment_info
+for key, value in experiment_info.items():
     print(f'{key}: {value}')
 
 # Define the output file path
 output_file = f'{stamp_folder_path}/params.txt'
 
-# Save the hyperparams to the text file
+# Save the experiment_info to the text file
 with open(output_file, 'w', encoding='utf-8') as file:
-    for key, value in hyperparams.items():
+    for key, value in experiment_info.items():
         file.write(f'{key}: {value}\n')
 
 # Run the hunt
-(train_losses,
-test_losses,
-test_rel_errs_sink,
-test_rel_errs_emd,
-test_mcvs,
-warmstarts_sink,
-warmstarts_mcv,
-warmstarts_sink_0,
-warmstarts_sink_5,
-warmstarts_sink_10,
-warmstarts_mcv_0,
-warmstarts_mcv_5,
-warmstarts_mcv_10) = the_hunt(
+results = the_hunt(
         deer,
         puma,
         loss_func,
