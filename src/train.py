@@ -20,7 +20,7 @@ def the_hunt(
         gen_net : GenNet,
         pred_net : PredNet,
         loss_func : callable,
-        cost : torch.Tensor,
+        cost_mat : torch.Tensor,
         eps : float,
         dust_const : float,
         dim_prior : int,
@@ -96,26 +96,25 @@ def the_hunt(
                 X_test = test_sets[key]
                 T = test_T[key]
                 sink = test_sinks[key]
-
                 P = pred_net(X_test)
 
                 loss = loss_func(P, T)
                 test_losses[key].append(loss.item())
 
-                pred_dist = get_pred_dists(P, X_test, eps, cost, dim)
+                pred_dist = get_pred_dists(P, X_test, eps, cost_mat, dim)
                 rel_errs_sink = torch.abs(pred_dist - sink) / sink
                 test_rel_errs_sink[key].append(rel_errs_sink.mean().item())
                 
-                test_mcv = get_mean_mcv(pred_net, X_test, cost, eps, dim)
+                test_mcv = get_mean_mcv(pred_net, X_test, cost_mat, eps, dim)
                 test_mcvs[key].append(test_mcv)
 
                 if plot_test_images:
                     plot_XPT(X_test[0], P[0], T[0], dim)
 
         # Setting networks to train mode
-        pred_net.train()
         if learn_gen:
             gen_net.train()
+        pred_net.train()
 
         # Training generative neural net
         if learn_gen:
@@ -132,7 +131,7 @@ def the_hunt(
                 with torch.no_grad():
                     if bootstrapped:
                         V0 = torch.exp(P)
-                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost,
+                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat,
                                         eps, V0, n_boot)
                         U = torch.log(U)
                         V = torch.log(V)
@@ -140,7 +139,7 @@ def the_hunt(
                     else:
                         V0 = torch.ones_like(X[:, :dim])
                         U, V = sink_vec(X[:, :dim], X[:, dim:],
-                                        cost, eps, V0, 1000)
+                                        cost_mat, eps, V0, 1000)
                         U = torch.log(U)
                         V = torch.log(V)
 
@@ -179,13 +178,13 @@ def the_hunt(
                 if bootstrapped:
                     V0 = torch.exp(pred_net(X))
                     U, V = sink_vec(X[:, :dim], X[:, dim:],
-                                    cost, eps, V0, n_boot)
+                                    cost_mat, eps, V0, n_boot)
                     U = torch.log(U)
                     V = torch.log(V)
 
                 else:
                     V0 = torch.ones_like(X[:, :dim])
-                    U, V = sink_vec(X[:, :dim], X[:, dim:], cost,
+                    U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat,
                                     eps, V0, 1000)
                     U = torch.log(U)
                     V = torch.log(V)
@@ -215,7 +214,7 @@ def the_hunt(
                 plot_test_rel_errs_sink(test_rel_errs_sink)
                 plot_test_mcvs(test_mcvs)
 
-                # print current learning rates
+            # print current learning rates
             if learn_gen:
                 print(f'gen lr: {gen_optimizer.param_groups[0]["lr"]}')
             print(f'pred lr: {pred_optimizer.param_groups[0]["lr"]}')
@@ -236,12 +235,13 @@ def the_hunt(
             warmstarts_mcv_0,
             warmstarts_mcv_5,
             warmstarts_mcv_10
-            ) = checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps,
+            ) = checkpoint(gen_net, pred_net, test_sets, test_sinks, cost_mat, eps,
                             dim, device, results_folder, train_losses,
                             test_losses, test_rel_errs_sink, test_mcvs)
 
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')
+            
         # Updating learning rates
         if learn_gen:
             gen_scheduler.step()

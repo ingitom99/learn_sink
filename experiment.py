@@ -8,7 +8,7 @@ from src.geometry import get_cost
 from src.sinkhorn import sink_vec
 from src.train import the_hunt
 from src.nets import GenNet, PredNet
-from src.loss import hilb_proj_loss
+from src.loss import hilb_proj_loss, mse_loss
 from src.data_funcs import preprocessor, test_set_sampler
 
 # Create 'stamp' folder for saving results
@@ -66,28 +66,24 @@ with torch.no_grad():
     lfw = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/lfw.pt')
     bear = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/bear.pt')
     quickdraw = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/quickdraw.pt')
-    omniglot = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/omniglot.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
 lfw = preprocessor(lfw, length, dust_const)
 bear = preprocessor(bear, length, dust_const)
 quickdraw = preprocessor(quickdraw, length, dust_const)
-omniglot = preprocessor(omniglot, length, dust_const)
 
 mnist = test_set_sampler(mnist, n_test).double().to(device)
 cifar = test_set_sampler(cifar, n_test).double().to(device)
 lfw = test_set_sampler(lfw, n_test).double().to(device)
 bear = test_set_sampler(bear, n_test).double().to(device)
 quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
-omniglot = test_set_sampler(omniglot, n_test).double().to(device)
 
 test_sets = {'mnist' : mnist,'cifar' : cifar, 'lfw' : lfw, 'bear' : bear,
-             'quickdraw' : quickdraw, 'omniglot' : omniglot}
+             'quickdraw' : quickdraw}
 
 # Creating a dictionary of test emds, and test targets for each test set
 test_sinks = {}
-test_emds = {}
 test_T = {}
 
 print('Computing test emds, sinks, and targets...')
@@ -103,24 +99,19 @@ for key in test_sets.keys():
         T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
         test_T[key] = T
         sinks = []
-        emds = []
         for x in tqdm(X):
             mu = x[:dim] / x[:dim].sum()
             nu = x[dim:] / x[dim:].sum()
             sink = ot.sinkhorn2(mu, nu, cost, eps)
-            emd = ot.emd2(mu, nu, cost)
             sinks.append(sink)
-            emds.append(emd)
         sinks = torch.tensor(sinks)
-        emds = torch.tensor(emds)
         test_sinks[key] = sinks
-        test_emds[key] = emds
 
 # Initialization of loss function
 loss_func = hilb_proj_loss
 
 # Initialization of nets
-deer = GenNet(dim_prior, dim, width_gen, dust_const,
+deer = GenNet(dim_prior, dim, width_gen, dust_const, 
               skip_const).double().to(device)
 puma = PredNet(dim, width_pred).double().to(device)
 
@@ -190,7 +181,7 @@ for key, value in experiment_info.items():
     print(f'{key}: {value}')
 
 # Define the output file path
-output_file = f'{stamp_folder_path}/params.txt'
+output_file = f'{stamp_folder_path}/experiment_info.txt'
 
 # Save the experiment_info to the text file
 with open(output_file, 'w', encoding='utf-8') as file:
@@ -210,7 +201,6 @@ results = the_hunt(
         device,
         test_sets,
         test_sinks,
-        test_emds,
         test_T,
         n_loops,
         n_mini_loops_gen,

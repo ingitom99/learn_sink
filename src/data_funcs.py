@@ -255,40 +255,6 @@ def get_mnist(n_samples : int, path : str) -> None:
     torch.save(mnist_save, path)
     return None
     
-
-def get_omniglot(n_samples : int, path : str) -> None:
-
-    """
-    Download and save a set of Omniglot images as a pytorch tensor in a '.pt'
-    file.
-
-    Parameters
-    ----------
-    n_samples : int
-        Number of samples from the Omniglot dataset.
-    path : str
-        Path to save the dataset.
-
-    Returns
-    -------
-    None
-    """
-
-    dataset = torchvision.datasets.Omniglot(root="./data", download=True,
-                                transform=torchvision.transforms.ToTensor())
-    
-    omniglot = torch.zeros((len(dataset), 105, 105))
-    for i, datapoint in enumerate(dataset):
-        image = datapoint[0]
-        omniglot[i] = image
-    
-    rand_perm = torch.randperm(len(omniglot))
-    omniglot_save = omniglot[rand_perm][:n_samples]
-
-    torch.save(omniglot_save, path)
-
-    return None
-    
 def get_cifar(n_samples : int, path : str) -> None:
 
     """

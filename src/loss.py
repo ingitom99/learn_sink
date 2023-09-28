@@ -30,3 +30,25 @@ def hilb_proj_loss(U: torch.Tensor, V: torch.Tensor) -> float:
     loss = spectrum.mean()
 
     return loss
+
+def mse_loss(U: torch.Tensor, V: torch.Tensor) -> float:
+
+    """
+    Compute the mean squared error between pairs of vectors.
+
+    Parameters
+    ----------
+    U : (n_samples, dim) torch.Tensor
+        First set of vectors.
+    V : (n_samples, dim) torch.Tensor
+        Second set of vectors.
+    
+    Returns
+    -------
+    loss : float
+        Mean loss value.
+    """
+
+    loss = ((U - V) ** 2).mean()
+
+    return loss
