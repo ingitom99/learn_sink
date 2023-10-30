@@ -170,6 +170,8 @@ def the_hunt(
             if learn_gen:
                 prior_sample = torch.randn((n_batch,
                                         2 * dim_prior)).double().to(device)
+                for layer in gen_net.layers:
+                    layer.weight /= torch.linalg.matrix_norm(layer.weight, ord=2)
                 X = gen_net(prior_sample)
 
             else:
