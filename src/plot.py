@@ -364,12 +364,18 @@ def plot_test_mcvs(test_mcvs : dict[str, list], path: str = None) -> None:
 
     return None
 
-def violin_plot(pred, ones, gauss, title):
-    keys = list(pred.keys())
+def plot_warmstart_violins(warmstarts, title, path = None):
+    keys = list(warmstarts.keys())
+
+    pred = {}
+    ones = {}
+    gauss = {}
+    for key in warmstarts.keys():
+        pred[key], ones[key], gauss[key] = warmstarts[key]
     data_pred = []
     data_ones = []
     data_gauss = []
-
+    plt.figure()
     for key in keys:
         data_pred.append(pred[key])
         data_ones.append(ones[key])
@@ -382,12 +388,14 @@ def violin_plot(pred, ones, gauss, title):
     add_label(plt.violinplot(data_ones, showmedians=True,showextrema=False), 'ones')
     add_label(plt.violinplot(data_gauss, showmedians=True,showextrema=False), 'gauss')
     plt.xticks(torch.arange(1, len(keys) + 1), labels=keys)
-    plt.xlim(0.25, len(labels) + 0.75)
+    plt.xlim(0.25, len(keys) + 0.75)
     plt.ylabel('Error')
     plt.yticks(torch.arange(0, 1.0001, 0.05))
     plt.legend(*zip(*labels), loc=1)
     plt.grid()
     plt.title(title)
-    plt.show()
-
+    if path:
+        plt.savefig(f'{path}')
+    else:
+        plt.show()
     return None

@@ -2,10 +2,9 @@
 import datetime
 import os
 import torch
-import ot
 from tqdm import tqdm
 from src.geometry import get_cost
-from src.sinkhorn import sink_vec
+from src.sinkhorn import sink_vec, sink
 from src.train import the_hunt
 from src.nets import GenNet, PredNet
 from src.loss import hilb_proj_loss, mse_loss
@@ -46,7 +45,7 @@ n_boot = 100
 extend_data = False
 test_iter = 500
 n_test = 25
-checkpoint = n_loops
+checkpoint_iter = n_loops
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -98,12 +97,13 @@ for key in test_sets.keys():
         V = torch.log(V)
         T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
         test_T[key] = T
-        sinks = []
+        sinks = [] 
         for x in tqdm(X):
             mu = x[:dim] / x[:dim].sum()
             nu = x[dim:] / x[dim:].sum()
-            sink = ot.sinkhorn2(mu, nu, cost, eps)
-            sinks.append(sink)
+            v0 = torch.ones_like(mu)
+            _, _, _, sink_dist = sink(mu, nu, cost, eps, v0, 1000)
+            sinks.append(sink_dist)
         sinks = torch.tensor(sinks)
         test_sinks[key] = sinks
 
@@ -173,7 +173,7 @@ experiment_info = {
     'bootstrapped?': bootstrapped,
     'no. bootstraps': n_boot,
     'extend data?': extend_data,
-    'checkpoint': checkpoint,
+    'checkpoint': checkpoint_iter,
 }
 
 # Print experiment_info
@@ -220,7 +220,7 @@ results = the_hunt(
         extend_data,
         test_iter,
         stamp_folder_path,
-        checkpoint,
+        checkpoint_iter,
         )
 
 print('The hunt is over. Time to rest.')

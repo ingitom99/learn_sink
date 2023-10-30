@@ -46,7 +46,7 @@ def the_hunt(
         plot_test_images : bool,
         display_test_info : bool,
         results_folder : str,
-        checkpoint : int,
+        checkpoint_iter : int,
         ) -> tuple[dict, dict, dict]:
 
     """
@@ -223,7 +223,7 @@ def the_hunt(
             print(f'non nan percentage: {non_nan_total / n_batch}')
 
         # Checkpointing
-        if ((i+1) % checkpoint == 0):
+        if ((i+1) % checkpoint_iter == 0):
             print(f'Checkpointing at iter: {i+1}')
 
             (

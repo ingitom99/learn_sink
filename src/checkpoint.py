@@ -1,8 +1,7 @@
-import torch
 from src.test_funcs import *
 from src.plot import *
 
-def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
+def checkpoint(gen_net : , pred_net, test_sets, test_sinks, cost, eps, dim, device,
                results_folder, train_losses, test_losses, test_rel_errs_sink,
                test_mcvs):
     
@@ -42,6 +41,24 @@ def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
     plot_test_mcvs(test_mcvs, f'{results_folder}/test_mcvs.png')
     plot_warmstarts_mcv(warmstarts_mcv, results_folder)
     plot_warmstarts_sink(warmstarts_sink, results_folder)
+    plot_warmstart_violins(warmstarts_sink_0,
+                           'Rel Err (Sinkhorn Converged) : iteration 0',
+                           f'{results_folder}/violins_rel_err_sink_0.png')
+    plot_warmstart_violins(warmstarts_sink_5,
+                            'Rel Err (Sinkhorn Converged) : iteration 5',
+                            f'{results_folder}/violins_rel_err_sink_5.png')
+    plot_warmstart_violins(warmstarts_sink_10,
+                            'Rel Err (Sinkhorn Converged) : iteration 10',
+                            f'{results_folder}/violins_rel_err_sink_10.png')
+    plot_warmstart_violins(warmstarts_mcv_0,
+                            'Marginal Constraint Violation : iteration 0',
+                            f'{results_folder}/violins_mcv_0.png')
+    plot_warmstart_violins(warmstarts_mcv_5,
+                            'Marginal Constraint Violation : iteration 5',
+                            f'{results_folder}/violins_mcv_5.png')
+    plot_warmstart_violins(warmstarts_mcv_10,
+                            'Marginal Constraint Violation : iteration 10',
+                            f'{results_folder}/violins_mcv_10.png')
 
     return (
         warmstarts_sink,

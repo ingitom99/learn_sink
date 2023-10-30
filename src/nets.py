@@ -101,12 +101,10 @@ class PredNet(nn.Module):
         self.l_2 = nn.Sequential(nn.Linear(width, width), nn.BatchNorm1d(width),
                                  nn.ELU())
         self.l_3 = nn.Sequential(nn.Linear(width, dim))
-        self.layers = [self.l_1, self.l_2, self.l_3, self.l_3]
+        self.layers = [self.l_1, self.l_2, self.l_3]
 
     def forward(self, x):
         for layer in self.layers:
             x = layer(x)
         return x
     
-
-# write a function to do pca algorithm
