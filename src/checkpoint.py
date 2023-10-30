@@ -1,7 +1,7 @@
 from src.test_funcs import *
 from src.plot import *
 
-def checkpoint(gen_net : , pred_net, test_sets, test_sinks, cost, eps, dim, device,
+def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
                results_folder, train_losses, test_losses, test_rel_errs_sink,
                test_mcvs):
     

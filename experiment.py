@@ -13,7 +13,7 @@ from src.data_funcs import preprocessor, test_set_sampler
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
 formatted_time = current_time.strftime('%m-%d_%H_%M_%S')
-stamp_folder_path = '/content/gdrive/MyDrive/learn_sink/stamps_main/stamp_main_'+formatted_time
+stamp_folder_path = './stamps/stamp'+formatted_time
 os.mkdir(stamp_folder_path)
 
 # Problem hyperparameters
@@ -60,15 +60,16 @@ print(f'Entropic regularization param: {eps}')
 
 # weight regularization
 loss_reg = 10
-toggle_reg = True
+toggle_reg = False
+layer_weights_normed = False
 
 # Loading, preprocessing, and sampling for the test sets dictionary
 with torch.no_grad():
-    mnist = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/mnist.pt')
-    cifar = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/cifar.pt')
-    lfw = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/lfw.pt')
-    bear = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/bear.pt')
-    quickdraw = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/quickdraw.pt')
+    mnist = torch.load('./data/mnist.pt')
+    cifar = torch.load('./data/cifar.pt')
+    lfw = torch.load('./data/lfw.pt')
+    bear = torch.load('./data/bear.pt')
+    quickdraw = torch.load('./data/quickdraw.pt')
 
 mnist = preprocessor(mnist, length, dust_const)
 cifar = preprocessor(cifar, length, dust_const)
@@ -178,6 +179,9 @@ experiment_info = {
     'no. bootstraps': n_boot,
     'extend data?': extend_data,
     'checkpoint': checkpoint_iter,
+    'weight regularization in loss?': toggle_reg,
+    'weight regularization in loss coefficient': loss_reg,
+    'layer weights normalized?': layer_weights_normed,
 }
 
 # Print experiment_info
@@ -199,6 +203,7 @@ results = the_hunt(
         loss_func,
         loss_reg,
         toggle_reg,
+        layer_weights_normed,
         cost,
         eps,
         dust_const,

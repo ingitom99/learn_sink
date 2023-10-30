@@ -22,6 +22,7 @@ def the_hunt(
         loss_func : callable,
         loss_reg: float,
         toggle_reg: bool,
+        layer_weights_normed: bool,
         cost_mat : torch.Tensor,
         eps : float,
         dust_const : float,
@@ -170,8 +171,11 @@ def the_hunt(
             if learn_gen:
                 prior_sample = torch.randn((n_batch,
                                         2 * dim_prior)).double().to(device)
-                for layer in gen_net.layers:
-                    layer.weight /= torch.linalg.matrix_norm(layer.weight, ord=2)
+                
+                if layer_weights_normed:
+                    for layer in gen_net.layers:
+                        layer[0].weight = torch.nn.parameter.Parameter(layer[0].weight / torch.linalg.matrix_norm(layer[0].weight, ord=2))
+
                 X = gen_net(prior_sample)
 
             else:

@@ -1,0 +1,7 @@
+numpy==1.23.5
+matplotlib==3.7.1
+tqdm==4.66.1
+torch==2.1.0
+jax==0.4.16
+ott==0.4.4
+torchvision==0.16.0
