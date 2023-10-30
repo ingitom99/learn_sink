@@ -20,6 +20,8 @@ def the_hunt(
         gen_net : GenNet,
         pred_net : PredNet,
         loss_func : callable,
+        loss_reg: float,
+        toggle_reg: bool,
         cost_mat : torch.Tensor,
         eps : float,
         dust_const : float,
@@ -98,7 +100,7 @@ def the_hunt(
                 sink = test_sinks[key]
                 P = pred_net(X_test)
 
-                loss = loss_func(P, T)
+                loss = loss_func(P, T, gen_net, loss_reg, toggle_reg)
                 test_losses[key].append(loss.item())
 
                 pred_dist = get_pred_dists(P, X_test, eps, cost_mat, dim)
@@ -154,7 +156,7 @@ def the_hunt(
                 T = T_gen
                 P = pred_net(X)
 
-                gen_loss = -loss_func(P, T)
+                gen_loss = -loss_func(P, T, gen_net, loss_reg, toggle_reg)
                 train_losses['gen'].append(gen_loss.item())
                 gen_loss.backward(retain_graph=True)
 
@@ -168,6 +170,8 @@ def the_hunt(
             if learn_gen:
                 prior_sample = torch.randn((n_batch,
                                         2 * dim_prior)).double().to(device)
+                for layer in gen_net.layers:
+                    layer.weight /= torch.linalg.matrix_norm(layer.weight, ord=2)
                 X = gen_net(prior_sample)
 
             else:

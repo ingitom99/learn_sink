@@ -58,6 +58,10 @@ cost = get_cost(length).double().to(device)
 eps = 1e-2
 print(f'Entropic regularization param: {eps}')
 
+# weight regularization
+loss_reg = 10
+toggle_reg = True
+
 # Loading, preprocessing, and sampling for the test sets dictionary
 with torch.no_grad():
     mnist = torch.load('/content/gdrive/MyDrive/learn_sink_stuff_IT_VL/data/mnist.pt')
@@ -193,6 +197,8 @@ results = the_hunt(
         deer,
         puma,
         loss_func,
+        loss_reg,
+        toggle_reg,
         cost,
         eps,
         dust_const,
