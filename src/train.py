@@ -159,7 +159,7 @@ def the_hunt(
 
                 gen_loss = -loss_func(P, T)
                 if loss_gen_reg_coeff > 0:
-                    gen_loss -= weight_reg(gen_net, loss_gen_reg_coeff)
+                    gen_loss = gen_loss - weight_reg(gen_net, loss_gen_reg_coeff)
                 train_losses['gen'].append(gen_loss.item())
                 gen_loss.backward(retain_graph=True)
 

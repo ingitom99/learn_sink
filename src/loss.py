@@ -70,10 +70,10 @@ def approximate_matrix_norm(W: torch.tensor, nb_iterations: int):
 
     """
 
-    b = torch.rand(W.shape[0])
+    b = torch.rand(W.shape[0], dtype=W.dtype, device=W.device)
     for _ in range(nb_iterations):
         b = torch.matmul(W, torch.matmul(W.T, b))
-        b /= torch.linalg.vector_norm(b)
+        b = b / torch.linalg.vector_norm(b)
     norm = torch.sqrt(
         (torch.matmul(b, torch.matmul(W, torch.matmul(W.T, b))) / torch.matmul(b, b))
     )
@@ -101,6 +101,8 @@ def weight_reg(gen_net : GenNet, reg_coeff : float) -> float:
     reg_val = 0
     for layer in gen_net.layers:
             weights = layer[0].weight
-            reg_val += torch.max(0.0, approximate_matrix_norm(weights, 1) - 1)
-    reg_val *= reg_coeff
+            reg_contrib = approximate_matrix_norm(weights, 1) - 1
+            if reg_contrib > 0:
+                reg_val = reg_val + torch.max(reg_contrib)
+    reg_val = reg_val * reg_coeff
     return reg_val
