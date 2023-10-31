@@ -15,6 +15,30 @@ from tqdm import tqdm
 from skimage.draw import random_shapes
 
 
+def approximate_matrix_norm(W: torch.tensor, nb_iterations: int):
+
+    """
+    Approximates the 2-norm of a matrix using the power method.
+
+    Parameters
+    ----------
+    W: matrix to compute 2-norm of.
+    nb_iterations: number of iterations of the power method.
+
+    Returns
+    -------
+    Approximate 2-norm of `W`.
+
+    """
+    b = torch.rand(W.shape[0])
+    for _ in range(nb_iterations):
+        b = torch.matmul(W, torch.matmul(W.T, b))
+        b /= torch.linalg.vector_norm(b)
+    return torch.sqrt(
+        (torch.matmul(b, torch.matmul(W, torch.matmul(W.T, b))) / torch.matmul(b, b))
+    )
+
+
 def test_set_sampler(test_set : torch.Tensor, n_samples : int) -> torch.Tensor:
 
     """
