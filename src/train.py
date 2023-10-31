@@ -15,13 +15,13 @@ from src.plot import *
 from src.data_funcs import rand_noise
 from src.nets import GenNet, PredNet
 from src.checkpoint import checkpoint
+from src.loss import weight_reg
 
 def the_hunt(
         gen_net : GenNet,
         pred_net : PredNet,
         loss_func : callable,
-        loss_reg: float,
-        toggle_reg: bool,
+        loss_gen_reg_coeff: float,
         layer_weights_normed: bool,
         cost_mat : torch.Tensor,
         eps : float,
@@ -101,7 +101,7 @@ def the_hunt(
                 sink = test_sinks[key]
                 P = pred_net(X_test)
 
-                loss = loss_func(P, T, gen_net, loss_reg, toggle_reg)
+                loss = loss_func(P, T)
                 test_losses[key].append(loss.item())
 
                 pred_dist = get_pred_dists(P, X_test, eps, cost_mat, dim)
@@ -157,7 +157,9 @@ def the_hunt(
                 T = T_gen
                 P = pred_net(X)
 
-                gen_loss = -loss_func(P, T, gen_net, loss_reg, toggle_reg)
+                gen_loss = -loss_func(P, T)
+                if loss_gen_reg_coeff > 0:
+                    gen_loss -= weight_reg(gen_net, loss_gen_reg_coeff)
                 train_losses['gen'].append(gen_loss.item())
                 gen_loss.backward(retain_graph=True)
 
@@ -231,7 +233,7 @@ def the_hunt(
             print(f'non nan percentage: {non_nan_total / n_batch}')
 
         # Checkpointing
-        if ((i+1) % checkpoint_iter == 0):
+        if (i+1) % checkpoint_iter == 0:
             print(f'Checkpointing at iter: {i+1}')
 
             (

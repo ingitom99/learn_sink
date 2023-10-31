@@ -23,8 +23,8 @@ dim_prior = length_prior**2
 dim = length**2
 dust_const = 1e-6
 skip_const = 0.5
-width_gen = 6 * dim
-width_pred = 6 * dim
+width_gen = 1 * dim
+width_pred = 1 * dim
 
 # Training experiment_info
 n_loops = 20000
@@ -59,8 +59,7 @@ eps = 1e-2
 print(f'Entropic regularization param: {eps}')
 
 # weight regularization
-loss_reg = 10
-toggle_reg = False
+loss_gen_reg_coeff = 10.0
 layer_weights_normed = False
 
 # Loading, preprocessing, and sampling for the test sets dictionary
@@ -179,8 +178,7 @@ experiment_info = {
     'no. bootstraps': n_boot,
     'extend data?': extend_data,
     'checkpoint': checkpoint_iter,
-    'weight regularization in loss?': toggle_reg,
-    'weight regularization in loss coefficient': loss_reg,
+    'weight regularization in loss coefficient': loss_gen_reg_coeff,
     'layer weights normalized?': layer_weights_normed,
 }
 
@@ -201,8 +199,7 @@ results = the_hunt(
         deer,
         puma,
         loss_func,
-        loss_reg,
-        toggle_reg,
+        loss_gen_reg_coeff,
         layer_weights_normed,
         cost,
         eps,
