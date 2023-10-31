@@ -13,38 +13,39 @@ from src.data_funcs import preprocessor, test_set_sampler
 # Create 'stamp' folder for saving results
 current_time = datetime.datetime.now()
 formatted_time = current_time.strftime('%m-%d_%H_%M_%S')
-stamp_folder_path = './stamps/stamp'+formatted_time
+stamp_folder_path = './results/experiment_'+formatted_time
 os.mkdir(stamp_folder_path)
 
 # Problem hyperparameters
-length_prior = 14
+length_prior = 10
 length = 28
 dim_prior = length_prior**2
 dim = length**2
 dust_const = 1e-6
-skip_const = 0.5
-width_gen = 1 * dim
-width_pred = 1 * dim
+skip_const = 0.75
+width_gen = 4 * dim
+width_pred = 4 * dim
 
 # Training experiment_info
-n_loops = 20000
+n_loops = 10
 n_mini_loops_gen = 1
 n_mini_loops_pred = 1
-n_batch = 500
-n_accumulation_gen = 1
-n_accumulation_pred = 1
+n_batch = 200
+layer_weights_normed = False
+loss_gen_reg_coeff = 10.0
 weight_decay_gen = 0.0
-weight_decay_pred = 0.0
+weight_decay_pred = 1e-4
 lr_gen = 0.1
 lr_pred = 0.1
 lr_fact_gen = 1.0
 lr_fact_pred = 1.0
 learn_gen = True
 bootstrapped = True
-n_boot = 100
-extend_data = False
-test_iter = 500
-n_test = 25
+n_boot = 40
+test_iter = 5
+n_test = 3
+plot_test_images = True
+display_test_info = True
 checkpoint_iter = n_loops
 
 # Device
@@ -57,10 +58,6 @@ cost = get_cost(length).double().to(device)
 # Regularization parameter
 eps = 1e-2
 print(f'Entropic regularization param: {eps}')
-
-# weight regularization
-loss_gen_reg_coeff = 10.0
-layer_weights_normed = False
 
 # Loading, preprocessing, and sampling for the test sets dictionary
 with torch.no_grad():
@@ -82,8 +79,8 @@ lfw = test_set_sampler(lfw, n_test).double().to(device)
 bear = test_set_sampler(bear, n_test).double().to(device)
 quickdraw = test_set_sampler(quickdraw, n_test).double().to(device)
 
-test_sets = {'mnist' : mnist,'cifar' : cifar, 'lfw' : lfw, 'bear' : bear,
-             'quickdraw' : quickdraw}
+test_sets = {'mnist' : mnist,'cifar' : cifar, 'bear' : bear,
+             'quickdraw' : quickdraw, 'lfw' : lfw}
 
 # Creating a dictionary of test emds, and test targets for each test set
 test_sinks = {}
@@ -101,7 +98,7 @@ for key in test_sets.keys():
         V = torch.log(V)
         T = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
         test_T[key] = T
-        sinks = [] 
+        sinks = []
         for x in tqdm(X):
             mu = x[:dim] / x[:dim].sum()
             nu = x[dim:] / x[dim:].sum()
@@ -115,7 +112,7 @@ for key in test_sets.keys():
 loss_func = hilb_proj_loss
 
 # Initialization of nets
-deer = GenNet(dim_prior, dim, width_gen, dust_const, 
+deer = GenNet(dim_prior, dim, width_gen, dust_const,
               skip_const).double().to(device)
 puma = PredNet(dim, width_pred).double().to(device)
 
@@ -166,20 +163,14 @@ experiment_info = {
     'no. loops' : n_loops,
     'no. mini loops gen' : n_mini_loops_gen,
     'no. mini loops pred' : n_mini_loops_pred,
-    'batch size gradient update' : n_batch,
-    'batch size per step gen' : n_batch * n_accumulation_gen,
-    'batch size per step pred' : n_batch * n_accumulation_pred,
-    'no. gradients per step gen' : n_accumulation_gen,
-    'no. gradients per step pred' : n_accumulation_pred,
+    'batch size per step gen' : n_batch,
+    'batch size per step pred' : n_batch,
     'test_iter': test_iter,
     'no. test samples': n_test,
     'learn gen?': learn_gen,
     'bootstrapped?': bootstrapped,
     'no. bootstraps': n_boot,
-    'extend data?': extend_data,
     'checkpoint': checkpoint_iter,
-    'weight regularization in loss coefficient': loss_gen_reg_coeff,
-    'layer weights normalized?': layer_weights_normed,
 }
 
 # Print experiment_info
@@ -214,8 +205,6 @@ results = the_hunt(
         n_mini_loops_gen,
         n_mini_loops_pred,
         n_batch,
-        n_accumulation_gen,
-        n_accumulation_pred,
         weight_decay_gen,
         weight_decay_pred,
         lr_pred,
@@ -225,8 +214,9 @@ results = the_hunt(
         learn_gen,
         bootstrapped,
         n_boot,
-        extend_data,
         test_iter,
+        plot_test_images,
+        display_test_info,
         stamp_folder_path,
         checkpoint_iter,
         )
