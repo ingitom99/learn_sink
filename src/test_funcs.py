@@ -48,10 +48,10 @@ def get_pred_dists(P : torch.Tensor, X : torch.Tensor, eps : float,
     K = torch.exp(-C/eps)
     for p, x in zip(P, X):
         mu = x[:dim] / x[:dim].sum()
-        nu = x[dim:] / x[dim:].sum()
+        #nu = x[dim:] / x[dim:].sum()
         v = torch.exp(p)
         u = mu / (K @ v)
-        v = nu / (K.T @ u)
+        #v = nu / (K.T @ u)
         G = torch.diag(u)@K@torch.diag(v)    
         dist = torch.trace(C.T@G)
         dists.append(dist)
@@ -68,7 +68,7 @@ def get_mean_mcv(pred_net : PredNet, X: torch.Tensor, C : torch.Tensor,
         nu = x[dim:]
         v_pred = V_pred[i]
         u_pred = mu / (K @ v_pred)
-        v_pred = nu / (K.T @ u_pred)
+        #v_pred = nu / (K.T @ u_pred)
         G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
         mcv = MCV(mu, nu, G_pred)
     mcvs.append(mcv)
@@ -378,17 +378,22 @@ def test_warmstart_sink_t(t : int, pred_net : PredNet, test_sets : dict, test_si
                 prob = linear_problem.LinearProblem(geom, mu_jax, nu_jax)
                 u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
                                                 False))).double().to(device)
-
-                for _ in range(t+1):
-
+                if t == 0:
                     u_pred = mu / (K @ v_pred)
-                    v_pred = nu / (K.T @ u_pred)
-                    
                     u_ones = mu / (K @ v_ones)
-                    v_ones = nu / (K.T @ u_ones)
-
                     v_gauss = nu / (K.T @ u_gauss)
-                    u_gauss = mu / (K @ v_gauss)                
+
+                else:
+                    for _ in range(t):
+
+                        u_pred = mu / (K @ v_pred)
+                        v_pred = nu / (K.T @ u_pred)
+                        
+                        u_ones = mu / (K @ v_ones)
+                        v_ones = nu / (K.T @ u_ones)
+
+                        v_gauss = nu / (K.T @ u_gauss)
+                        u_gauss = mu / (K @ v_gauss)                
                 
                 G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
                 dist_pred = torch.trace(C.T@G_pred)
@@ -441,16 +446,22 @@ def test_warmstart_MCV_t(t : int, pred_net : PredNet, test_sets : dict, C : torc
                 prob = linear_problem.LinearProblem(geom, mu_jax, nu_jax)
                 u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
                                                     False))).double().to(device)
-                for _ in range(t+1):
-
+                
+                if t == 0:
                     u_pred = mu / (K @ v_pred)
-                    v_pred = nu / (K.T @ u_pred)
-
                     u_ones = mu / (K @ v_ones)
-                    v_ones = nu / (K.T @ u_ones)
-
                     v_gauss = nu / (K.T @ u_gauss)
-                    u_gauss = mu / (K @ v_gauss)
+                else:
+                    for _ in range(t):
+
+                        u_pred = mu / (K @ v_pred)
+                        v_pred = nu / (K.T @ u_pred)
+
+                        u_ones = mu / (K @ v_ones)
+                        v_ones = nu / (K.T @ u_ones)
+
+                        v_gauss = nu / (K.T @ u_gauss)
+                        u_gauss = mu / (K @ v_gauss)
 
                 G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
                 MCV_pred = MCV(mu, nu, G_pred)
@@ -479,7 +490,7 @@ def get_mean_mcv(pred_net : PredNet, X: torch.Tensor, C : torch.Tensor,
         nu = x[dim:]
         v_pred = V_pred[i]
         u_pred = mu / (K @ v_pred)
-        v_pred = nu / (K.T @ u_pred)
+        #v_pred = nu / (K.T @ u_pred)
         G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
         mcv = MCV(mu, nu, G_pred)
     mcvs.append(mcv)
