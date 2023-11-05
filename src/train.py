@@ -65,6 +65,9 @@ def the_hunt(
         test_losses[key] = []
         test_rel_errs_sink[key] = []
         test_mcvs[key] = []
+    
+    # initializing lipshitz constant collector
+    lipshitz_constants = []
 
     # initializing optimizers
     pred_optimizer = torch.optim.SGD(pred_net.parameters(),
@@ -217,6 +220,12 @@ def the_hunt(
             pred_optimizer.step()
 
         if ((i+1) % test_iter == 0) or (i == 0):
+            lip_val = 1.0
+            for layer in gen_net.layers:
+                lip_val = lip_val * torch.linalg.matrix_norm(layer[0].weight, ord=2)
+            lipshitz_constants.append(lip_val.item())
+
+        if ((i+1) % test_iter == 0) or (i == 0):
             if display_test_info:
                 plot_XPT(X[0], P[0], T[0], dim)
                 plot_train_losses(train_losses)
@@ -240,10 +249,10 @@ def the_hunt(
             warmstarts_sink,
             warmstarts_mcv,
             warmstarts_sink_0,
-            warmstarts_sink_5,
+            warmstarts_sink_1,
             warmstarts_sink_10,
             warmstarts_mcv_0,
-            warmstarts_mcv_5,
+            warmstarts_mcv_1,
             warmstarts_mcv_10
             ) = checkpoint(gen_net, pred_net, test_sets, test_sinks, cost_mat, eps,
                             dim, device, results_folder, train_losses,
@@ -267,11 +276,12 @@ def the_hunt(
         'warmstarts_sink': warmstarts_sink,
         'warmstarts_mcv': warmstarts_mcv,
         'warmstarts_sink_0': warmstarts_sink_0,
-        'warmstarts_sink_5': warmstarts_sink_5,
+        'warmstarts_sink_1': warmstarts_sink_1,
         'warmstarts_sink_10': warmstarts_sink_10,
         'warmstarts_mcv_0': warmstarts_mcv_0,
-        'warmstarts_mcv_5': warmstarts_mcv_5,
-        'warmstarts_mcv_10': warmstarts_mcv_10
+        'warmstarts_mcv_1': warmstarts_mcv_1,
+        'warmstarts_mcv_10': warmstarts_mcv_10,
+        'lipshitz_constants': lipshitz_constants
         }
     
     return results

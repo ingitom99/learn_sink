@@ -19,8 +19,10 @@ def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
 
     warmstarts_sink_0 = test_warmstart_sink_t(0, pred_net, test_sets, test_sinks,
                                 cost, eps, dim, device)
-    warmstarts_sink_5 = test_warmstart_sink_t(5, pred_net, test_sets, test_sinks,
+    warmstarts_sink_1 = test_warmstart_sink_t(1, pred_net, test_sets, test_sinks,
                                 cost, eps, dim, device)
+    # warmstarts_sink_5 = test_warmstart_sink_t(5, pred_net, test_sets, test_sinks,
+    #                             cost, eps, dim, device)
     warmstarts_sink_10 = test_warmstart_sink_t(10, pred_net, test_sets, test_sinks,
                                 cost, eps, dim, device)
 
@@ -28,8 +30,10 @@ def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
                                         dim, device)
     warmstarts_mcv_0 = test_warmstart_MCV_t(0, pred_net, test_sets, cost, eps,
                                         dim, device)
-    warmstarts_mcv_5 = test_warmstart_MCV_t(5, pred_net, test_sets, cost, eps,
+    warmstarts_mcv_1 = test_warmstart_MCV_t(1, pred_net, test_sets, cost, eps,
                                         dim, device)
+    # warmstarts_mcv_5 = test_warmstart_MCV_t(5, pred_net, test_sets, cost, eps,
+    #                                     dim, device)
     warmstarts_mcv_10 = test_warmstart_MCV_t(10, pred_net, test_sets, cost, eps,
                                         dim, device)
 
@@ -44,18 +48,18 @@ def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
     plot_warmstart_violins(warmstarts_sink_0,
                            'Rel Err (Sinkhorn Converged) : iteration 0',
                            f'{results_folder}/violins_rel_err_sink_0.png')
-    plot_warmstart_violins(warmstarts_sink_5,
-                            'Rel Err (Sinkhorn Converged) : iteration 5',
-                            f'{results_folder}/violins_rel_err_sink_5.png')
+    plot_warmstart_violins(warmstarts_sink_1,
+                            'Rel Err (Sinkhorn Converged) : iteration 1',
+                            f'{results_folder}/violins_rel_err_sink_1.png')
     plot_warmstart_violins(warmstarts_sink_10,
                             'Rel Err (Sinkhorn Converged) : iteration 10',
                             f'{results_folder}/violins_rel_err_sink_10.png')
     plot_warmstart_violins(warmstarts_mcv_0,
                             'Marginal Constraint Violation : iteration 0',
                             f'{results_folder}/violins_mcv_0.png')
-    plot_warmstart_violins(warmstarts_mcv_5,
-                            'Marginal Constraint Violation : iteration 5',
-                            f'{results_folder}/violins_mcv_5.png')
+    plot_warmstart_violins(warmstarts_mcv_1,
+                            'Marginal Constraint Violation : iteration 1',
+                            f'{results_folder}/violins_mcv_1.png')
     plot_warmstart_violins(warmstarts_mcv_10,
                             'Marginal Constraint Violation : iteration 10',
                             f'{results_folder}/violins_mcv_10.png')
@@ -64,9 +68,9 @@ def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
         warmstarts_sink,
         warmstarts_mcv,
         warmstarts_sink_0,
-        warmstarts_sink_5,
+        warmstarts_sink_1,
         warmstarts_sink_10,
         warmstarts_mcv_0,
-        warmstarts_mcv_5, 
+        warmstarts_mcv_1, 
         warmstarts_mcv_10
     )
