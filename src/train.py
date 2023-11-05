@@ -67,7 +67,7 @@ def the_hunt(
         test_mcvs[key] = []
     
     # initializing lipshitz constant collector
-    lipshitz_constants = []
+    lip_vals_gen = []
 
     # initializing optimizers
     pred_optimizer = torch.optim.SGD(pred_net.parameters(),
@@ -219,11 +219,11 @@ def the_hunt(
             pred_loss.backward(retain_graph=True)
             pred_optimizer.step()
 
-        if ((i+1) % test_iter == 0) or (i == 0):
-            lip_val = 1.0
+        if (i % 50) == 0:
+            lip_val_gen = 1.0
             for layer in gen_net.layers:
-                lip_val = lip_val * torch.linalg.matrix_norm(layer[0].weight, ord=2)
-            lipshitz_constants.append(lip_val.item())
+                lip_val_gen = lip_val_gen * torch.linalg.matrix_norm(layer[0].weight, ord=2)
+            lip_vals_gen.append(lip_val_gen.item())
 
         if ((i+1) % test_iter == 0) or (i == 0):
             if display_test_info:
@@ -232,7 +232,7 @@ def the_hunt(
                 plot_test_losses(test_losses)
                 plot_test_rel_errs_sink(test_rel_errs_sink)
                 plot_test_mcvs(test_mcvs)
-                plot_lipschitz_vals(lipshitz_constants)
+                plot_lipschitz_vals(lip_vals_gen)
 
             # print current learning rates
             if learn_gen:
@@ -258,7 +258,7 @@ def the_hunt(
             ) = checkpoint(gen_net, pred_net, test_sets, test_sinks, cost_mat,
                            eps, dim, device, results_folder, train_losses,
                             test_losses, test_rel_errs_sink, test_mcvs,
-                            lipshitz_constants)
+                            lip_vals_gen)
 
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')
@@ -283,7 +283,7 @@ def the_hunt(
         'warmstarts_mcv_0': warmstarts_mcv_0,
         'warmstarts_mcv_1': warmstarts_mcv_1,
         'warmstarts_mcv_10': warmstarts_mcv_10,
-        'lipshitz_constants': lipshitz_constants
+        'lipshitz_constants_gen': lip_vals_gen
         }
     
     return results

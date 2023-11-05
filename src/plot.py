@@ -403,8 +403,8 @@ def plot_warmstart_violins(warmstarts, title, path = None):
 def plot_lipschitz_vals(lipschitz_vals, path = None):
     plt.figure()
     plt.plot(lipschitz_vals)
-    plt.title('Lipschitz Values')
-    plt.xlabel('# training phases')
+    plt.title('Lipschitz Values Gen Net')
+    plt.xlabel('# Lipschitz test phases')
     plt.ylabel('Lipschitz Value')
     plt.grid()
     if path:
