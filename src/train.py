@@ -163,7 +163,7 @@ def the_hunt(
 
                 gen_loss = -loss_func(P, T)
                 if loss_gen_reg_coeff > 0:
-                    gen_loss = gen_loss - weight_reg(gen_net, loss_gen_reg_coeff)
+                    gen_loss = gen_loss + weight_reg(gen_net, loss_gen_reg_coeff)
                 train_losses['gen'].append(gen_loss.item())
                 gen_loss.backward(retain_graph=True)
 
@@ -180,7 +180,7 @@ def the_hunt(
                 
                 if layer_weights_normed:
                     for layer in gen_net.layers:
-                        layer[0].weight = torch.nn.parameter.Parameter(layer[0].weight / torch.linalg.matrix_norm(layer[0].weight, ord=2))
+                        layer[0].weight = torch.nn.parameter.Parameter(layer[0].weight / approximate_matrix_norm(layer[0].weight, 3))
 
                 X = gen_net(prior_sample)
 
@@ -220,11 +220,10 @@ def the_hunt(
             pred_loss.backward(retain_graph=True)
             pred_optimizer.step()
 
-        if (i % 50) == 0:
+        if (i % 100) == 0:
             lip_val_gen = 1.0
             for layer in gen_net.layers:
-                lip_val_gen = lip_val_gen * approximate_matrix_norm(
-                    layer[0].weight, 3)
+                lip_val_gen = lip_val_gen * torch.linalg.matrix_norm(layer[0].weight, ord=2)
             lip_vals_gen.append(lip_val_gen.item())
 
         if ((i+1) % test_iter == 0) or (i == 0):
