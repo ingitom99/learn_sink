@@ -15,7 +15,7 @@ from src.plot import *
 from src.data_funcs import rand_noise
 from src.nets import GenNet, PredNet
 from src.checkpoint import checkpoint
-from src.loss import weight_reg
+from src.loss import weight_reg, approximate_matrix_norm
 
 def the_hunt(
         gen_net : GenNet,
@@ -222,7 +222,8 @@ def the_hunt(
         if (i % 50) == 0:
             lip_val_gen = 1.0
             for layer in gen_net.layers:
-                lip_val_gen = lip_val_gen * torch.linalg.matrix_norm(layer[0].weight, ord=2)
+                lip_val_gen = lip_val_gen * approximate_matrix_norm(
+                    layer[0].weight, 3)
             lip_vals_gen.append(lip_val_gen.item())
 
         if ((i+1) % test_iter == 0) or (i == 0):
