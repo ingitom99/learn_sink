@@ -127,7 +127,8 @@ def get_gauss_init(geom : Geometry, mu : jnp.ndarray, nu : jnp.ndarray) -> jnp.n
     return u
 
 def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
-                    eps: float, dim : int, device : str) -> tuple[list, list]:
+                    eps: float, dim : int,
+                    device : str, niter : int) -> tuple[list, list]:
     
     length = int(dim**.5)
     geom = get_geom(length, eps)
@@ -140,9 +141,9 @@ def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
             X = test_sets[key]
             # Initiliazing Sinkhorn algorithm
             K = torch.exp(C/-eps)
-            MCVs_pred_all = torch.zeros(len(X), 1000)
-            MCVs_ones_all = torch.zeros(len(X), 1000)
-            MCVs_gauss_all = torch.zeros(len(X), 1000)
+            MCVs_pred_all = torch.zeros(len(X), niter)
+            MCVs_ones_all = torch.zeros(len(X), niter)
+            MCVs_gauss_all = torch.zeros(len(X), niter)
             V_pred = torch.exp(pred_net(X))
             for i in tqdm(range(len(X))):
                 x = X[i]
@@ -158,7 +159,7 @@ def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
                 prob = linear_problem.LinearProblem(geom, mu_jax, nu_jax)
                 u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
                                                     False))).double().to(device)
-                for _ in range(200):
+                for _ in range(niter):
 
                     u_pred = mu / (K @ v_pred)
                     v_pred = nu / (K.T @ u_pred)
@@ -193,7 +194,7 @@ def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
 
 def test_warmstart_sink(pred_net : PredNet, test_sets : dict, test_sinks : dict,
                         C : torch.Tensor, eps: float, dim : int,
-                        device : str) -> tuple[list, list]:
+                        device : str, niter : int) -> tuple[list, list]:
 
     length = int(dim**.5)
     geom = get_geom(length, eps)
@@ -206,9 +207,9 @@ def test_warmstart_sink(pred_net : PredNet, test_sets : dict, test_sinks : dict,
             print(f'Testing warmstart sink {key}')
             X = test_sets[key]
             K = torch.exp(C/-eps)
-            rel_errs_pred_all = torch.zeros(len(X), 1000)
-            rel_errs_ones_all = torch.zeros(len(X), 1000)
-            rel_errs_gauss_all = torch.zeros(len(X), 1000)
+            rel_errs_pred_all = torch.zeros(len(X), niter)
+            rel_errs_ones_all = torch.zeros(len(X), niter)
+            rel_errs_gauss_all = torch.zeros(len(X), niter)
             V_pred = torch.exp(pred_net(X))
 
             for i in tqdm(range(len(X))):
@@ -230,7 +231,7 @@ def test_warmstart_sink(pred_net : PredNet, test_sets : dict, test_sinks : dict,
                 u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
                                                 False))).double().to(device)
 
-                for _ in range(200):
+                for _ in range(niter):
 
                     u_pred = mu / (K @ v_pred)
                     v_pred = nu / (K.T @ u_pred)
@@ -269,7 +270,7 @@ def test_warmstart_sink(pred_net : PredNet, test_sets : dict, test_sinks : dict,
 
 def test_warmstart_emd(pred_net : PredNet, test_sets : dict, test_emds : dict,
                         C : torch.Tensor, eps: float, dim : int,
-                        device : str) -> tuple[list, list]:
+                        device : str, niter : int) -> tuple[list, list]:
 
     length = int(dim**.5)
     geom = get_geom(length, eps)
@@ -282,9 +283,9 @@ def test_warmstart_emd(pred_net : PredNet, test_sets : dict, test_emds : dict,
             print(f'Testing warmstart emd {key}')
             X = test_sets[key]
             K = torch.exp(C/-eps)
-            rel_errs_pred_all = torch.zeros(len(X), 1000)
-            rel_errs_ones_all = torch.zeros(len(X), 1000)
-            rel_errs_gauss_all = torch.zeros(len(X), 1000)
+            rel_errs_pred_all = torch.zeros(len(X), niter)
+            rel_errs_ones_all = torch.zeros(len(X), niter)
+            rel_errs_gauss_all = torch.zeros(len(X), niter)
             V_pred = torch.exp(pred_net(X))
 
             for i in tqdm(range(len(X))):
@@ -306,7 +307,7 @@ def test_warmstart_emd(pred_net : PredNet, test_sets : dict, test_emds : dict,
                 u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
                                                 False))).double().to(device)
 
-                for _ in range(200):
+                for _ in range(niter):
 
                     u_pred = mu / (K @ v_pred)
                     v_pred = nu / (K.T @ u_pred)

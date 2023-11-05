@@ -3,7 +3,7 @@ from src.plot import *
 
 def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
                results_folder, train_losses, test_losses, test_rel_errs_sink,
-               test_mcvs, lipshitz_constants):
+               test_mcvs, lipshitz_constants, niter_warmstart):
     
     # Testing mode
     gen_net.eval()
@@ -15,7 +15,7 @@ def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
 
     # Test warmstart
     warmstarts_sink = test_warmstart_sink(pred_net, test_sets, test_sinks,
-                                cost, eps, dim, device)
+                                cost, eps, dim, device, niter_warmstart)
 
     warmstarts_sink_0 = test_warmstart_sink_t(0, pred_net, test_sets, test_sinks,
                                 cost, eps, dim, device)
@@ -27,7 +27,7 @@ def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
                                 cost, eps, dim, device)
 
     warmstarts_mcv = test_warmstart_MCV(pred_net, test_sets, cost, eps,
-                                        dim, device)
+                                        dim, device, niter_warmstart)
     warmstarts_mcv_0 = test_warmstart_MCV_t(0, pred_net, test_sets, cost, eps,
                                         dim, device)
     warmstarts_mcv_1 = test_warmstart_MCV_t(1, pred_net, test_sets, cost, eps,

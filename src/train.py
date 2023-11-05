@@ -50,6 +50,7 @@ def the_hunt(
         display_test_info : bool,
         results_folder : str,
         checkpoint_iter : int,
+        niter_warmstart : int
         ) -> tuple[dict, dict, dict]:
 
     """
@@ -259,7 +260,7 @@ def the_hunt(
             ) = checkpoint(gen_net, pred_net, test_sets, test_sinks, cost_mat,
                            eps, dim, device, results_folder, train_losses,
                             test_losses, test_rel_errs_sink, test_mcvs,
-                            lip_vals_gen)
+                            lip_vals_gen, niter_warmstart)
 
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')
