@@ -399,3 +399,16 @@ def plot_warmstart_violins(warmstarts, title, path = None):
     else:
         plt.show()
     return None
+
+def plot_lipschitz_vals(lipschitz_vals, path = None):
+    plt.figure()
+    plt.plot(lipschitz_vals)
+    plt.title('Lipschitz Values')
+    plt.xlabel('# training phases')
+    plt.ylabel('Lipschitz Value')
+    plt.grid()
+    if path:
+        plt.savefig(f'{path}')
+    else:
+        plt.show()
+    return None

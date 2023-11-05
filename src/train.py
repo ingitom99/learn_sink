@@ -232,6 +232,7 @@ def the_hunt(
                 plot_test_losses(test_losses)
                 plot_test_rel_errs_sink(test_rel_errs_sink)
                 plot_test_mcvs(test_mcvs)
+                plot_lipschitz_vals(lipshitz_constants)
 
             # print current learning rates
             if learn_gen:
@@ -254,9 +255,10 @@ def the_hunt(
             warmstarts_mcv_0,
             warmstarts_mcv_1,
             warmstarts_mcv_10
-            ) = checkpoint(gen_net, pred_net, test_sets, test_sinks, cost_mat, eps,
-                            dim, device, results_folder, train_losses,
-                            test_losses, test_rel_errs_sink, test_mcvs)
+            ) = checkpoint(gen_net, pred_net, test_sets, test_sinks, cost_mat,
+                           eps, dim, device, results_folder, train_losses,
+                            test_losses, test_rel_errs_sink, test_mcvs,
+                            lipshitz_constants)
 
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')

@@ -3,7 +3,7 @@ from src.plot import *
 
 def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
                results_folder, train_losses, test_losses, test_rel_errs_sink,
-               test_mcvs):
+               test_mcvs, lipshitz_constants):
     
     # Testing mode
     gen_net.eval()
@@ -63,6 +63,8 @@ def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
     plot_warmstart_violins(warmstarts_mcv_10,
                             'Marginal Constraint Violation : iteration 10',
                             f'{results_folder}/violins_mcv_10.png')
+    plot_lipschitz_vals(lipshitz_constants,
+                                f'{results_folder}/lipschitz_vals.png')
 
     return (
         warmstarts_sink,
