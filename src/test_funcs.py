@@ -158,7 +158,7 @@ def test_warmstart_MCV(pred_net : PredNet, test_sets : dict, C : torch.Tensor,
                 prob = linear_problem.LinearProblem(geom, mu_jax, nu_jax)
                 u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
                                                     False))).double().to(device)
-                for _ in range(1000):
+                for _ in range(200):
 
                     u_pred = mu / (K @ v_pred)
                     v_pred = nu / (K.T @ u_pred)
@@ -230,7 +230,7 @@ def test_warmstart_sink(pred_net : PredNet, test_sets : dict, test_sinks : dict,
                 u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
                                                 False))).double().to(device)
 
-                for _ in range(1000):
+                for _ in range(200):
 
                     u_pred = mu / (K @ v_pred)
                     v_pred = nu / (K.T @ u_pred)
@@ -306,7 +306,7 @@ def test_warmstart_emd(pred_net : PredNet, test_sets : dict, test_emds : dict,
                 u_gauss = torch.tensor(np.array(initer.init_dual_a(prob,
                                                 False))).double().to(device)
 
-                for _ in range(1000):
+                for _ in range(200):
 
                     u_pred = mu / (K @ v_pred)
                     v_pred = nu / (K.T @ u_pred)
