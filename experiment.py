@@ -47,6 +47,7 @@ n_test = 3
 plot_test_images = True
 display_test_info = True
 checkpoint_iter = n_loops
+niter_warmstart = 200
 
 # Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -171,6 +172,7 @@ experiment_info = {
     'bootstrapped?': bootstrapped,
     'no. bootstraps': n_boot,
     'checkpoint': checkpoint_iter,
+    'warmstart iterations': niter_warmstart,
 }
 
 # Print experiment_info
@@ -219,6 +221,7 @@ results = the_hunt(
         display_test_info,
         stamp_folder_path,
         checkpoint_iter,
+        niter_warmstart
         )
 
 print('The hunt is over. Time to rest.')
