@@ -15,7 +15,7 @@ from src.plot import *
 from src.data_funcs import rand_noise
 from src.nets import GenNet, PredNet
 from src.checkpoint import checkpoint
-from src.loss import weight_reg, approximate_matrix_norm
+from src.loss import weight_reg, approximate_matrix_norm, mse_loss
 
 def the_hunt(
         gen_net : GenNet,
@@ -105,7 +105,7 @@ def the_hunt(
                 sink = test_sinks[key]
                 P = pred_net(X_test)
 
-                loss = loss_func(P, T)
+                loss = mse_loss(P, T)
                 test_losses[key].append(loss.item())
 
                 pred_dist = get_pred_dists(P, X_test, eps, cost_mat, dim)
@@ -220,7 +220,7 @@ def the_hunt(
             pred_loss.backward(retain_graph=True)
             pred_optimizer.step()
 
-        if (i % 100) == 0:
+        if (i % 1000) == 0:
             lip_val_gen = 1.0
             for layer in gen_net.layers:
                 lip_val_gen = lip_val_gen * torch.linalg.matrix_norm(layer[0].weight, ord=2)
