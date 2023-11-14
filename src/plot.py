@@ -34,13 +34,13 @@ def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
     length = int(dim**.5)
 
     plt.figure()
-    plt.title('Mu')
+    plt.title('a')
     plt.imshow(X[:dim].cpu().detach().numpy().reshape(length, length),
                cmap='magma')
     plt.colorbar()
     plt.show()
     plt.figure()
-    plt.title('Nu')
+    plt.title('b')
     plt.imshow(X[dim:].cpu().detach().numpy().reshape(length, length),
                cmap='magma')
     plt.colorbar()
@@ -79,16 +79,16 @@ def plot_train_losses(train_losses : dict, path: str = None) -> None:
     
     plt.figure()
     plt.subplot(2, 1, 1)
-    plt.plot(train_losses['gen'], color='4361EE')
+    plt.plot(train_losses['gen'], color='#4361EE')
     plt.title('Generative Training Loss')
-    plt.xlabel('# training phases')
-    plt.ylabel('loss')
+    plt.xlabel('# Training Iterations')
+    plt.ylabel('Loss')
     plt.grid()
     plt.subplot(2, 1, 2)
-    plt.plot(train_losses['pred'], color='4361EE')
+    plt.plot(train_losses['pred'], color='#4361EE')
     plt.title('Predictive Training Loss')
-    plt.xlabel('# training phases')
-    plt.ylabel('loss')
+    plt.xlabel('# Training Iterations')
+    plt.ylabel('Loss')
     plt.grid()
     plt.tight_layout()
 
@@ -121,8 +121,8 @@ def plot_test_losses(test_losses : dict[str, list], path: str = None) -> None:
     for key in test_losses.keys():
         plt.plot(test_losses[key], label=key)
     plt.title('Test Losses')
-    plt.xlabel('# test phases')
-    plt.ylabel('loss')
+    plt.xlabel('# Test Phases')
+    plt.ylabel('Loss')
     plt.grid()
     plt.legend()
 
@@ -158,7 +158,7 @@ def plot_test_rel_errs_emd(rel_errs_emd : dict[str, list],
         data = rel_errs_emd[key]
         plt.plot(data, label=key)
     plt.title(' Rel Error: PredNet Dist VS ot.emd2')
-    plt.xlabel('# test phases')
+    plt.xlabel('# Test Phases')
     plt.ylabel('rel err')
     plt.yticks(torch.arange(0, 1.0001, 0.05))
     plt.grid()
@@ -195,9 +195,9 @@ def plot_test_rel_errs_sink(rel_errs_sink : dict[str, list],
         for key in rel_errs_sink.keys():
             data = rel_errs_sink[key]
             plt.plot(data, label=key)
-        plt.title(' Rel Error: PredNet Dist VS ot.sinkhorn2')
-        plt.xlabel('# test phases')
-        plt.ylabel('rel err')
+        plt.title(r'$E_{SD}$ over Test Phases')
+        plt.xlabel('# Test Phases')
+        plt.ylabel(r'$E_{SD}$')
         plt.yticks(torch.arange(0, 1.0001, 0.05))
         plt.grid()
         plt.legend()
@@ -208,8 +208,6 @@ def plot_test_rel_errs_sink(rel_errs_sink : dict[str, list],
             plt.show()
     
         return None
-
-
 
 def plot_warmstarts_mcv(test_warmstart_mcv : dict[str, tuple],
                     folder: str = None) -> None:
@@ -233,12 +231,12 @@ def plot_warmstarts_mcv(test_warmstart_mcv : dict[str, tuple],
     for key in test_warmstart_mcv.keys():
         plt.figure()
         pred, ones, gauss = test_warmstart_mcv[key]
-        plt.plot(pred, label='pred', color='F72585')
-        plt.plot(ones, label='ones', color='3F37C9')
-        plt.plot(gauss, label='gauss', color='4CC9F0')
-        plt.title(f'Warmstart (mcv): {key}')
-        plt.xlabel('# iterations')
-        plt.ylabel('MCV')
+        plt.plot(pred, label=r'pred $v_0$', color='#F72585')
+        plt.plot(ones, label=r'ones $v_0$', color='#3F37C9')
+        #plt.plot(gauss, label='gauss', color='#4CC9F0')
+        plt.title(f' {key}')
+        plt.xlabel('# Sinkhorn iterations')
+        plt.ylabel(r'$E_{MCV}$')
         plt.yticks(torch.arange(0, 1.0001, 0.05))
         plt.grid()
         plt.legend()
@@ -312,12 +310,12 @@ def plot_warmstarts_sink(test_warmstart_sink : dict[str, tuple],
     for key in test_warmstart_sink.keys():
         plt.figure()
         pred, ones, gauss = test_warmstart_sink[key]
-        plt.plot(pred, label='predicted V0', color='F72585')
-        plt.plot(ones, label='ones V0', color='3F37C9')
-        plt.plot(gauss, label='gauss V0', color='4CC9F0')
-        plt.title(f'Warmstart (sink): {key}')
-        plt.xlabel('# iterations')
-        plt.ylabel('rel err')
+        plt.plot(pred, label=r'pred $v_0$', color='#F72585')
+        plt.plot(ones, label=r'ones $v_0$', color='#3F37C9')
+        #plt.plot(gauss, label='gauss V0', color='#4CC9F0')
+        plt.title(f'{key}')
+        plt.xlabel('# Sinkhorn Iterations')
+        plt.ylabel(r'$E_{SD}$')
         plt.yticks(torch.arange(0, 1.0001, 0.05))
         plt.grid()
         plt.legend()
@@ -351,9 +349,9 @@ def plot_test_mcvs(test_mcvs : dict[str, list], path: str = None) -> None:
     plt.figure()
     for key in test_mcvs.keys():
         plt.plot(test_mcvs[key], label=key)
-    plt.title('Test MCVs')
-    plt.xlabel('# test phases')
-    plt.ylabel('MCV')
+    plt.title(r'$E_{MCV}$ During Training')
+    plt.xlabel('# Test Phases')
+    plt.ylabel(r'$E_{MCV}$')
     plt.grid()
     plt.legend()
 
@@ -384,9 +382,9 @@ def plot_warmstart_violins(warmstarts, title, path = None):
     def add_label(violin, label):
         color = violin["bodies"][0].get_facecolor().flatten()
         labels.append((mpatches.Patch(color=color), label))
-    add_label(plt.violinplot(data_pred, showmedians=True,showextrema=False, color='F72585'), 'pred')
-    add_label(plt.violinplot(data_ones, showmedians=True,showextrema=False, color='3F37C9'), 'ones')
-    add_label(plt.violinplot(data_gauss, showmedians=True,showextrema=False, color='4CC9F0'), 'gauss')
+    add_label(plt.violinplot(data_pred, showmedians=True,showextrema=False, color='#F72585'), 'pred')
+    add_label(plt.violinplot(data_ones, showmedians=True,showextrema=False, color='#3F37C9'), 'ones')
+    #add_label(plt.violinplot(data_gauss, showmedians=True,showextrema=False, color='#4CC9F0'), 'gauss')
     plt.xticks(torch.arange(1, len(keys) + 1), labels=keys)
     plt.xlim(0.25, len(keys) + 0.75)
     plt.ylabel('Error')

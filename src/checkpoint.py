@@ -46,22 +46,22 @@ def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
     plot_warmstarts_mcv(warmstarts_mcv, results_folder)
     plot_warmstarts_sink(warmstarts_sink, results_folder)
     plot_warmstart_violins(warmstarts_sink_0,
-                           'Rel Err (Sinkhorn Converged) : iteration 0',
+                           r'$E_{SD} : iteration 0',
                            f'{results_folder}/violins_rel_err_sink_0.png')
     plot_warmstart_violins(warmstarts_sink_1,
-                            'Rel Err (Sinkhorn Converged) : iteration 1',
+                            r'$E_{SD} : iteration 1',
                             f'{results_folder}/violins_rel_err_sink_1.png')
     plot_warmstart_violins(warmstarts_sink_10,
-                            'Rel Err (Sinkhorn Converged) : iteration 10',
+                            r'$E_{SD} : iteration 10',
                             f'{results_folder}/violins_rel_err_sink_10.png')
     plot_warmstart_violins(warmstarts_mcv_0,
-                            'Marginal Constraint Violation : iteration 0',
+                            r'$E_{MCV} : iteration 0',
                             f'{results_folder}/violins_mcv_0.png')
     plot_warmstart_violins(warmstarts_mcv_1,
-                            'Marginal Constraint Violation : iteration 1',
+                            r'$E_{MCV} : iteration 1',
                             f'{results_folder}/violins_mcv_1.png')
     plot_warmstart_violins(warmstarts_mcv_10,
-                            'Marginal Constraint Violation : iteration 10',
+                            r'$E_{MCV} : iteration 10',
                             f'{results_folder}/violins_mcv_10.png')
     plot_lipschitz_vals(lipshitz_constants,
                                 f'{results_folder}/lipschitz_vals.png')
