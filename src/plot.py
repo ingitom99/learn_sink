@@ -353,7 +353,7 @@ def plot_test_mcvs(test_mcvs : dict[str, list], path: str = None) -> None:
         plt.plot(test_mcvs[key], label=key)
     plt.title('Test MCVs')
     plt.xlabel('# test phases')
-    plt.ylabel('mcv')
+    plt.ylabel('MCV')
     plt.grid()
     plt.legend()
 
