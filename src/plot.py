@@ -328,6 +328,23 @@ def plot_warmstarts_sink(test_warmstart_sink : dict[str, tuple],
 
     return None
 
+
+# plot 4 datasets on 2x2 grid
+def plot_4(data, folder = None):
+
+    #plot 4 elements of data on 2x2 subplots
+    plt.figure()
+    plt.subplot(2, 2, 1)
+    plt.imshow(data[0].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+    plt.axis('off')
+    plt.subplot(2, 2, 2)
+    plt.imshow(data[1].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+    plt.axis('off')
+    plt.subplot(2, 2, 3)
+    
+
+    return None
+
 def plot_test_mcvs(test_mcvs : dict[str, list], path: str = None) -> None:
 
     """
@@ -405,6 +422,19 @@ def plot_lipschitz_vals(lipschitz_vals, path = None):
     plt.xlabel('# Lipschitz test phases')
     plt.ylabel('Lipschitz Value')
     plt.grid()
+    if path:
+        plt.savefig(f'{path}')
+    else:
+        plt.show()
+    return None
+
+# given 20 images of 28x28, plot them in a 4x5 grid
+def plot_20_images(images, path = None):
+    plt.figure()
+    for i in range(20):
+        plt.subplot(4, 5, i + 1)
+        plt.imshow(images[i].cpu().detach().numpy().reshape(28, 28), cmap='magma')
+        plt.axis('off')
     if path:
         plt.savefig(f'{path}')
     else:
