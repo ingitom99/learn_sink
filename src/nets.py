@@ -39,7 +39,7 @@ class GenNet(nn.Module):
         self.skip_const = skip_const
         self.length_prior = int(self.dim_prior**.5)
         self.length = int(self.dim**.5)
-        self.l_1 = nn.Sequential(nn.Linear(dim_prior, width),
+        self.l_1 = nn.Sequential(nn.Linear(2*dim_prior, width),
                                  nn.BatchNorm1d(width), nn.ELU())
         self.l_2 = nn.Sequential(nn.Linear(width, width),
                                  nn.BatchNorm1d(width), nn.ELU())

@@ -117,51 +117,6 @@ def the_hunt(
             gen_net.train()
         pred_net.train()
 
-        # Training generative neural net
-        if learn_gen:
-            for _ in range(n_mini_loops_gen):
-
-                gen_optimizer.zero_grad()
-
-                prior_sample = torch.randn((n_batch,
-                                            dim_prior)).double().to(device)
-                X = gen_net(prior_sample)
-
-                P = pred_net(X)
-
-                with torch.no_grad():
-                    if bootstrapped:
-                        V0 = torch.exp(P)
-                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat,
-                                        eps, V0, n_boot)
-                        U = torch.log(U)
-                        V = torch.log(V)
-
-                    else:
-                        V0 = torch.ones_like(X[:, :dim])
-                        U, V = sink_vec(X[:, :dim], X[:, dim:],
-                                        cost_mat, eps, V0, 1000)
-                        U = torch.log(U)
-                        V = torch.log(V)
-
-                    nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
-                        V).any(dim=1)).to(device)
-
-                X_gen = X[nan_mask]
-                T_gen = V[nan_mask]
-
-                X = X_gen
-                T = T_gen
-                P = pred_net(X)
-
-                gen_loss = -loss_func(P, T)
-                train_losses['gen'].append(gen_loss.item())
-                gen_loss.backward(retain_graph=True)
-
-                # Update
-                gen_optimizer.step()
-
-
         # Training predictive neural net
         for _ in range(n_mini_loops_pred):
             pred_optimizer.zero_grad()
@@ -206,6 +161,50 @@ def the_hunt(
             train_losses['pred'].append(pred_loss.item())
             pred_loss.backward(retain_graph=True)
             pred_optimizer.step()
+
+                # Training generative neural net
+        if learn_gen:
+            for _ in range(n_mini_loops_gen):
+
+                gen_optimizer.zero_grad()
+
+                # prior_sample = torch.randn((n_batch,
+                #                             2*dim_prior)).double().to(device)
+                #X = gen_net(prior_sample)
+
+                P = pred_net(X)
+
+                with torch.no_grad():
+                    if bootstrapped:
+                        V0 = torch.exp(P)
+                        U, V = sink_vec(X[:, :dim], X[:, dim:], cost_mat,
+                                        eps, V0, n_boot)
+                        U = torch.log(U)
+                        V = torch.log(V)
+
+                    else:
+                        V0 = torch.ones_like(X[:, :dim])
+                        U, V = sink_vec(X[:, :dim], X[:, dim:],
+                                        cost_mat, eps, V0, 1000)
+                        U = torch.log(U)
+                        V = torch.log(V)
+
+                    nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
+                        V).any(dim=1)).to(device)
+
+                X_gen = X[nan_mask]
+                T_gen = V[nan_mask]
+
+                X = X_gen
+                T = T_gen
+                P = pred_net(X)
+
+                gen_loss = -loss_func(P, T)
+                train_losses['gen'].append(gen_loss.item())
+                gen_loss.backward(retain_graph=True)
+
+                # Update
+                gen_optimizer.step()
 
         if ((i+1) % test_iter == 0) or (i == 0):
             if display_test_info:
@@ -264,7 +263,6 @@ def the_hunt(
         'warmstarts_mcv_0': warmstarts_mcv_0,
         'warmstarts_mcv_1': warmstarts_mcv_1,
         'warmstarts_mcv_10': warmstarts_mcv_10,
-        'lipshitz_constants_gen': lip_vals_gen
         }
     
     return results

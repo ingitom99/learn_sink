@@ -36,14 +36,14 @@ def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
     plt.figure()
     plt.title('a')
     plt.imshow(X[:dim].cpu().detach().numpy().reshape(length, length),
-               cmap='grey')
+               cmap='gray')
     plt.colorbar()
     plt.show()
 
     plt.figure()
     plt.title('b')
     plt.imshow(X[dim:].cpu().detach().numpy().reshape(length, length),
-               cmap='grey')
+               cmap='gray')
     plt.colorbar()
     plt.show()
 
@@ -51,10 +51,10 @@ def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
     plt.figure()
     plt.subplot(1, 2, 1)
     plt.imshow(X[:dim].cpu().detach().numpy().reshape(length, length),
-                cmap='grey')
+                cmap='gray')
     plt.subplot(1, 2, 2)
     plt.imshow(X[dim:].cpu().detach().numpy().reshape(length, length),
-                cmap='grey')
+                cmap='gray')
     plt.xticks([])
     plt.yticks([])
     plt.show()
@@ -62,13 +62,13 @@ def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
     plt.figure()
     plt.title('T')
     plt.imshow(T.cpu().detach().numpy().reshape(length, length),
-               cmap='grey')
+               cmap='gray')
     plt.colorbar()
     plt.show()
 
     plt.figure()
     plt.title('P')
-    plt.imshow(P.cpu().detach().numpy().reshape(length, length), cmap='grey')
+    plt.imshow(P.cpu().detach().numpy().reshape(length, length), cmap='gray')
     plt.colorbar()
     plt.show()
 
