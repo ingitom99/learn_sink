@@ -15,14 +15,11 @@ from src.plot import *
 from src.data_funcs import rand_noise
 from src.nets import GenNet, PredNet
 from src.checkpoint import checkpoint
-from src.loss import weight_reg, approximate_matrix_norm, mse_loss
 
 def the_hunt(
         gen_net : GenNet,
         pred_net : PredNet,
         loss_func : callable,
-        loss_gen_reg_coeff: float,
-        layer_weights_normed: bool,
         cost_mat : torch.Tensor,
         eps : float,
         dust_const : float,
@@ -66,9 +63,6 @@ def the_hunt(
         test_losses[key] = []
         test_rel_errs_sink[key] = []
         test_mcvs[key] = []
-    
-    # initializing lipshitz constant collector
-    lip_vals_gen = []
 
     # initializing optimizers
     pred_optimizer = torch.optim.SGD(pred_net.parameters(),
@@ -105,7 +99,7 @@ def the_hunt(
                 sink = test_sinks[key]
                 P = pred_net(X_test)
 
-                loss = mse_loss(P, T)
+                loss = loss_func(P, T)
                 test_losses[key].append(loss.item())
 
                 pred_dist = get_pred_dists(P, X_test, eps, cost_mat, dim)
@@ -130,7 +124,7 @@ def the_hunt(
                 gen_optimizer.zero_grad()
 
                 prior_sample = torch.randn((n_batch,
-                                        2 * dim_prior)).double().to(device)
+                                            dim_prior)).double().to(device)
                 X = gen_net(prior_sample)
 
                 P = pred_net(X)
@@ -154,7 +148,6 @@ def the_hunt(
                         V).any(dim=1)).to(device)
 
                 X_gen = X[nan_mask]
-                V = V - torch.unsqueeze(V.mean(dim=1), 1).repeat(1, dim)
                 T_gen = V[nan_mask]
 
                 X = X_gen
@@ -162,8 +155,6 @@ def the_hunt(
                 P = pred_net(X)
 
                 gen_loss = -loss_func(P, T)
-                if loss_gen_reg_coeff > 0:
-                    gen_loss = gen_loss + weight_reg(gen_net, loss_gen_reg_coeff)
                 train_losses['gen'].append(gen_loss.item())
                 gen_loss.backward(retain_graph=True)
 
@@ -177,10 +168,6 @@ def the_hunt(
             if learn_gen:
                 prior_sample = torch.randn((n_batch,
                                         2 * dim_prior)).double().to(device)
-                
-                if layer_weights_normed:
-                    for layer in gen_net.layers:
-                        layer[0].weight = torch.nn.parameter.Parameter(layer[0].weight / approximate_matrix_norm(layer[0].weight, 3))
 
                 X = gen_net(prior_sample)
 
@@ -220,12 +207,6 @@ def the_hunt(
             pred_loss.backward(retain_graph=True)
             pred_optimizer.step()
 
-        if (i % 1000) == 0:
-            lip_val_gen = 1.0
-            for layer in gen_net.layers:
-                lip_val_gen = lip_val_gen * torch.linalg.matrix_norm(layer[0].weight, ord=2)
-            lip_vals_gen.append(lip_val_gen.item())
-
         if ((i+1) % test_iter == 0) or (i == 0):
             if display_test_info:
                 plot_XPT(X[0], P[0], T[0], dim)
@@ -233,7 +214,6 @@ def the_hunt(
                 plot_test_losses(test_losses)
                 plot_test_rel_errs_sink(test_rel_errs_sink)
                 plot_test_mcvs(test_mcvs)
-                plot_lipschitz_vals(lip_vals_gen)
 
             # print current learning rates
             if learn_gen:
@@ -259,7 +239,7 @@ def the_hunt(
             ) = checkpoint(gen_net, pred_net, test_sets, test_sinks, cost_mat,
                            eps, dim, device, results_folder, train_losses,
                             test_losses, test_rel_errs_sink, test_mcvs,
-                            lip_vals_gen, niter_warmstart)
+                            niter_warmstart)
 
         if ((i+2) % test_iter == 0) or (i == n_loops-1):
             plt.close('all')

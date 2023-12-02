@@ -3,8 +3,7 @@ sinkhorn.py
 -----------
 
 Implementation(s) of the Sinkhorn algorithm and associated functions for
-computing approximate solutions to the entropic regularized optimal transport
-problem.
+computing solutions to the entropic regularized optimal transport problem.
 """
 
 # Imports

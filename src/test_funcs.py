@@ -548,4 +548,3 @@ def get_gauss_init(geom : Geometry, mu : jnp.ndarray, nu : jnp.ndarray) -> jnp.n
     prob = linear_problem.LinearProblem(geom, mu, nu)
     u = init.init_dual_a(prob, False)
     return u
-

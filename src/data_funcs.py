@@ -86,7 +86,8 @@ def rand_noise(n_samples : int, dim : int, dust_const : float,
                pairs : bool) -> torch.Tensor:
 
     """
-    Create a sample of random uniform noise cubed.
+    Create a batch of random uniform noise distributions with dusting and
+    normalization to ensure the samples are positive probability vectors.
 
     Parameters
     ----------

@@ -36,24 +36,39 @@ def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
     plt.figure()
     plt.title('a')
     plt.imshow(X[:dim].cpu().detach().numpy().reshape(length, length),
-               cmap='magma')
+               cmap='grey')
     plt.colorbar()
     plt.show()
+
     plt.figure()
     plt.title('b')
     plt.imshow(X[dim:].cpu().detach().numpy().reshape(length, length),
-               cmap='magma')
+               cmap='grey')
     plt.colorbar()
     plt.show()
+
+    # plot a and b side by side
+    plt.figure()
+    plt.subplot(1, 2, 1)
+    plt.imshow(X[:dim].cpu().detach().numpy().reshape(length, length),
+                cmap='grey')
+    plt.subplot(1, 2, 2)
+    plt.imshow(X[dim:].cpu().detach().numpy().reshape(length, length),
+                cmap='grey')
+    plt.xticks([])
+    plt.yticks([])
+    plt.show()
+
     plt.figure()
     plt.title('T')
     plt.imshow(T.cpu().detach().numpy().reshape(length, length),
-               cmap='magma')
+               cmap='grey')
     plt.colorbar()
     plt.show()
+
     plt.figure()
     plt.title('P')
-    plt.imshow(P.cpu().detach().numpy().reshape(length, length), cmap='magma')
+    plt.imshow(P.cpu().detach().numpy().reshape(length, length), cmap='grey')
     plt.colorbar()
     plt.show()
 
@@ -133,44 +148,6 @@ def plot_test_losses(test_losses : dict[str, list], path: str = None) -> None:
 
     return None
 
-def plot_test_rel_errs_emd(rel_errs_emd : dict[str, list],
-                           path: str = None) -> None:
-    
-    """
-    Plot the test relative errors against ot.emd2() for each test set on the
-    same plot.
-
-    Parameters
-    ----------
-    rel_errs_emd : dict[str, list]
-        Dictionary of test relative errors against ot.emd2().
-    path : str, optional
-        Path to save the plot to as a png file. If None (default) the plot is
-        displayed instead.
-
-    Returns
-    -------
-    None.
-    """
-
-    plt.figure()
-    for key in rel_errs_emd.keys():
-        data = rel_errs_emd[key]
-        plt.plot(data, label=key)
-    plt.title(' Rel Error: PredNet Dist VS ot.emd2')
-    plt.xlabel('# Test Phases')
-    plt.ylabel('rel err')
-    plt.yticks(torch.arange(0, 1.0001, 0.05))
-    plt.grid()
-    plt.legend()
-    
-    if path:
-        plt.savefig(f'{path}')
-    else:
-        plt.show()
-
-    return None
-
 def plot_test_rel_errs_sink(rel_errs_sink : dict[str, list],
                             path: str = None) -> None:
         
@@ -195,9 +172,9 @@ def plot_test_rel_errs_sink(rel_errs_sink : dict[str, list],
         for key in rel_errs_sink.keys():
             data = rel_errs_sink[key]
             plt.plot(data, label=key)
-        plt.title(r'$E_{SD}$ over Test Phases')
+        plt.title(r'Relative Error on Entropic Transport Distance')
         plt.xlabel('# Test Phases')
-        plt.ylabel(r'$E_{SD}$')
+        plt.ylabel(f'Relative Error')
         plt.yticks(torch.arange(0, 1.0001, 0.05))
         plt.grid()
         plt.legend()
@@ -231,57 +208,18 @@ def plot_warmstarts_mcv(test_warmstart_mcv : dict[str, tuple],
     for key in test_warmstart_mcv.keys():
         plt.figure()
         pred, ones, gauss = test_warmstart_mcv[key]
-        plt.plot(pred, label=r'pred $v_0$', color='#F72585')
-        plt.plot(ones, label=r'ones $v_0$', color='#3F37C9')
-        #plt.plot(gauss, label='gauss', color='#4CC9F0')
+        plt.plot(pred, label=r'pred', color='#F72585')
+        plt.plot(ones, label=r'ones', color='#3F37C9')
+        plt.plot(gauss, label=r'gauss', color='#4CC9F0')
         plt.title(f' {key}')
-        plt.xlabel('# Sinkhorn iterations')
-        plt.ylabel(r'$E_{MCV}$')
-        plt.yticks(torch.arange(0, 1.0001, 0.05))
+        plt.xlabel('# Sinkhorn Iterations')
+        plt.ylabel(f'Marginal Constraint Violation')
+        plt.yticks(torch.arange(0, 0.30001, 0.05))
         plt.grid()
         plt.legend()
     
         if folder:
             path = folder + f'/warmstart_mcv_{key}.png'
-            plt.savefig(f'{path}')
-        else:
-            plt.show()
-
-    return None
-
-def plot_warmstarts_emd(test_warmstart_emd : dict[str, tuple],
-                    folder: str = None) -> None:
-    
-    """
-    Plot the warmstart (emd) graphs for each test set on different plots.
-
-    Parameters
-    ----------
-    test_warmstart_emd : dict[str, tuple]
-        Dictionary of warmstart data (predicted V0 and ones V0).
-    folder : str, optional
-        Folder to save the plots to as png files. If None (default) the plots
-        are displayed instead.
-
-    Returns
-    -------
-    None.
-    """
-      
-    for key in test_warmstart_emd.keys():
-        plt.figure()
-        pred, ones = test_warmstart_emd[key]
-        plt.plot(pred, label='predicted V0')
-        plt.plot(ones, label='ones V0')
-        plt.title(f'Warmstart (emd): {key}')
-        plt.xlabel('# iterations')
-        plt.ylabel('rel err')
-        plt.yticks(torch.arange(0, 1.0001, 0.05))
-        plt.grid()
-        plt.legend()
-    
-        if folder:
-            path = folder + f'/warmstart_emd_{key}.png'
             plt.savefig(f'{path}')
         else:
             plt.show()
@@ -310,13 +248,13 @@ def plot_warmstarts_sink(test_warmstart_sink : dict[str, tuple],
     for key in test_warmstart_sink.keys():
         plt.figure()
         pred, ones, gauss = test_warmstart_sink[key]
-        plt.plot(pred, label=r'pred $v_0$', color='#F72585')
-        plt.plot(ones, label=r'ones $v_0$', color='#3F37C9')
-        #plt.plot(gauss, label='gauss V0', color='#4CC9F0')
+        plt.plot(pred, label=f'pred', color='#F72585')
+        plt.plot(ones, label=f'ones', color='#3F37C9')
+        plt.plot(gauss, label=f'gauss', color='#4CC9F0')
         plt.title(f'{key}')
         plt.xlabel('# Sinkhorn Iterations')
-        plt.ylabel(r'$E_{SD}$')
-        plt.yticks(torch.arange(0, 1.0001, 0.05))
+        plt.ylabel('Relative Error')
+        plt.yticks(torch.arange(0, 0.60001, 0.05))
         plt.grid()
         plt.legend()
     
@@ -325,23 +263,6 @@ def plot_warmstarts_sink(test_warmstart_sink : dict[str, tuple],
             plt.savefig(f'{path}')
         else:
             plt.show()
-
-    return None
-
-
-# plot 4 datasets on 2x2 grid
-def plot_4(data, folder = None):
-
-    #plot 4 elements of data on 2x2 subplots
-    plt.figure()
-    plt.subplot(2, 2, 1)
-    plt.imshow(data[0].cpu().detach().numpy().reshape(28, 28), cmap='magma')
-    plt.axis('off')
-    plt.subplot(2, 2, 2)
-    plt.imshow(data[1].cpu().detach().numpy().reshape(28, 28), cmap='magma')
-    plt.axis('off')
-    plt.subplot(2, 2, 3)
-    
 
     return None
 
@@ -366,9 +287,9 @@ def plot_test_mcvs(test_mcvs : dict[str, list], path: str = None) -> None:
     plt.figure()
     for key in test_mcvs.keys():
         plt.plot(test_mcvs[key], label=key)
-    plt.title(r'$E_{MCV}$ During Training')
+    plt.title(r'MCV During Training')
     plt.xlabel('# Test Phases')
-    plt.ylabel(r'$E_{MCV}$')
+    plt.ylabel('Marginal Constraint Violation')
     plt.grid()
     plt.legend()
 
@@ -399,9 +320,42 @@ def plot_warmstart_violins(warmstarts, title, path = None):
     def add_label(violin, label):
         color = violin["bodies"][0].get_facecolor().flatten()
         labels.append((mpatches.Patch(color=color), label))
-    add_label(plt.violinplot(data_pred, showmedians=True,showextrema=False, color='#F72585'), 'pred')
-    add_label(plt.violinplot(data_ones, showmedians=True,showextrema=False, color='#3F37C9'), 'ones')
-    #add_label(plt.violinplot(data_gauss, showmedians=True,showextrema=False, color='#4CC9F0'), 'gauss')
+    violin_pred = plt.violinplot(data_pred, showmedians=True,showextrema=False)
+    violin_ones = plt.violinplot(data_ones, showmedians=True,showextrema=False)
+    violin_gauss = plt.violinplot(data_gauss, showmedians=True,showextrema=False)
+    # Make all the violin statistics marks red:
+    for partname in violin_pred:
+        if partname == 'bodies':
+            continue
+        vp = violin_pred[partname]
+        vp.set_edgecolor('#F72585')
+        vp = violin_ones[partname]
+        vp.set_edgecolor('#3F37C9')
+        vp = violin_gauss[partname]
+        vp.set_edgecolor('#4CC9F0')
+        
+    # Make the violin body blue with a red border:
+    for vp in violin_pred['bodies']:
+        vp.set_facecolor('#F72585')
+        vp.set_edgecolor('#F72585')
+        vp.set_alpha(0.5)
+        
+    # Make the violin body blue with a red border:
+    for vp in violin_ones['bodies']:
+        vp.set_facecolor('#3F37C9')
+        vp.set_edgecolor('#3F37C9')
+        vp.set_alpha(0.5)
+        
+    # Make the violin body blue with a red border:
+    for vp in violin_gauss['bodies']:
+        vp.set_facecolor('#4CC9F0')
+        vp.set_edgecolor('#4CC9F0')
+        vp.set_alpha(0.5)
+        
+    add_label(violin_pred, 'pred')
+    add_label(violin_ones, 'ones')
+    add_label(violin_gauss, 'gauss')
+    
     plt.xticks(torch.arange(1, len(keys) + 1), labels=keys)
     plt.xlim(0.25, len(keys) + 0.75)
     plt.ylabel('Error')
@@ -415,28 +369,28 @@ def plot_warmstart_violins(warmstarts, title, path = None):
         plt.show()
     return None
 
-def plot_lipschitz_vals(lipschitz_vals, path = None):
-    plt.figure()
-    plt.plot(lipschitz_vals)
-    plt.title('Lipschitz Values Gen Net')
-    plt.xlabel('# Lipschitz test phases')
-    plt.ylabel('Lipschitz Value')
-    plt.grid()
-    if path:
-        plt.savefig(f'{path}')
-    else:
-        plt.show()
-    return None
+# plot 4 datasets on 2x2 grid
+def plot_4(warmstart_dict : dict, path : str = None):
 
-# given 20 images of 28x28, plot them in a 4x5 grid
-def plot_20_images(images, path = None):
     plt.figure()
-    for i in range(20):
-        plt.subplot(4, 5, i + 1)
-        plt.imshow(images[i].cpu().detach().numpy().reshape(28, 28), cmap='magma')
-        plt.axis('off')
+    for i, key in enumerate(warmstart_dict.keys()):
+        plt.subplot(2, 2, i+1)
+        pred, ones, gauss = warmstart_dict[key]
+        plt.plot(pred, label='pred', color='#F72585')
+        plt.plot(ones, label='ones', color='#3F37C9')
+        plt.plot(gauss, label='gauss', color='#4CC9F0')
+        plt.title(f'{key}')
+        plt.legend()
+
+        if i == 0 or i == 1:
+            plt.xticks([])
+
+        if i == 1 or i == 3:
+            plt.yticks([])
+
     if path:
         plt.savefig(f'{path}')
     else:
         plt.show()
+
     return None
