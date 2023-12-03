@@ -34,14 +34,14 @@ def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
     length = int(dim**.5)
 
     plt.figure()
-    plt.title('a')
+    plt.title('Mu')
     plt.imshow(X[:dim].cpu().detach().numpy().reshape(length, length),
                cmap='gray')
     plt.colorbar()
     plt.show()
 
     plt.figure()
-    plt.title('b')
+    plt.title('Nu')
     plt.imshow(X[dim:].cpu().detach().numpy().reshape(length, length),
                cmap='gray')
     plt.colorbar()
@@ -52,9 +52,13 @@ def plot_XPT(X : torch.Tensor, P : torch.Tensor, T : torch.Tensor, dim : int
     plt.subplot(1, 2, 1)
     plt.imshow(X[:dim].cpu().detach().numpy().reshape(length, length),
                 cmap='gray')
+    plt.title('Mu')
+    plt.xticks([])
+    plt.yticks([])
     plt.subplot(1, 2, 2)
     plt.imshow(X[dim:].cpu().detach().numpy().reshape(length, length),
                 cmap='gray')
+    plt.title('Nu')
     plt.xticks([])
     plt.yticks([])
     plt.show()

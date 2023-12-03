@@ -229,12 +229,10 @@ def the_hunt(
             (
             warmstarts_sink,
             warmstarts_mcv,
-            warmstarts_sink_0,
             warmstarts_sink_1,
-            warmstarts_sink_10,
-            warmstarts_mcv_0,
+            warmstarts_sink_5,
             warmstarts_mcv_1,
-            warmstarts_mcv_10
+            warmstarts_mcv_5
             ) = checkpoint(gen_net, pred_net, test_sets, test_sinks, cost_mat,
                            eps, dim, device, results_folder, train_losses,
                             test_losses, test_rel_errs_sink, test_mcvs,
@@ -248,6 +246,11 @@ def the_hunt(
             gen_scheduler.step()
         pred_scheduler.step()
 
+        # return nets to eval mode
+        pred_net.eval()
+        if learn_gen:
+            gen_net.eval()
+
     results = {
         'pred_net': pred_net,
         'gen_net': gen_net,
@@ -257,12 +260,10 @@ def the_hunt(
         'test_mcvs': test_mcvs,
         'warmstarts_sink': warmstarts_sink,
         'warmstarts_mcv': warmstarts_mcv,
-        'warmstarts_sink_0': warmstarts_sink_0,
         'warmstarts_sink_1': warmstarts_sink_1,
-        'warmstarts_sink_10': warmstarts_sink_10,
-        'warmstarts_mcv_0': warmstarts_mcv_0,
+        'warmstarts_sink_5': warmstarts_sink_5,
         'warmstarts_mcv_1': warmstarts_mcv_1,
-        'warmstarts_mcv_10': warmstarts_mcv_10,
+        'warmstarts_mcv_5': warmstarts_mcv_5,
         }
     
     return results

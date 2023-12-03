@@ -58,7 +58,7 @@ def checkpoint(gen_net, pred_net, test_sets, test_sinks, cost, eps, dim, device,
                             f'{results_folder}/violins_mcv_1.png')
     plot_warmstart_violins(warmstarts_mcv_5,
                             f'MCV : iteration 5',
-                            f'{results_folder}/violins_mcv_10.png')
+                            f'{results_folder}/violins_mcv_5.png')
 
     return (
         warmstarts_sink,
