@@ -124,6 +124,28 @@ def rand_noise(n_samples : int, dim : int, dust_const : float,
     else:
         return sample_a
 
+def rand_noise_gen(n_samples : int, dim_prior : int, dim : int,
+                   dust_const : float) -> torch.Tensor:
+
+    length_prior = int(dim_prior**.5)
+    length = int(dim**.5)
+    x = torch.randn((n_samples, 2 * dim_prior))
+    x = x.reshape(2, n_samples, length_prior, length_prior)
+    transform = torchvision.transforms.Resize((length, length), antialias=True)
+    x = torch.cat((transform(x[0]).reshape(n_samples, dim),
+                   transform(x[1]).reshape(n_samples, dim)), 1)
+    x = F.relu(x)
+    x_a = x[:, :dim]
+    x_b = x[:, dim:]
+    x_a = x_a / torch.unsqueeze(x_a.sum(dim=1), 1)
+    x_b = x_b / torch.unsqueeze(x_b.sum(dim=1), 1)
+    x_a = x_a + dust_const
+    x_b = x_b + dust_const
+    x_a = x_a / torch.unsqueeze(x_a.sum(dim=1), 1)
+    x_b = x_b / torch.unsqueeze(x_b.sum(dim=1), 1)
+    x = torch.cat((x_a, x_b), dim=1)
+    return x
+
 def rand_shapes(n_samples : int, dim : int, dust_const : float,
                 pairs : bool) -> torch.Tensor:
 
@@ -472,3 +494,4 @@ def get_quickdraw_multi(n_samples : int, n_classes : int, root_np : str,
     torch.save(dataset, path_torch)
 
     return None
+

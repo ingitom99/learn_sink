@@ -118,6 +118,7 @@ def sink_vec(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor,
         U = MU / (K @ V.T).T
         V = NU / (K.T @ U.T).T
 
+
     return U, V
 
 def sink_var_eps_vec(MU: torch.Tensor, NU: torch.Tensor, C: torch.Tensor,

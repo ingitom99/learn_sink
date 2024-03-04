@@ -398,3 +398,20 @@ def plot_4(warmstart_dict : dict, path : str = None):
         plt.show()
 
     return None
+
+def plot_test_images(test_sets : dict, path : str = None):
+    fig, axs = plt.subplots(4, 5)
+    for i, key in enumerate(test_sets.keys()):
+        for j in range(5):
+            ax = axs[i, j]
+            image = -1 * test_sets[key][j, :784].detach().cpu().numpy().reshape(28,28)
+            # if key == 'bear' or key == 'mnist':
+            #     image = image * -1
+            ax.imshow(image, cmap='gray')
+            ax.set_xticks([])
+            ax.set_yticks([])
+    if path:
+        plt.savefig(f'{path}')
+    else:
+        plt.show()
+    
