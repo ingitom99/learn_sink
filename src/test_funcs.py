@@ -71,7 +71,7 @@ def get_mean_mcv(pred_net : PredNet, X: torch.Tensor, C : torch.Tensor,
         #v_pred = nu / (K.T @ u_pred)
         G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
         mcv = MCV(mu, nu, G_pred)
-    mcvs.append(mcv)
+        mcvs.append(mcv)
     mcvs = torch.tensor(mcvs)
     return mcvs.mean().item()
 
@@ -494,7 +494,7 @@ def get_mean_mcv(pred_net : PredNet, X: torch.Tensor, C : torch.Tensor,
         #v_pred = nu / (K.T @ u_pred)
         G_pred = torch.diag(u_pred)@K@torch.diag(v_pred)
         mcv = MCV(mu, nu, G_pred)
-    mcvs.append(mcv)
+        mcvs.append(mcv)
     mcvs = torch.tensor(mcvs)
     return mcvs.mean().item()
 
