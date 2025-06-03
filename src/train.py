@@ -145,7 +145,7 @@ def the_hunt(
                     U = torch.log(U)
                     V = torch.log(V)
 
-                nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
+                nan_mask = ~(torch.isnan(U).any(dim=1) | torch.isnan(
                     V).any(dim=1)).to(device)
                 non_nan_total = nan_mask.sum().item()
 
@@ -189,7 +189,7 @@ def the_hunt(
                         U = torch.log(U)
                         V = torch.log(V)
 
-                    nan_mask = ~(torch.isnan(U).any(dim=1) & torch.isnan(
+                    nan_mask = ~(torch.isnan(U).any(dim=1) | torch.isnan(
                         V).any(dim=1)).to(device)
 
                 X_gen = X[nan_mask]
