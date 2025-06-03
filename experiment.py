@@ -31,8 +31,6 @@ n_loops = 10
 n_mini_loops_gen = 1
 n_mini_loops_pred = 1
 n_batch = 200
-layer_weights_normed = False
-loss_gen_reg_coeff = 10.0
 weight_decay_gen = 0.0
 weight_decay_pred = 1e-4
 lr_gen = 0.1
@@ -192,8 +190,6 @@ results = the_hunt(
         deer,
         puma,
         loss_func,
-        loss_gen_reg_coeff,
-        layer_weights_normed,
         cost,
         eps,
         dust_const,
