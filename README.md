@@ -8,7 +8,7 @@ It is based on the Master's thesis 'A Sinkhorn-NN Hybrid Algorithm' by Jonathan 
 
 # Reproduce Results
 
-In order reproduce the results of the paper it is as simple as executing the
+In order **to** reproduce the results of the paper it is as simple as executing the
 `experiment.py` file. The required packages and their versions are detailed in the `requirements.txt` file.
 The test data can be generated (scraped from online) by executing the `make_data.py` file or can be found at [this Google Drive folder](https://drive.google.com/drive/folders/1o5pz9-Zhr1-7s1QvPnOiTCVGWULmfC9f?usp=drive_link).
 
