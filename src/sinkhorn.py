@@ -107,6 +107,8 @@ def sink_vec(MU : torch.Tensor, NU : torch.Tensor, C : torch.Tensor,
     
     Returns
     -------
+    U : (n_samples, dim) torch.Tensor
+        1st Scaling factor.
     V : (n_samples, dim) torch.Tensor
         2nd Scaling factor.
     """
